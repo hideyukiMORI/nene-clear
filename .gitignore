@@ -13,5 +13,7 @@
 !/public_html/admin/.htaccess
 /storage/
 /build/
+/database/*.sqlite
+/database/*.sqlite3
 /frontend/node_modules/
 /frontend/apps/*/dist/

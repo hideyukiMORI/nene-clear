@@ -11,6 +11,7 @@
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^13.1",
+        "robmorgan/phinx": "^0.16.11",
         "symfony/yaml": "^8.0"
     },
     "autoload": {
@@ -45,6 +46,9 @@
         "analyse": "phpstan analyse --memory-limit 512M",
         "cs": "php-cs-fixer check --diff --allow-risky=yes --config=.php-cs-fixer.php",
         "cs:fix": "php-cs-fixer fix --allow-risky=yes --config=.php-cs-fixer.php",
+        "migrations:status": "phinx status -c phinx.php",
+        "migrations:migrate": "phinx migrate -c phinx.php",
+        "migrations:rollback": "phinx rollback -c phinx.php",
         "check": [
             "@test",
             "@analyse",
