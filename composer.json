@@ -5,6 +5,7 @@
     "license": "MIT",
     "require": {
         "php": ">=8.4.1 <9.0",
+        "firebase/php-jwt": "^7",
         "hideyukimori/nene2": "@dev"
     },
     "require-dev": {
