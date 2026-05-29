@@ -1,0 +1,17 @@
+/vendor/
+/node_modules/
+/.env
+/.env.local
+/.env.*.local
+/.phpunit.result.cache
+/.phpunit.cache/
+/.phpstan.cache/
+/.php-cs-fixer.cache
+/var/
+/public_html/assets/
+/public_html/admin/*
+!/public_html/admin/.htaccess
+/storage/
+/build/
+/frontend/node_modules/
+/frontend/apps/*/dist/
