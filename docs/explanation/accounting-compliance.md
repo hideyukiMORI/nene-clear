@@ -1,9 +1,13 @@
 # Accounting & Tax Compliance — Binding Rules
 
-**Status: binding (non-negotiable).** This document is the source of truth for
-NeNe Clear's adherence to Japanese accounting, consumption tax, and qualified
-invoice law. A finance or accounting professional reviewing the system must be
-able to find **zero deviations** from the rules below.
+> **Scope (ADR 0009):** NeNe Clear owns **reconciliation and dunning** only.
+> **Quote, invoice, and qualified invoice compliance belong in
+> [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice).** Sections 1–8
+> below are **bootstrap residue** retained for reference until moved to Invoice;
+> **§9–10 and [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
+> are authoritative for Clear.**
+
+**Status: binding (non-negotiable)** where applicable to Clear's domain.
 
 These are not guidelines. They are **MUST** requirements. Where a rule here
 conflicts with UX, performance, implementation convenience, or any other
@@ -149,10 +153,10 @@ validated in the UseCase before any document is issued or rendered.
 
 ---
 
-## 9. Payment reconciliation and dunning (Expansion #1)
+## 9. Payment reconciliation and dunning (core product)
 
-From Expansion #1 onward, bank import, payment matching, and dunning are
-**binding compliance surfaces**. All rules in
+Bank import, payment matching, and dunning are **NeNe Clear's core domain** —
+not a post-MVP expansion. All rules in
 [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
 apply with the same force as sections 1–8 above.
 

@@ -1,89 +1,62 @@
 # Roadmap
 
-NeNe Clear is a self-hosted quote and invoice OSS on NENE2 — Japan SMB billing without SaaS lock-in.
+NeNe Clear — **payment reconciliation and dunning** on NENE2. **Not** quote or
+invoice issuance ([ADR 0009](./adr/0009-separate-from-nene-invoice.md)).
+
+Billing documents: [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice).
 
 ## North Star
 
-Operators can self-host a billing platform that:
+Operators self-host Clear beside NeNe Invoice to:
 
-- manages clients and company issuer profile
-- creates quotes and converts them to invoices
-- issues Japan qualified invoice compliant PDFs
-- tracks payment status and overdue items
-- runs on **Tier A** shared hosting or **Tier B** Docker/VPS
-- optionally integrates with NeNe Records and NeNe Concierge via HTTP
-
-Full scope: [`docs/explanation/product-vision.md`](./explanation/product-vision.md), [`docs/explanation/requirements.md`](./explanation/requirements.md).
+- import bank CSV deposits
+- confirm matches to invoice payments (via Invoice API)
+- send logged dunning notices for overdue receivables
 
 ## Phase 0: Governance and Foundation
 
-Goal: engineering discipline and product design before runtime code.
+- Governance docs, ADR 0001/0002/0009 ✅
+- Product vision scoped to reconciliation/dunning ✅
+- NENE2 scaffold + `GET /health` 🔲 Issue #4+
+- Invoice upstream client contract 🔲
 
-- Governance docs, ADR 0001/0002, inheritance map ✅
-- Product vision, requirements, domain model ✅ (Issue #3)
-- Multi-tenancy + role hierarchy adopted as foundational ✅ ADR 0006 (Issue #17)
-- NENE2 consumer scaffold (tenant resolution + JWT auth + RBAC + `GET /health`), OpenAPI, CI 🔲 Issues #4–#7
-- ADR 0003 dual deployment 🔲 Issue #7
+## Phase 1: Reconciliation API
 
-Tracked by `docs/milestones/2026-05-governance-and-foundation.md`.
-
-**Status: product docs complete; runtime scaffold next.**
-
-## Phase 1: Core Billing API
-
-Goal: tenancy, auth, client master, quotes, invoices, payments — API and DB only.
-
-- `organizations`, `users`, `company_settings`, `clients`, `quotes`, `invoices`, `line_items`, `payments`, `document_sequences` — all tenant-scoped by `organization_id` (ADR 0006)
-- Organization resolution (default `single`) + JWT auth + `Role`/`Capability` RBAC
-- Organization CRUD (superadmin); user CRUD (admin)
-- Japan qualified invoice field validation in UseCases
-- Quote → invoice conversion
+- Multi-tenant + JWT + RBAC (ADR 0006)
+- `clear_settings`, `bank_import_batch`, `bank_transaction`
+- Invoice upstream: list open invoices, post payment on match confirm
+- `payment_reconciliation`, match reversal, audit events
+- Compliance per `payment-reconciliation-dunning-compliance.md`
 - OpenAPI + PHPUnit + PHPStan 8
 
-See [`docs/explanation/requirements.md#phase-1--api-only`](./explanation/requirements.md#phase-1--api-only).
+## Phase 2: Admin UI + Dunning
 
-## Phase 2: Admin UI + PDF
-
-Goal: operators manage billing without CLI.
-
-- React admin SPA — ja + en locale catalogs (ADR 0005; no other locales)
-- Server-side qualified invoice PDF (Japanese layout)
-- Email delivery via SMTP
-- Public PDF download token
-- Dashboard: unpaid / overdue
+- Reconciliation workspace
+- Dunning templates + send + history
+- ja + en UI (ADR 0005)
+- Unmatched / overdue dashboard
 
 ## Phase 3: Tier A Shared Hosting
 
-Goal: Japan SMB install path.
-
 - Web installer + release ZIP
-- Operator guide (Japanese)
-- Same-origin admin on shared hosting
+- Operator guide (Invoice + Clear two-app setup)
+- Same-origin or subdomain admin
 
-## Phase 4: Ecosystem Integration
+## Phase 4: Ecosystem
 
-Goal: connect to sibling products.
+- MCP tools (`listUnmatchedTransactions`, `proposeMatch`, `sendDunningNotice`)
+- Optional Records/Concierge links (unchanged — HTTP only)
+- CSV export for accounting software
 
-- NeNe Records product catalog import
-- NeNe Concierge lead → draft client / quote webhook
-- MCP tool catalog
-- CSV export; optional payment gateway
+## Not on this roadmap
 
-## Post-MVP expansions (maintainer sequence)
+The following belong to **`nene-invoice`**, not Clear:
 
-After Phase 1–3 core billing is stable, implement in this order:
+- Quotes, invoices, qualified invoice PDF
+- Purchase orders, contracts, subscriptions, expenses
+- Any "Expansion #2–5" billing document features from legacy Clear docs
 
-1. **Payment reconciliation & dunning**
-2. **Purchase order & delivery note**
-3. **Contract term & renewal**
-4. **Small-scale subscription billing**
-5. **Minimal expense reimbursement**
-
-Compliance for #1: [`docs/explanation/payment-reconciliation-dunning-compliance.md`](./explanation/payment-reconciliation-dunning-compliance.md).
-
-Full scope, prerequisites, and MVP boundaries: [`docs/explanation/expansion-roadmap.md`](./explanation/expansion-roadmap.md).
-
-**Current expansion focus:** #1 (after core invoice + payment lands).
+See [`docs/explanation/scope-boundary.md`](./explanation/scope-boundary.md).
 
 ## Non-goals
 

@@ -6,13 +6,19 @@ accepted
 
 ## Context
 
-NeNe Clear is a quote and invoice platform. Sibling products in the NeNe ecosystem each own a distinct domain:
+NeNe Clear is a **payment reconciliation and dunning** platform. It does **not**
+issue quotes or invoices — that is [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice)
+(ADR 0009).
 
+Sibling products in the NeNe ecosystem each own a distinct domain:
+
+- **NeNe Invoice** — quote, invoice, and payment management (required upstream)
 - **NeNe Records** — CMS and typed entity platform
 - **NeNe Corpus** — knowledge chat with citations
 - **NeNe Concierge** — scenario-driven conversion chat
 
-NeNe Clear may consume sibling HTTP APIs (product catalog from Records, leads from Concierge) but must not embed billing logic into those repositories or share their databases.
+NeNe Clear calls sibling HTTP APIs but must not embed billing document logic
+into those repositories or share their databases.
 
 Alternatives considered:
 
@@ -26,21 +32,25 @@ NeNe Clear is a **separate repository and deployable unit**:
 
 - Dependency direction: `NeNe Clear → sibling API`. Never `Sibling → NeNe Clear` code inclusion.
 - No shared PHP codebase beyond Composer dependency on NENE2.
-- No invoice routes, PDF generation, or payment logic in sibling repos.
-- Siblings expose documented HTTP APIs; NeNe Clear implements `Upstream/` HTTP clients when integration is needed.
+- No invoice routes, PDF generation, or **quote/invoice issuance** in sibling repos.
+- No bank reconciliation or dunning in **NeNe Invoice** — those stay in Clear (ADR 0009).
+- Siblings expose documented HTTP APIs; NeNe Clear implements `Upstream/` HTTP clients.
 - MCP tools map to NeNe Clear OpenAPI operations only — not direct access to sibling databases.
 
 ```
 Admin UI / MCP
     ↓
-NeNe Clear API (clients, quotes, invoices, payments)
+NeNe Clear API (bank import, reconciliation, dunning)
     ↓
 NeNe Clear database (owned here)
+    ↓ HTTP (required)
+NeNe Invoice API (quotes, invoices, payments — upstream)
     ↓ optional HTTP
-NeNe Records / NeNe Concierge / external APIs
+NeNe Records / NeNe Concierge
 ```
 
-Billing-owned data (clients, quotes, invoices, payments, PDF artifacts metadata) lives in **NeNe Clear database only**.
+Clear-owned data (bank lines, reconciliation links, dunning sends, audit) lives
+in **NeNe Clear database only**. Invoice figures are **never** authoritative in Clear DB.
 
 ## Consequences
 

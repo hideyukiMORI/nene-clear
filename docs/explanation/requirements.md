@@ -1,226 +1,156 @@
 # Requirements
 
-Functional and compliance requirements for NeNe Clear. MVP scope maps to **Phase 1–3** unless noted.
+Functional and compliance requirements for **NeNe Clear only** — payment
+reconciliation and dunning.
 
-See also: [`product-vision.md`](./product-vision.md), [`domain-model.md`](./domain-model.md).
+> **Out of scope:** quotes, invoices, qualified invoice PDFs, and primary payment
+> recording → [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice).
+> See [ADR 0009](../adr/0009-separate-from-nene-invoice.md).
+
+See also: [`product-vision.md`](./product-vision.md),
+[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
 
 ---
 
 ## 1. Tenancy and user roles
 
-NeNe Clear is **multi-tenant from the foundation** — see
-[ADR 0006](../adr/0006-multi-tenancy-and-roles.md). The **organization** is the
-tenant; every tenant-scoped table carries `organization_id`. A single install may
-run as one organization via the default `single` resolution mode; agencies use
-`path` / `subdomain` / `custom_domain`.
+Multi-tenant from the foundation — [ADR 0006](../adr/0006-multi-tenancy-and-roles.md).
 
-| Role | Scope | Capabilities | Phase |
-| --- | --- | --- | --- |
-| **superadmin** | Cross-tenant | Everything, incl. `manage_organizations` (create/list/delete tenants). `organization_id` may be `NULL` | 1 |
-| **admin** | One organization | Everything except `manage_organizations` — manages the org's **users**, **company settings** (issuer profile), and billing | 1 |
-| **member** | One organization | Billing operator: create/edit/send quotes & invoices, record payments (`manage_billing`, `view_billing`). Cannot manage users/settings | 1 |
-| **viewer** (optional) | One organization | Read-only documents and reports (`view_billing`) | 3+ |
-| **public client** | — | Download invoice PDF via time-limited token URL — no login | 2 |
+| Role | Capabilities (Clear-specific) | Phase |
+| --- | --- | --- |
+| **superadmin** | Cross-tenant; manage organizations | 1 |
+| **admin** | Bank import, match confirm/reverse, dunning send, upstream config | 1 |
+| **member** | Match confirm, dunning send (if granted) | 1 |
+| **viewer** | Read unmatched/matched lists, dunning history | 2+ |
 
-Authorization: a `Role` enum + `Capability` enum resolved per route and enforced
-by capability middleware. Role/capability string values are registered in
-[`../development/naming-conventions.md`](../development/naming-conventions.md) and
-[`terminology.md`](./terminology.md) (binding). Admin JWT for mutating routes.
+Authorization: `Role` + `Capability` middleware. JWT for mutating routes.
 
 ---
 
 ## 2. Core entities (MVP)
 
-All tenant-scoped entities below carry **`organization_id`** (ADR 0006).
+Tenant-scoped entities carry **`organization_id`**.
 
-| Entity | Purpose | Key fields |
+| Entity | Purpose |
+| --- | --- |
+| **organization** | Tenant |
+| **user** | Operator account |
+| **clear_settings** | Upstream Invoice API URL, credentials, bank accounts, dunning defaults |
+| **bank_import_batch** | CSV import provenance (hash, actor, timestamp) |
+| **bank_transaction** | Imported deposit line; unmatched until reconciled |
+| **payment_reconciliation** | Link bank_transaction ↔ Invoice payment (via API) |
+| **client_credit** | Overpayment balance |
+| **dunning_notice** | Send log per invoice |
+| **audit_event** | Match, reverse, dunning, import |
+
+**Not stored as SSOT in Clear:** invoice line items, tax figures, quote data —
+fetched from Invoice upstream or cached read-only with TTL.
+
+All money: **integer cents**. JPY only Phase 1–3.
+
+---
+
+## 3. Upstream — NeNe Invoice API
+
+Clear **MUST** integrate with NeNe Invoice via HTTP (ADR 0009):
+
+| Operation | Direction | Use |
 | --- | --- | --- |
-| **organization** | Tenant | name, slug (unique), plan, is_active, custom_domain (optional), external_id (optional) |
-| **user** | Operator account | email (unique), password_hash, role (superadmin/admin/member/viewer), organization_id (NULL for superadmin), status (active/invited) |
-| **company_settings** | Issuer profile — **per organization** | organization_id, legal_name, address, phone, email, **registration_number**, bank_name, bank_branch, account_type, account_number, logo_url (optional) |
-| **client** | Buyer / customer | name, contact_name, email, billing_address, **registration_number** (optional for B2B qualified invoice) |
-| **quote** | Estimate / quotation | client_id, quote_number, issued_at, valid_until, status, subtotal_cents, tax_cents, total_cents, notes |
-| **invoice** | Bill / invoice | client_id, quote_id (optional), invoice_number, issued_at, due_at, status, subtotal_cents, tax_cents, total_cents, **is_qualified_invoice** |
-| **line_item** | Row on quote or invoice | parent_type (quote/invoice), parent_id, description, quantity, unit_price_cents, tax_rate_bps, sort_order |
-| **payment** | Payment record | invoice_id, paid_at, amount_cents, method (bank_transfer/cash/other), notes |
+| List open / overdue invoices | Invoice → Clear (read) | Matching UI, dunning eligibility |
+| Get invoice detail + outstanding | Invoice → Clear (read) | Match confirmation |
+| Create / update payment | Clear → Invoice (write) | After match confirmed |
+| List clients (optional) | Invoice → Clear (read) | Fuzzy name match hints |
 
-All money: **integer cents**. Tax rate: **basis points** (1000 = 10.00%).
+If Invoice API is unavailable, Clear **MAY** operate in degraded mode (import
+only, no match write) — document in operator guide.
 
----
-
-## 3. Japan qualified invoice — required fields
-
-> **Binding compliance.** The rules in this section are governed by
-> [`accounting-compliance.md`](./accounting-compliance.md) (non-negotiable). A
-> finance professional reviewing the system must find zero deviations. Any
-> departure requires an ADR with tax-professional sign-off.
-
-When `is_qualified_invoice = true`, the system must enforce and render:
-
-### Issuer (supplier)
-
-- [ ] Legal name or trade name
-- [ ] Address
-- [ ] **Registration number** — format `T` + 13 digits
-- [ ] Issue date
-
-### Buyer (optional on simplified invoices, required for full B2B)
-
-- [ ] Name
-- [ ] Address — when provided
-
-### Transaction details
-
-- [ ] Line items: description, tax rate per line or document
-- [ ] Taxable amount per rate category
-- [ ] Consumption tax per rate category
-- [ ] Total billing amount
-
-### Validation rules (API layer)
-
-- Registration number regex: `^T[0-9]{13}$` — **syntax check only**. This
-  validates format, not existence; the system does **not** verify the number
-  against the National Tax Agency registry or compute a check digit. Passing the
-  regex does not mean the number is registered or valid.
-- Tax rates allowed: 1000 (10%), 800 (8% reduced) — extensible via ADR
-- Invoice cannot be marked qualified if issuer registration_number is empty
-- Consumption tax is rounded **once per tax rate per document**, never per line
-  item — see [ADR 0004](../adr/0004-tax-rounding-per-rate.md)
-- PDF totals must match API-calculated cents (single source: UseCase)
+Future adapters for non-Invoice billing sources require ADR.
 
 ---
 
-## 4. Document lifecycle
+## 4. Reconciliation requirements
 
-| From | Action | To | Phase |
-| --- | --- | --- | --- |
-| — | Create quote | quote `draft` | 1 |
-| draft | Send / finalize | quote `sent` | 1 |
-| sent | Accept | quote `accepted` | 1 |
-| sent | Reject / expire | quote `rejected` / `expired` | 1 |
-| accepted | Convert | invoice `draft` | 1 |
-| — | Create invoice directly | invoice `draft` | 1 |
-| draft | Issue | invoice `issued` | 1 |
-| issued | Record full payment | invoice `paid` | 1 |
-| issued | Partial payment | invoice `partially_paid` | 2 |
-| issued | Past due_at unpaid | invoice `overdue` (computed) | 1 |
+Binding detail: [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
 
-Quote numbers and invoice numbers: auto-increment per organization with configurable prefix (e.g. `EST-2026-001`, `INV-2026-001`).
+### Phase 1 — API
+
+- [ ] Invoice upstream client + connection test
+- [ ] Bank CSV import → `bank_import_batch` + `bank_transaction`
+- [ ] List unmatched transactions and open invoices (from upstream)
+- [ ] Manual match confirm → call Invoice payment API + store `payment_reconciliation`
+- [ ] Match reversal with audit (no hard delete)
+- [ ] Partial payment and overpayment flows per compliance doc
+- [ ] OpenAPI + PHPUnit + PHPStan 8
+
+### Phase 2 — Admin UI
+
+- [ ] Reconciliation workspace (unmatched / suggest / confirm)
+- [ ] Dunning list + send + history
+- [ ] ja + en admin UI (ADR 0005)
+- [ ] Dashboard: unmatched count, overdue count
+
+### Phase 3 — Tier A
+
+- [ ] Web installer (MySQL, admin user, Invoice API config)
+- [ ] Release ZIP
+- [ ] Operator guide
 
 ---
 
-## 5. MVP features by phase
+## 5. Dunning requirements
 
-### Phase 1 — API only
-
-- [ ] Organization resolution middleware (default `single`; path/subdomain/custom_domain) + `organization_id` scoping on every query (ADR 0006)
-- [ ] Admin JWT auth + `Role`/`Capability` RBAC (capability middleware)
-- [ ] Organization CRUD — superadmin (`/admin/organizations`)
-- [ ] User CRUD — admin within organization (`/admin/users`)
-- [ ] Company settings CRUD (per organization)
-- [ ] Client CRUD + soft delete
-- [ ] Quote CRUD + line items + status transitions
-- [ ] Invoice CRUD + convert from quote + line items
-- [ ] Payment create + list by invoice
-- [ ] Qualified invoice field validation
-- [ ] OpenAPI 3.1 + PHPUnit + PHPStan 8
-
-### Phase 2 — Admin UI + PDF
-
-- [ ] React admin SPA (clients, quotes, invoices, payments, settings)
-- [ ] Admin UI locale catalogs: **ja (primary) + en (secondary)** — no other locales (ADR 0005)
-- [ ] Server-side qualified invoice PDF (Japanese layout)
-- [ ] Quote PDF (optional, simpler layout)
-- [ ] Email invoice PDF via SMTP
-- [ ] Public PDF download token URL
-- [ ] Dashboard: unpaid / overdue summary
-
-### Phase 3 — Tier A shared hosting
-
-- [ ] Web installer (MySQL credentials, admin user, company name)
-- [ ] Release ZIP build script
-- [ ] Operator guide (Japanese)
-- [ ] Same-origin admin on shared hosting
-
-### Phase 4 — Ecosystem + extensions
-
-- [ ] NeNe Records product import for line items
-- [ ] NeNe Concierge webhook → draft client / quote
-- [ ] MCP tool catalog (read + write with auth)
-- [ ] CSV export for accounting software
-- [ ] Payment gateway link (Stripe, etc.) — optional
+- [ ] Only for invoices in overdue/unpaid state from upstream
+- [ ] Template with invoice number, dates, outstanding, bank instructions (from Invoice/upstream)
+- [ ] Send log immutable (`dunning_notice`)
+- [ ] Minimum interval between notices (default 7 days)
+- [ ] No auto statutory interest on balance without ADR + advisor sign-off
 
 ---
 
 ## 6. API requirements
 
-- JSON API, OpenAPI 3.1 contract
-- RFC 9457 Problem Details for errors
-- snake_case JSON properties
-- Pagination: `limit`, `offset`, `items` envelope
+- JSON API, OpenAPI 3.1, RFC 9457 Problem Details
+- snake_case JSON; pagination envelope
 - Admin routes under `/admin/…`
 - `GET /health` unauthenticated
 
 ---
 
-## 7. Security requirements
+## 7. Security
 
-- Admin JWT for mutating routes; `Capability` enforced per route (ADR 0006)
-- **Tenant isolation**: every query scoped by resolved `organization_id`; cross-tenant reads/writes prohibited. Only superadmin operates cross-tenant
-- PDF download tokens: random, time-limited, scoped to one invoice
-- No stack traces in production responses
-- Secrets in `.env` only — never committed
-- Audit log for invoice issue and payment record (Phase 2+)
+- Tenant isolation on all queries (ADR 0006)
+- Upstream credentials in `.env` only
+- Audit log for match and dunning (Phase 1+)
+- No stack traces in production
 
 ---
 
 ## 8. Explicit non-goals
 
-| Item | Reason |
+| Item | Owner / reason |
 | --- | --- |
-| General ledger / journal entries | Different product category; export to accounting SaaS instead |
-| Payroll | Out of scope |
-| Expense receipts (full reimbursement) | Out of scope until Expansion #5 |
-| Inventory / stock | NeNe Shop territory |
-| PEPPOL / structured e-invoice network | Phase 4+ research; PDF first |
-| Multi-currency | JPY only for Phase 1–3 |
-| Multilingual UI beyond ja/en | Domain locked to Japanese rules; UI bound to Japanese + English (ADR 0005) |
-| Consumption tax filing | Operator exports data; no tax return generation |
+| Quotes, invoices, PDFs | **NeNe Invoice** |
+| Upper compatibility with Invoice | ADR 0009 — separate products |
+| Shared DB with Invoice | ADR 0009 |
+| General ledger | Export CSV only |
+| Bank API sync (MVP) | CSV first |
+| Automatic match without confirm | Compliance + philosophy |
 
 ---
 
-## 9. Acceptance tests (Phase 3 smoke)
+## 9. Acceptance tests (MVP)
 
-1. Install on clean MySQL via web installer.
-2. Enter company profile with valid `T` registration number.
-3. Create client + quote with 2 line items (10% and 8% tax).
-4. Convert to invoice, issue, download qualified invoice PDF.
-5. Record payment → invoice status `paid`.
-6. List overdue invoices returns empty after payment.
-
----
-
-## 10. Expansion #1 — payment reconciliation & dunning (requirements summary)
-
-Full binding rules: [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
-
-| Requirement | Phase |
-| --- | --- |
-| Bank CSV import with batch provenance (hash, actor, timestamp) | E1-a |
-| `bank_transaction` list unmatched / matched | E1-a |
-| Human-confirmed match → `payment` + `payment_reconciliation` | E1-b |
-| Partial payment, overpayment → `client_credit`, transfer-fee rules | E1-b |
-| Match reversal with audit (no hard delete) | E1-b |
-| Rule-based match suggestions (non-final until confirmed) | E1-c |
-| Dunning templates (Japanese primary), send log, minimum interval | E1-d |
-| CSV export for accounting import | E1-d |
+1. Configure Invoice upstream URL + token.
+2. Import bank CSV with 3 deposit lines.
+3. Confirm match for one invoice → payment visible in Invoice; reconciliation row in Clear.
+4. Reverse match → audit entry; invoice outstanding restored in Invoice.
+5. Send dunning for one overdue invoice → `dunning_notice` row.
 
 ---
 
 ## Related
 
-- **Compliance (binding):** [`accounting-compliance.md`](./accounting-compliance.md)
-- **Reconciliation & dunning (binding):** [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
-- Domain model: [`domain-model.md`](./domain-model.md)
-- Naming: [`../development/naming-conventions.md`](../development/naming-conventions.md)
+- Compliance: [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
+- Upstream: [`../integrations/sibling-products.md`](../integrations/sibling-products.md)
+- ADR 0009: Domain boundary
 - Roadmap: [`../roadmap.md`](../roadmap.md)

@@ -1,74 +1,50 @@
 # Philosophy — NeNe Clear
 
-**NeNe Clear** (*Clear billing from quote to cash.*)
+**NeNe Clear** — *Clear deposits. Collect with confidence.*
 
 This document records **ideals**, **philosophy**, and **non‑negotiable beliefs**
-for the product. It complements [`product-vision.md`](./product-vision.md) (scope
-and personas) and [`expansion-roadmap.md`](./expansion-roadmap.md) (feature
-sequence).
+for the product. Read [ADR 0009](../adr/0009-separate-from-nene-invoice.md) first:
+**Clear is not NeNe Invoice.** Different domain, different repo, not upper compatible.
 
-Product name: [ADR 0007](../adr/0007-product-identity-nene-clear.md).
+| Product | Domain |
+| --- | --- |
+| **NeNe Invoice** (`nene-invoice`) | Quote, invoice, payment management |
+| **NeNe Clear** (this repo) | Payment reconciliation & dunning |
 
 ---
 
 ## 1. What we believe
 
-### 1.1 Every SMB deserves a clear money trail
+### 1.1 Reconciliation is its own job
 
-Small businesses do not fail because they lack features — they fail because
-**money movement is opaque**. Quotes live in email, invoices in Excel, payments
-in bank CSV, reminders in someone's memory.
+Issuing a correct 適格請求書 and **knowing which deposit cleared which invoice**
+are different skills, different workflows, and different failure modes.
 
-**Ideal:** One self-hosted place where *what was promised*, *what was billed*,
-*what arrived*, and *what is still owed* are **visible and auditable** — for
-the office manager **and** for any AI assistant the team already uses.
+**Ideal:** Operators use **NeNe Invoice** for documents and **NeNe Clear** for
+matching bank reality to receivables — without Excel in between.
 
-### 1.2 Self-hosting is a feature, not nostalgia
+### 1.2 Self-hosting applies here too
 
-Japan SMB on shared hosting (FTP, MySQL, no Docker) is not "legacy." It is a
-**deliberate choice**: data stays on infrastructure the operator already pays for,
-beside WordPress or a static site, without another SaaS bill.
+The office manager already self-hosts Invoice beside WordPress. Reconciliation
+data (bank lines, match history, dunning sends) should stay on the same
+infrastructure — not in another SaaS.
 
-**Ideal:** Tier A install feels as approachable as uploading a CMS — not as
-punishment for being small.
+### 1.3 Compliance is structure, not email templates
 
-### 1.3 Compliance is structure, not paperwork
+Reconciliation and dunning touch **電子帳簿保存法**, audit expectations, and
+professional reminder boundaries. Rules live in
+[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
+— not in someone's memory.
 
-Qualified invoice and consumption tax rules are not PDF decoration. They are
-**validation rules** in the API — the same rules whether a human clicks
-"Issue" or an agent calls `createInvoice` via MCP.
+### 1.4 Human confirms, AI proposes
 
-**Ideal:** A tax reviewer finds **zero deviations** from documented compliance
-([`accounting-compliance.md`](./accounting-compliance.md),
-[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md));
-any change requires ADR and professional sign-off.
+Bank CSV import can be automated; **match confirmation** must not be silent.
+AI suggests; operator confirms; audit log records the decision.
 
-### 1.4 AI everywhere — but responsibility stays in the system
+### 1.5 Narrow scope is a feature
 
-By the time this product reaches operators, many teams will use Claude, Codex, or
-similar tools daily. That does **not** replace the product. It changes **how**
-operators interact with it.
-
-**Ideal — dual surface:**
-
-| Actor | Surface | Responsibility |
-| --- | --- | --- |
-| **Human operator** | Admin UI | Confirms matches, sends dunning, owns decisions |
-| **AI assistant** | OpenAPI + MCP | Proposes matches, drafts quotes, lists overdue — **never silent writes without audit** |
-| **End client** | PDF / email | Receives documents; no account required |
-
-FTP install does not mean "no AI." It means **AI runs on the client side**
-(browser, desktop, MCP host) while **billing truth lives in MySQL** on the
-server.
-
-### 1.5 Small scope, long horizon
-
-We refuse to become freee. We **embrace** being the narrow, excellent layer:
-**quote → invoice → collect → clear** — then carefully add PO, contracts,
-subscriptions, and minimal expenses ([expansion roadmap](./expansion-roadmap.md)).
-
-**Ideal:** A wholesaler with eight staff gets 80% of their billing pain solved
-without learning double-entry accounting.
+We refuse to absorb Invoice's domain "for convenience." One product that does
+見積 through 督促 becomes freee. **Clear does 消込 and 督促 only.**
 
 ---
 
@@ -76,59 +52,39 @@ without learning double-entry accounting.
 
 ### 2.1 Clear over clever
 
-- Explicit layers (Handler → UseCase → Repository), not magic.
-- Integer cents, not floats. Registered terms, not synonyms
-  ([`terminology.md`](./terminology.md)).
-- OpenAPI before UI assumptions.
+Explicit layers, integer cents, registered terms ([`terminology.md`](./terminology.md)),
+OpenAPI before UI.
 
-If an agent or junior developer cannot find the rule in docs, the design failed.
+### 2.2 Invoice upstream, Clear downstream
 
-### 2.2 Human confirms, AI proposes
+```
+NeNe Invoice API  →  (read invoices, outstanding, payments)
+                   ←  (write payment / status via API after match)
+NeNe Clear        →  (bank import, reconciliation, dunning — owned here)
+```
 
-Especially for **payment reconciliation** (Expansion #1):
-
-- Import and structure bank data in the system.
-- Rules and AI **suggest** matches.
-- A human **confirms** → audit log → `payment` + invoice status update.
-
-Automatic clearing without confirmation is a liability, not a feature, until
-explicitly ADR'd for a defined low-risk subset. See
-[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
+Never share databases. Never fork Invoice code into Clear.
 
 ### 2.3 Same contract for GUI and MCP
 
-Everything an operator can do in admin UI must be reachable via documented HTTP
-(and MCP where appropriate). No hidden SQL paths for agents.
-
-This mirrors NeNe Concierge's "GUI parity with API" principle — applied to
-**back-office billing**.
+Every operator action in admin UI is reachable via documented HTTP/MCP.
 
 ### 2.4 Sibling products, separate repos
 
-NeNe Records, Corpus, and Concierge remain upstream/downstream **via HTTP only**
-(ADR 0002). Clear owns billing data; it never merges into CMS or chat repos.
-
-### 2.5 Bilingual operators, Japanese law
-
-Admin UI: **Japanese + English** (ADR 0005). Statutory invoice content:
-**Japanese**. The product serves non-Japanese founders running Japan-registered
-entities — compliance is fixed; UI language is flexible. Repository docs are
-**English only** (ADR 0008).
+Records, Corpus, Concierge, **Invoice**, and Clear are independent deployables
+(ADR 0002, ADR 0009).
 
 ---
 
-## 3. Ideals checklist (north star behaviors)
+## 3. Ideals checklist
 
-When evaluating a feature or PR, ask:
+When evaluating a PR, ask:
 
-1. Does it make the **quote-to-cash loop clearer** for a non-engineer?
-2. Does it work on **Tier A** without Redis, without CLI, without Codex on the server?
-3. Does it leave an **audit trail** suitable for "who matched this deposit?"
-4. Can an **AI agent** perform the same action through OpenAPI/MCP?
-5. Does it stay **out of full accounting** territory unless the expansion roadmap says otherwise?
-6. Does it **register terms** before shipping identifiers?
-
-If most answers are no, reconsider or split the work.
+1. Does it belong to **reconciliation or dunning** — not billing documents?
+2. Does it treat **Invoice as upstream truth** for invoice figures?
+3. Does it leave an **audit trail** for matches and dunning sends?
+4. Does it require **human confirmation** before finalizing matches?
+5. Would it make someone think Clear **replaces** Invoice? (If yes, reject.)
 
 ---
 
@@ -136,12 +92,11 @@ If most answers are no, reconsider or split the work.
 
 | We are not | Why |
 | --- | --- |
-| A general ledger | freee / Money Forward territory; we export CSV instead |
-| A bank | We import CSV; we do not hold deposits |
-| A payment gateway (Phase 1–3 core) | Manual record first; PSP optional later |
-| A WordPress plugin | Sibling app on same origin is fine |
-| An AI chatbot | MCP proposes; UI and logs confirm |
-| A debt collection agency | Dunning is operator-controlled professional reminder |
+| NeNe Invoice or its successor | ADR 0009 — separate domain |
+| Quote / invoice / PDF tool | Invoice repo |
+| General ledger | Export CSV; accounting software posts journals |
+| Debt collection agency | Operator-controlled reminders only |
+| Upper compatible superset of Invoice | Explicit non-goal |
 
 ---
 
@@ -149,64 +104,29 @@ If most answers are no, reconsider or split the work.
 
 | Reading | Meaning |
 | --- | --- |
-| **Clear (verb)** | Reconcile bank lines to invoices |
-| **Clear (adjective)** | Transparent status: draft, issued, overdue, paid |
-| **Clear (verb)** | Remove Excel chaos; one system of record |
-
-One word, three readings — same as Records / Corpus / Concierge in the NeNe
-family.
+| **Clear (verb)** | Reconcile bank lines to invoices (消込) |
+| **Clear (adjective)** | Transparent unmatched / overdue status |
+| **Not** | "Clear everything from quote to cash" in one app — that's Invoice + Clear together |
 
 ---
 
-## 6. Relationship to the NeNe portfolio
+## 6. Portfolio position
 
 ```
-Website (WordPress / static)
-    ├── NeNe Corpus      — visitor asks questions (public knowledge)
-    ├── NeNe Concierge   — visitor converts (scenario chat)
-    └── NeNe Records     — content & catalog (CMS)
-
-Back office (same server or VPS)
-    └── NeNe Clear       — quote, bill, collect, clear (this product)
+Back office
+  ├── NeNe Invoice  — 見積 · 請求 · 入金管理
+  └── NeNe Clear    — 入金消込 · 督促管理   ← this product
 ```
 
-**Front office** attracts and informs. **Clear** closes the commercial loop.
-
----
-
-## 7. Maintainer intent
-
-> **Free quote-to-cash from Excel and memory.**
->
-> Qualified invoices are API-enforced rules, not PDF cosmetics. Data stays on
-> hosting the operator already pays for — no extra SaaS bill. In the AI era,
-> humans confirm, AI proposes, and the audit trail remains — all three at once
-> for a self-hosted back-office OSS.
->
-> The name **Clear** means both **reconciliation** and **clarity**. We will not
-> shrink to "invoice PDF generator only."
-
----
-
-## 8. Document map
-
-| Question | Read |
-| --- | --- |
-| Why does the product exist? | This file + `product-vision.md` |
-| What do we build in v1? | `requirements.md` |
-| What comes after MVP? | `expansion-roadmap.md` |
-| Reconciliation & dunning rules? | `payment-reconciliation-dunning-compliance.md` |
-| What is the product called? | ADR 0007 — **NeNe Clear** |
-| What are exact spellings? | `terminology.md` |
+Front office (Records, Corpus, Concierge) is unchanged. Clear does not replace Invoice.
 
 ---
 
 ## Related
 
 - ADR 0007: Product identity
-- ADR 0008: English-only repository docs
+- ADR 0009: Domain split from nene-invoice
 - [`product-vision.md`](./product-vision.md)
-- [`expansion-roadmap.md`](./expansion-roadmap.md)
-- [`accounting-compliance.md`](./accounting-compliance.md)
+- [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
 
 Last updated: 2026-05-29

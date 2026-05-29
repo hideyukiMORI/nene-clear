@@ -1,40 +1,25 @@
 # CLAUDE.md — NeNe Clear
 
-Private canonical repo for **NeNe Clear**. Strategy SSOT:
-[publication-strategy `docs/products/nene-clear.md`](https://github.com/hideyukiMORI/publication-strategy/blob/main/docs/products/nene-clear.md).
+Private repo for **NeNe Clear** — **入金消込・督促管理 only**.
 
-## One-liner
+**Not** `nene-invoice`. Invoice = 見積・請求・入金管理. **Separate domain. Not upper compatible.**
 
-Quote → invoice → payment → **reconciliation**. Japan SMB · self-hosted · qualified invoice · MCP-ready.
+Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.com/hideyukiMORI/publication-strategy/blob/main/docs/products/nene-clear.md).
 
 ## Hard rules
 
-- Do **not** edit `nene-invoice` for Clear product work
-- No direct commits to `main`
-- No changes without a GitHub Issue
-- Repository docs are **English only** (ADR 0008)
-
-## Expansion order (fixed)
-
-1. Payment reconciliation & dunning
-2. Purchase order & delivery note
-3. Contract renewal
-4. Small-scale subscription billing
-5. Minimal expense reimbursement
-
-Details: `docs/explanation/expansion-roadmap.md`
-
-## Compliance docs (binding)
-
-| Topic | Path |
-| --- | --- |
-| Invoice & tax | `docs/explanation/accounting-compliance.md` |
-| Reconciliation & dunning | `docs/explanation/payment-reconciliation-dunning-compliance.md` |
+- Do **not** implement quotes, invoices, or PDF here → `nene-invoice`
+- Do **not** describe Clear as Invoice successor or superset
+- Do **not** edit `nene-invoice` unless explicitly asked for Invoice work
+- No direct commits to `main`; Issue required
+- Repository docs: English only (ADR 0008)
 
 ## Canonical paths
 
 | Purpose | Path |
 | --- | --- |
-| Philosophy | `docs/explanation/philosophy.md` |
+| Domain split | `docs/adr/0009-separate-from-nene-invoice.md` |
+| Scope boundary | `docs/explanation/scope-boundary.md` |
+| Compliance | `docs/explanation/payment-reconciliation-dunning-compliance.md` |
+| Invoice upstream | `docs/integrations/sibling-products.md` |
 | TODO | `docs/todo/current.md` |
-| Naming | `docs/development/naming-conventions.md` |
