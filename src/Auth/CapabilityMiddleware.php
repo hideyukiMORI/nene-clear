@@ -15,30 +15,39 @@ use Psr\Http\Server\RequestHandlerInterface;
  *
  * Runs after {@see \Nene2\Auth\BearerTokenMiddleware}, which sets the decoded
  * claims on the `nene2.auth.claims` request attribute. A request whose path
- * starts with a protected prefix requires the mapped {@see Capability}; the
- * authenticated user's `role` claim must grant it, otherwise 403.
+ * starts with a protected prefix requires the mapped {@see CapabilityRule}: the
+ * rule's read capability for safe methods (GET/HEAD/OPTIONS), its write
+ * capability otherwise. The authenticated user's `role` claim must grant it,
+ * otherwise 403.
  *
  * Paths that match no prefix are not capability-gated here (any authenticated
  * user passes); public paths are already excluded upstream.
  */
 final readonly class CapabilityMiddleware implements MiddlewareInterface
 {
+    /** @var list<string> */
+    private const array SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
+
     /**
-     * @param array<string, Capability> $prefixCapabilities path prefix => required capability
+     * @param array<string, CapabilityRule> $prefixRules path prefix => required capabilities
      */
     public function __construct(
         private ProblemDetailsResponseFactory $problemDetails,
-        private array $prefixCapabilities,
+        private array $prefixRules,
     ) {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $required = $this->requiredCapability($request->getUri()->getPath() ?: '/');
+        $rule = $this->ruleForPath($request->getUri()->getPath() ?: '/');
 
-        if ($required === null) {
+        if ($rule === null) {
             return $handler->handle($request);
         }
+
+        $required = in_array(strtoupper($request->getMethod()), self::SAFE_METHODS, true)
+            ? $rule->read
+            : $rule->write;
 
         $claims = (array) $request->getAttribute('nene2.auth.claims', []);
         $roleValue = $claims['role'] ?? null;
@@ -57,11 +66,11 @@ final readonly class CapabilityMiddleware implements MiddlewareInterface
         return $handler->handle($request);
     }
 
-    private function requiredCapability(string $path): ?Capability
+    private function ruleForPath(string $path): ?CapabilityRule
     {
-        foreach ($this->prefixCapabilities as $prefix => $capability) {
+        foreach ($this->prefixRules as $prefix => $rule) {
             if (str_starts_with($path, $prefix)) {
-                return $capability;
+                return $rule;
             }
         }
 

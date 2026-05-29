@@ -60,6 +60,63 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         return array_map($this->hydrate(...), $rows);
     }
 
+    public function findByOrganization(int $organizationId, ?BankTransactionStatus $status, int $limit, int $offset): array
+    {
+        if ($status === null) {
+            $rows = $this->query->fetchAll(
+                'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE organization_id = ? '
+                . 'ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
+                [$organizationId, $limit, $offset],
+            );
+        } else {
+            $rows = $this->query->fetchAll(
+                'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE organization_id = ? AND status = ? '
+                . 'ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
+                [$organizationId, $status->value, $limit, $offset],
+            );
+        }
+
+        return array_map($this->hydrate(...), $rows);
+    }
+
+    public function countByOrganization(int $organizationId, ?BankTransactionStatus $status): int
+    {
+        $row = $status === null
+            ? $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_transactions WHERE organization_id = ?', [$organizationId])
+            : $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_transactions WHERE organization_id = ? AND status = ?', [$organizationId, $status->value]);
+
+        if ($row === null) {
+            return 0;
+        }
+
+        return (int) ($row['c'] ?? 0);
+    }
+
+    public function findUnmatchedByOrganization(int $organizationId, int $limit, int $offset): array
+    {
+        $rows = $this->query->fetchAll(
+            'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE organization_id = ? AND status IN (?, ?) '
+            . 'ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
+            [$organizationId, BankTransactionStatus::Unmatched->value, BankTransactionStatus::PartiallyMatched->value, $limit, $offset],
+        );
+
+        return array_map($this->hydrate(...), $rows);
+    }
+
+    public function countUnmatchedByOrganization(int $organizationId): int
+    {
+        $row = $this->query->fetchOne(
+            'SELECT COUNT(*) AS c FROM bank_transactions WHERE organization_id = ? AND status IN (?, ?)',
+            [$organizationId, BankTransactionStatus::Unmatched->value, BankTransactionStatus::PartiallyMatched->value],
+        );
+
+        if ($row === null) {
+            return 0;
+        }
+
+        return (int) ($row['c'] ?? 0);
+    }
+
     /**
      * @param array<string, mixed> $row
      */

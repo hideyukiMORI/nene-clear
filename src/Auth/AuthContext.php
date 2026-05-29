@@ -30,4 +30,15 @@ final readonly class AuthContext
 
         return is_string($role) ? Role::tryFrom($role) : null;
     }
+
+    /**
+     * The authenticated user's id (`sub` claim), or 0 when absent.
+     */
+    public static function userId(ServerRequestInterface $request): int
+    {
+        $claims = (array) $request->getAttribute('nene2.auth.claims', []);
+        $sub = $claims['sub'] ?? null;
+
+        return is_int($sub) ? $sub : (is_numeric($sub) ? (int) $sub : 0);
+    }
 }

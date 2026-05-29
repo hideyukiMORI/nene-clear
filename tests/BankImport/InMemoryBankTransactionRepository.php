@@ -6,6 +6,7 @@ namespace NeneClear\Tests\BankImport;
 
 use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
+use NeneClear\BankImport\BankTransactionStatus;
 
 final class InMemoryBankTransactionRepository implements BankTransactionRepositoryInterface
 {
@@ -42,6 +43,46 @@ final class InMemoryBankTransactionRepository implements BankTransactionReposito
         return array_values(array_filter(
             $this->byId,
             static fn (BankTransaction $t): bool => $t->bankImportBatchId === $bankImportBatchId,
+        ));
+    }
+
+    public function findByOrganization(int $organizationId, ?BankTransactionStatus $status, int $limit, int $offset): array
+    {
+        $matches = array_values(array_filter(
+            $this->byId,
+            static fn (BankTransaction $t): bool => $t->organizationId === $organizationId
+                && ($status === null || $t->status === $status),
+        ));
+
+        return array_slice($matches, $offset, $limit);
+    }
+
+    public function countByOrganization(int $organizationId, ?BankTransactionStatus $status): int
+    {
+        return count(array_filter(
+            $this->byId,
+            static fn (BankTransaction $t): bool => $t->organizationId === $organizationId
+                && ($status === null || $t->status === $status),
+        ));
+    }
+
+    public function findUnmatchedByOrganization(int $organizationId, int $limit, int $offset): array
+    {
+        $matches = array_values(array_filter(
+            $this->byId,
+            static fn (BankTransaction $t): bool => $t->organizationId === $organizationId
+                && in_array($t->status, [BankTransactionStatus::Unmatched, BankTransactionStatus::PartiallyMatched], true),
+        ));
+
+        return array_slice($matches, $offset, $limit);
+    }
+
+    public function countUnmatchedByOrganization(int $organizationId): int
+    {
+        return count(array_filter(
+            $this->byId,
+            static fn (BankTransaction $t): bool => $t->organizationId === $organizationId
+                && in_array($t->status, [BankTransactionStatus::Unmatched, BankTransactionStatus::PartiallyMatched], true),
         ));
     }
 }

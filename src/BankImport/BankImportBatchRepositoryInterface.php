@@ -11,4 +11,11 @@ interface BankImportBatchRepositoryInterface
     public function existsByFileHash(int $organizationId, string $fileHash): bool;
 
     public function save(BankImportBatch $batch): int;
+
+    /**
+     * @return list<BankImportBatch>
+     */
+    public function findByOrganization(int $organizationId, int $limit, int $offset): array;
+
+    public function countByOrganization(int $organizationId): int;
 }

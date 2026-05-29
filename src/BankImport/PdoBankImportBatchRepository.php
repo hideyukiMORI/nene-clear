@@ -51,6 +51,28 @@ final readonly class PdoBankImportBatchRepository implements BankImportBatchRepo
         return $this->query->lastInsertId();
     }
 
+    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    {
+        $rows = $this->query->fetchAll(
+            'SELECT ' . self::COLUMNS . ' FROM bank_import_batches WHERE organization_id = ? '
+            . 'ORDER BY id DESC LIMIT ? OFFSET ?',
+            [$organizationId, $limit, $offset],
+        );
+
+        return array_map($this->hydrate(...), $rows);
+    }
+
+    public function countByOrganization(int $organizationId): int
+    {
+        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_import_batches WHERE organization_id = ?', [$organizationId]);
+
+        if ($row === null) {
+            return 0;
+        }
+
+        return (int) ($row['c'] ?? 0);
+    }
+
     /**
      * @param array<string, mixed> $row
      */
