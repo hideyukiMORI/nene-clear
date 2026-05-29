@@ -19,7 +19,9 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 | Purpose | Path |
 | --- | --- |
 | Domain split | `docs/adr/0009-separate-from-nene-invoice.md` |
+| Scope contract (GOAL/DO/DON'T) | `docs/explanation/scope-contract.md` |
 | Scope boundary | `docs/explanation/scope-boundary.md` |
 | Compliance | `docs/explanation/payment-reconciliation-dunning-compliance.md` |
-| Invoice upstream | `docs/integrations/sibling-products.md` |
+| Invoice upstream contract | `docs/integrations/invoice-upstream-contract.md` |
+| Invoice upstream (overview) | `docs/integrations/sibling-products.md` |
 | TODO | `docs/todo/current.md` |
