@@ -11,6 +11,7 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 - Do **not** implement quotes, invoices, or PDF here → `nene-invoice`
 - Do **not** describe Clear as Invoice successor or superset
 - Do **not** edit `nene-invoice` unless explicitly asked for Invoice work
+- **Follow NENE2 conventions** — code MUST comply with `docs/development/nene2-compliance.md` (binding); reuse framework objects, don't reinvent them
 - No direct commits to `main`; Issue required
 - Repository docs: English only (ADR 0008)
 
@@ -19,6 +20,7 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 | Purpose | Path |
 | --- | --- |
 | Domain split | `docs/adr/0009-separate-from-nene-invoice.md` |
+| NENE2 conventions (binding) | `docs/development/nene2-compliance.md` |
 | Scope contract (GOAL/DO/DON'T) | `docs/explanation/scope-contract.md` |
 | Scope boundary | `docs/explanation/scope-boundary.md` |
 | Compliance | `docs/explanation/payment-reconciliation-dunning-compliance.md` |

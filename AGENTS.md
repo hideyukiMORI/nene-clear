@@ -20,6 +20,7 @@ Entry point for AI agents working on **NeNe Clear** (private repo `nene-clear`).
 - **Scope vs Invoice:** `docs/explanation/scope-boundary.md`
 - **Requirements:** `docs/explanation/requirements.md`
 - **Reconciliation & dunning (binding):** `docs/explanation/payment-reconciliation-dunning-compliance.md`
+- **NENE2 coding conventions (binding):** `docs/development/nene2-compliance.md`
 - **Invoice upstream:** `docs/integrations/sibling-products.md`
 - **Current work:** `docs/todo/current.md`
 - **Roadmap:** `docs/roadmap.md`
@@ -29,6 +30,7 @@ Entry point for AI agents working on **NeNe Clear** (private repo `nene-clear`).
 - Issue-driven; no direct commits to `main`
 - Do **not** add quote/invoice/PDF features here — **`nene-invoice` owns billing documents**
 - Do **not** describe Clear as replacing or superseding Invoice
+- **Follow NENE2 conventions** — comply with `docs/development/nene2-compliance.md`; reuse framework objects (`JsonResponseFactory`, `Router`, `PaginationQuery`, `BearerTokenMiddleware`, `DatabaseQueryExecutorInterface`, …), don't reinvent them
 - Namespace: `NeneClear\`; money: integer cents
 
 ## Framework

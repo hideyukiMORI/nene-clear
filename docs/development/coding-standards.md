@@ -4,6 +4,7 @@ NeNe Clear coding standards split by surface. **Full policies live in the dedica
 
 | Surface | Source of truth |
 | --- | --- |
+| **NENE2 conventions (binding)** | [`nene2-compliance.md`](./nene2-compliance.md) |
 | **PHP / API / database** | [`backend-standards.md`](./backend-standards.md) |
 | **Naming (code, API, DB, tests)** | [`naming-conventions.md`](./naming-conventions.md) |
 | **Canonical term/identifier spellings** | [`../explanation/terminology.md`](../explanation/terminology.md) |
@@ -11,7 +12,7 @@ NeNe Clear coding standards split by surface. **Full policies live in the dedica
 | **React / TypeScript admin** | [`frontend-standards.md`](./frontend-standards.md) (Phase 2+) |
 | **NENE2 inheritance map** | [`../inheritance-from-nene2.md`](../inheritance-from-nene2.md) |
 
-**Framework baseline:** [NENE2 coding standards](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/coding-standards.md) — NeNe Clear deviates only where local docs or ADRs say so.
+**Framework baseline (binding):** [NENE2 coding standards](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/coding-standards.md), mapped to Clear MUST rules in [`nene2-compliance.md`](./nene2-compliance.md). NeNe Clear deviates from NENE2 framework behavior only via a local ADR.
 
 ---
 
