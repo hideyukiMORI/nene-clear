@@ -1,6 +1,6 @@
 # AI Tools Policy
 
-NeNe Clear inherits NENE2 AI integration principles with billing-specific boundaries.
+NeNe Clear inherits NENE2 AI integration principles with reconciliation/dunning boundaries (human confirms, AI proposes).
 
 ## Agent entry
 
@@ -11,9 +11,10 @@ NeNe Clear inherits NENE2 AI integration principles with billing-specific bounda
 ## MCP boundary
 
 - MCP tools map to **OpenAPI HTTP operations** only.
-- MCP is for **operators and development agents**, not public document download clients.
+- MCP is for **operators and development agents** — not direct database or shell access.
 - Do not add tools that read the database directly or execute shell commands without Issue + security review.
-- Write tools (create invoice, mark paid) require auth review before catalog publication.
+- Match suggestions may be AI-proposed, but **human confirmation is required** before a match is final (compliance §2.8).
+- Write tools (`confirmMatch`, `applyClientCredit`, `sendDunningNotice`) require auth + audit review before catalog publication.
 
 Validate catalog:
 

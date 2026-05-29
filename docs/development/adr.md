@@ -6,8 +6,8 @@ NeNe Clear uses lightweight Architecture Decision Records, inherited from [NENE2
 
 Write an ADR when a decision affects:
 
-- quote, invoice, payment architecture, or public API contracts
-- Japan invoice compliance strategy or PDF generation approach
+- bank import, reconciliation, client-credit, or dunning architecture, or public API contracts
+- reconciliation/dunning compliance strategy or the Invoice upstream API contract
 - dependency or framework integration choices
 - authentication, authorization, or MCP safety boundaries
 - dual deployment (Tier A shared hosting vs Tier B Docker)
@@ -23,7 +23,8 @@ docs/adr/
 ├── 0000-template.md
 ├── 0001-inherit-nene2-governance.md
 ├── 0002-separate-from-sibling-products.md
-├── 0007-product-identity-nene-clear.md
+├── 0004-tax-rounding-per-rate.md          # superseded — relocated to nene-invoice (ADR 0009)
+├── 0005-bilingual-ja-en-scope.md
 ├── 0006-multi-tenancy-and-roles.md
 ├── 0007-product-identity-nene-clear.md
 ├── 0008-english-only-repository-documentation.md

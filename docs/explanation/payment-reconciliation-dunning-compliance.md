@@ -92,8 +92,10 @@ affected features.
   clicked "match" unless they explicitly override with documented reason.
 - If import date and bank value date differ, **bank value date wins** unless an
   ADR documents a per-bank-format exception.
-- Manual payment entry (without bank import) is allowed in Phase 1–2 core; from
-  Expansion #1 onward, **reconciled payments SHOULD prefer bank-sourced dates**.
+- Clear records payments via **bank import + confirmed reconciliation**, so
+  `paid_at` is bank-sourced by default. Manual payment entry without a bank line
+  is Invoice's domain (ADR 0009); any operator override of `paid_at` MUST carry a
+  documented reason.
 
 ### 2.3 Partial payment — MUST
 
@@ -169,12 +171,12 @@ used as evidence MUST be handled as **electronic transaction data** (電子取�
 | Immutability | After import, `bank_transaction` amount, date, and counterparty text MUST NOT be edited in place |
 | Correction | Erroneous imports are voided via reversal import batch, not silent edit |
 | Provenance | Store `import_batch_id`, source filename, file hash (SHA-256), `imported_at`, `imported_by` |
-| Account scope | Each batch tied to one company bank account registered in `company_settings` |
+| Account scope | Each batch tied to one company bank account registered in `clear_settings` |
 | Duplicate detection | Same file hash or duplicate line key MUST warn or block re-import |
 
 ### 3.2 Retention — MUST
 
-- Imported bank lines and reconciliation links follow **§6 of
+- Imported bank lines and reconciliation links follow **§3 (Retention) of
   [`accounting-compliance.md`](./accounting-compliance.md)** — minimum **7 years**,
   up to **10 years** where applicable; no auto-purge.
 - Searchability: list/filter by date, amount, match status, client, invoice number.
@@ -182,7 +184,7 @@ used as evidence MUST be handled as **electronic transaction data** (電子取�
 ### 3.3 Timestamps and audit — MUST
 
 - System clock used for `imported_at` MUST be documented in operator guide.
-- All match/unmatch actions logged per §8 of `accounting-compliance.md`.
+- All match/unmatch actions logged per §4 (Audit trail) of `accounting-compliance.md`.
 
 ---
 
@@ -217,7 +219,7 @@ Dunning MUST NOT target `draft` invoices.
 - Issuer legal name and contact
 - Invoice number, issue date, due date
 - **Outstanding amount** (current, not original total if partially paid)
-- Payment instructions (bank name, branch, account type, account number from `company_settings`)
+- Payment instructions (bank name, branch, account type, account number from `clear_settings`)
 - Professional closing; no abusive or threatening language
 
 ### 4.4 Template content — MUST NOT include (unless operator custom template + advisor review)
@@ -270,9 +272,9 @@ Tax advisor uses export to prepare returns; NeNe Clear does not file.
 
 ---
 
-## 6. Audit trail — MUST (Expansion #1)
+## 6. Audit trail — MUST
 
-In addition to [`accounting-compliance.md`](./accounting-compliance.md) §8:
+In addition to [`accounting-compliance.md`](./accounting-compliance.md) §4 (Audit trail):
 
 | Event | Minimum audit fields |
 | --- | --- |
@@ -288,7 +290,7 @@ Audit records follow the same no-silent-mutation rule as issued invoices.
 
 ## 7. Professional review checklist
 
-Before Expansion #1 ships, a licensed **税理士 or 公認会計士** SHOULD sign off on:
+Before Phase 1 (reconciliation API) ships, a licensed **税理士 or 公認会計士** SHOULD sign off on:
 
 1. Payment date sourcing from bank import
 2. Partial / overpayment / fee mismatch flows
@@ -296,7 +298,7 @@ Before Expansion #1 ships, a licensed **税理士 or 公認会計士** SHOULD si
 4. Default dunning template wording (Japanese primary)
 5. Confirmation that subledger export columns meet their journal import workflow
 
-Record sign-off in the Expansion #1 milestone Issue or ADR.
+Record sign-off in the Phase 1 milestone Issue or ADR.
 
 ---
 
@@ -315,14 +317,17 @@ If unsure whether a change has compliance impact, **assume it does**.
 
 ## Related entities (register before code)
 
-| Concept | Working table name |
-| --- | --- |
-| Imported bank line | `bank_transaction` |
-| Import batch | `bank_import_batch` |
-| Match link | `payment_reconciliation` |
-| Client overpayment credit | `client_credit` |
-| Dunning send | `dunning_notice` |
+| Concept | Entity | Canonical table (terminology.md §1) |
+| --- | --- | --- |
+| Imported bank line | `BankTransaction` | `bank_transactions` |
+| Import batch | `BankImportBatch` | `bank_import_batches` |
+| Match link | `PaymentReconciliation` | `payment_reconciliations` |
+| Allocation row | `ReconciliationAllocation` | `reconciliation_allocations` |
+| Client overpayment credit | `ClientCredit` | `client_credits` |
+| Dunning send | `DunningNotice` | `dunning_notices` |
 
-See [`terminology.md`](./terminology.md) for canonical spellings before implementation.
+[`terminology.md`](./terminology.md) is the **single source of truth** for these
+spellings; register any new term there before implementation. Singular forms used
+in prose above refer to a single row of the corresponding table.
 
 Last updated: 2026-05-29

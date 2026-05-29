@@ -58,7 +58,7 @@ in **NeNe Clear database only**. Invoice figures are **never** authoritative in 
 
 - Sibling products remain stable when billing services change.
 - Clear OSS story: four products, one framework, HTTP integration.
-- Security boundaries: CMS admin JWT ≠ billing admin JWT.
+- Security boundaries: CMS admin JWT ≠ Clear admin JWT.
 
 **Costs**
 

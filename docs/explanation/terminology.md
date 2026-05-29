@@ -5,6 +5,13 @@ canonical spelling and form of every NeNe Clear term and identifier:
 entities, status values, JSON/DB field names, enums, Problem Details slugs, and
 `operationId` stems.
 
+> **Domain (ADR 0009):** NeNe Clear owns **payment reconciliation and dunning**
+> (入金消込・督促管理) only. Quote, invoice, line item, and qualified-invoice
+> identifiers belong to [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice).
+> Invoice and client figures are **read from the Invoice upstream API** — Clear
+> references them by id and may cache them read-only; it does **not** own their
+> spelling here beyond the upstream read models in §6.
+
 If an identifier appears anywhere in the codebase, OpenAPI, database, tests, or
 docs, its spelling **MUST** match this registry **exactly** — same characters,
 same case, same separators. There is no "close enough."
@@ -39,21 +46,27 @@ See: [`glossary.md`](./glossary.md), [`../development/naming-conventions.md`](..
 
 ---
 
-## 1. Domain entities
+## 1. Domain entities (owned by Clear)
+
+Tenant-scoped tables carry `organization_id`. Tables are **snake_case plural**;
+domain folders are **PascalCase singular**.
 
 | Concept | PHP class / domain folder | Table | Primary FK in JSON/DB |
 | --- | --- | --- | --- |
 | Tenant | `Organization` | `organizations` | `organization_id` |
 | Operator account | `User` | `users` | `user_id` |
-| Issuer profile | `Company` (folder); `CompanySettings` (entity) | `company_settings` | — (one per `organization_id`) |
-| Buyer | `Client` | `clients` | `client_id` |
-| Estimate | `Quote` | `quotes` | `quote_id` |
-| Bill | `Invoice` | `invoices` | `invoice_id` |
-| Document row | `LineItem` | `line_items` | `line_item_id` |
-| Receipt | `Payment` | `payments` | `payment_id` |
-| Number generator | `DocumentSequence` | `document_sequences` | — |
+| Clear settings (singleton per org) | `ClearSettings` (entity); `Settings` (folder) | `clear_settings` | — (one per `organization_id`) |
+| Bank CSV import batch | `BankImportBatch` | `bank_import_batches` | `bank_import_batch_id` |
+| Imported bank deposit line | `BankTransaction` | `bank_transactions` | `bank_transaction_id` |
+| Confirmed match link | `PaymentReconciliation` | `payment_reconciliations` | `payment_reconciliation_id` |
+| Allocation row (one match → one invoice) | `ReconciliationAllocation` | `reconciliation_allocations` | `reconciliation_allocation_id` |
+| Overpayment credit balance | `ClientCredit` | `client_credits` | `client_credit_id` |
+| Dunning send record | `DunningNotice` | `dunning_notices` | `dunning_notice_id` |
+| Audit event | `AuditEvent` | `audit_events` | `audit_event_id` |
 
-Domain folders are **PascalCase singular**; tables are **snake_case plural**.
+**Not owned by Clear** (read from Invoice upstream, see §6): `invoice`, `client`,
+`payment`. Clear stores only the upstream id plus reconciliation links; it never
+owns quote, line item, tax, or qualified-invoice fields.
 
 ---
 
@@ -63,17 +76,19 @@ Stored and transmitted **exactly** as written (lowercase snake_case).
 
 | Owner | Allowed values |
 | --- | --- |
-| `quote.status` | `draft`, `sent`, `accepted`, `rejected`, `expired` |
-| `invoice.status` | `draft`, `issued`, `partially_paid`, `paid` |
-| invoice computed | `overdue` (computed flag, not a stored status in Phase 1) |
-| `payment.method` | `bank_transfer`, `cash`, `other` |
-| `line_item.parent_type` | `quote`, `invoice` |
+| `bank_transaction.status` | `unmatched`, `partially_matched`, `matched`, `voided` |
+| `bank_import_batch.status` | `imported`, `reversed` |
+| `payment_reconciliation.status` | `confirmed`, `reversed` |
+| `client_credit.status` | `open`, `partially_applied`, `applied` |
+| `dunning_notice.status` | `sent`, `failed` |
 | `user.role` | `superadmin`, `admin`, `member`, `viewer` (ADR 0006) |
 | `user.status` | `active`, `invited` |
-| Capability (enum) | `manage_organizations`, `manage_users`, `manage_company_settings`, `manage_billing`, `view_billing` |
+| Capability (enum) | `manage_organizations`, `manage_users`, `manage_clear_settings`, `manage_reconciliation`, `view_reconciliation`, `send_dunning` (ADR 0006) |
 | Org resolution mode | `single` (default), `path`, `subdomain`, `custom_domain` |
+| **Upstream** `invoice.status` (read-only) | `issued`, `partially_paid`, `paid`; `overdue` is a computed flag — **owned by Invoice**, mirrored read-only for dunning eligibility |
 
-Do not invent `cancelled`, `void`, `unpaid`, `pending`, etc. without registering them here first.
+Do not invent `cancelled`, `void`, `pending`, `unpaid`, etc. without registering
+them here first.
 
 ---
 
@@ -85,26 +100,33 @@ Do not invent `cancelled`, `void`, `unpaid`, `pending`, etc. without registering
 | Organization slug | `slug` | `org_slug`, `code` |
 | User role | `role` (values in §2) | `user_role`, `permission` |
 | User credential | `password_hash` | `password`, `pass_hash` |
-| Invoice registration number | `registration_number` | `tax_registration_number`, `invoice_registration_number`, `t_number` |
-| Qualified-invoice flag | `is_qualified_invoice` | `qualified`, `is_qualified` |
 | Soft-delete flag / time | `is_deleted`, `deleted_at` | `deleted`, `is_del` |
-| Subtotal (pre-tax) | `subtotal_cents` | `sub_total_cents`, `subtotal` |
-| Tax amount | `tax_cents` | `tax`, `tax_amount` |
-| Total | `total_cents` | `amount_cents` (on documents), `grand_total` |
-| Unit price | `unit_price_cents` | `price_cents`, `unitprice_cents` |
-| Payment amount | `amount_cents` | `paid_cents`, `payment_cents` |
-| Tax rate | `tax_rate_bps` | `tax_rate`, `rate`, `tax_rate_percent` |
-| Foreign keys | `client_id`, `quote_id`, `invoice_id` | `clientId`, `client` |
-| Polymorphic parent | `parent_type`, `parent_id` | `parentType`, `owner_id` |
-| Numbers | `quote_number`, `invoice_number` | `number`, `quote_no` |
-| Timestamps | `issued_at`, `due_at`, `paid_at`, `valid_until`, `deleted_at` | `issue_date`, `due_date`, `paidAt` |
-| Issuer fields | `legal_name`, `bank_name`, `bank_branch`, `account_type`, `account_number`, `logo_url` | `company_name`, `branch`, `acct_no` |
-| Client fields | `contact_name`, `billing_address` | `contact`, `address` |
+| Bank transaction amount | `amount_cents` | `deposit_cents`, `value_cents` |
+| Bank value date | `value_date` (date type) | `transaction_date`, `valued_at`, `paid_at` (on the bank line) |
+| Counterparty text (remitter) | `counterparty_text` | `payer`, `remitter_name` |
+| Import file hash | `file_hash` (SHA-256 hex) | `hash`, `checksum`, `sha256` |
+| Import source filename | `source_filename` | `filename`, `file_name` |
+| Import row count | `row_count` | `lines`, `count` |
+| Allocation amount | `amount_cents` | `allocated_cents`, `alloc_cents` |
+| Payment date written upstream | `paid_at` | `payment_date`, `paidAt` |
+| Reversal reason | `reversal_reason` | `reason`, `reverse_note` |
+| Reason code (fee absorption etc.) | `reason_code` | `reason`, `code` |
+| Outstanding at send (dunning) | `outstanding_at_send_cents` | `outstanding_cents`, `balance_cents` |
+| Dunning recipient | `recipient_email` | `email`, `to` |
+| Dunning template version | `template_version` | `template`, `version` |
+| Credit remaining balance | `remaining_cents` | `balance_cents`, `left_cents` |
+| Upstream invoice id | `invoice_id` | `upstream_invoice_id`, `invoiceId` |
+| Upstream client id | `client_id` | `upstream_client_id`, `clientId` |
+| Upstream payment id | `payment_id` | `upstream_payment_id`, `paymentId` |
+| Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `payment_reconciliation_id`, `client_credit_id` | camelCase, abbreviations |
+| Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`, `actor_id` (use role-specific names above) |
+| Audit event type | `event_type` | `type`, `action` |
 | List envelope | `items`, `limit`, `offset` | `data`, `results`, `count` |
 
-Rules: money columns end in `_cents` (integer); timestamps end in `_at` (except
-the documented `valid_until`); booleans use `is_` / `has_`; foreign keys are
-`{singular_entity}_id`. See `naming-conventions.md` for the full pattern set.
+Rules: money columns end in `_cents` (integer); event timestamps end in `_at`;
+pure calendar dates use `_date` (documented exception: `value_date`); booleans
+use `is_` / `has_`; foreign keys are `{singular_entity}_id`. See
+`naming-conventions.md` for the full pattern set.
 
 ---
 
@@ -115,21 +137,27 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | Slug | Use |
 | --- | --- |
 | `validation-failed` | Request body/field validation error |
-| `invoice-not-found` | Invoice id/token not found |
-| `quote-not-found` | Quote id not found |
-| `client-not-found` | Client id not found |
-| `organization-not-found` | Organization id/slug not found |
-| `user-not-found` | User id not found |
-| `invalid-credentials` | Login failed — wrong email or password |
 | `unauthorized` | Missing or invalid bearer token (framework `BearerTokenMiddleware`) |
+| `invalid-credentials` | Login failed — wrong email or password |
 | `insufficient-capability` | Authenticated but lacks required capability |
 | `organization-not-resolved` | Tenant could not be resolved for the request |
-| `invalid-state-transition` | Disallowed status change |
-| `qualified-invoice-incomplete` | Missing required qualified-invoice field |
+| `organization-not-found` | Organization id/slug not found |
+| `user-not-found` | User id not found |
+| `bank-import-batch-not-found` | Import batch id not found |
+| `bank-transaction-not-found` | Bank transaction id not found |
+| `reconciliation-not-found` | Reconciliation id not found |
+| `client-credit-not-found` | Client credit id not found |
+| `dunning-notice-not-found` | Dunning notice id not found |
+| `invalid-state-transition` | Disallowed status change (e.g. reverse an already-reversed match) |
+| `duplicate-bank-import` | Re-import of same file hash / duplicate line key |
+| `allocation-exceeds-outstanding` | Match allocation > invoice outstanding without overpayment handling |
+| `upstream-invoice-unavailable` | Invoice API unreachable; degraded (import-only) mode |
+| `upstream-invoice-not-found` | Referenced invoice not found in Invoice upstream |
+| `dunning-not-eligible` | Invoice not in a dunnable state / outstanding ≤ 0 / interval not elapsed |
 
 Add new slugs here before using them. Validation `errors[].field` uses
-snake_case paths (e.g. `body.registration_number`); `errors[].code` is
-snake_case (e.g. `required`, `invalid_invoice_number`).
+snake_case paths (e.g. `body.value_date`); `errors[].code` is snake_case (e.g.
+`required`, `invalid_amount`).
 
 ---
 
@@ -144,12 +172,35 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `login`, `getCurrentUser` | Auth |
 | `listOrganizations`, `getOrganizationById`, `createOrganization`, `deleteOrganization` | Organization (superadmin) |
 | `listUsers`, `getUserById`, `createUser`, `updateUser`, `deleteUser` | User (admin) |
-| `listClients`, `getClientById`, `createClient`, `updateClient`, `deleteClient` | Client |
-| `listQuotes`, `getQuoteById`, `createQuote`, `convertQuoteToInvoice` | Quote |
-| `listInvoices`, `getInvoiceById`, `createInvoice`, `issueInvoice` | Invoice |
-| `listPayments`, `createPayment` | Payment |
+| `getClearSettings`, `updateClearSettings`, `testUpstreamConnection` | Clear settings (admin) |
+| `importBankCsv`, `listBankImportBatches`, `getBankImportBatchById`, `reverseBankImportBatch` | Bank import |
+| `listBankTransactions`, `listUnmatchedTransactions`, `getBankTransactionById` | Bank transaction |
+| `listUpstreamInvoices`, `getUpstreamInvoiceById` | Invoice upstream (read-only) |
+| `proposeMatch`, `confirmMatch`, `reverseReconciliation`, `listReconciliations`, `getReconciliationById` | Reconciliation |
+| `listClientCredits`, `applyClientCredit` | Client credit |
+| `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice` | Dunning |
 
-Extend this list (do not improvise) when adding operations.
+Extend this list (do not improvise) when adding operations. MCP tool names
+mirror these `operationId` values exactly (`listUnmatchedTransactions`,
+`proposeMatch`, `sendDunningNotice` are the Phase 4 MCP set — roadmap §Phase 4).
+
+---
+
+## 6. Upstream read models (Invoice API — not Clear SSOT)
+
+Clear reads these from the Invoice upstream and may cache them read-only with a
+TTL. Field spellings below are the **shape Clear consumes**; the Invoice product
+owns their authoritative definition. Clear MUST NOT persist them as a source of
+truth or expose write operations for them.
+
+| Read model | Fields Clear consumes (read-only) |
+| --- | --- |
+| `invoice` (upstream) | `invoice_id`, `invoice_number`, `issued_at`, `due_at`, `total_cents`, `outstanding_cents`, `status`, `tax_breakdown` (opaque), `client_id` |
+| `client` (upstream) | `client_id`, `contact_name`, `recipient_email` (match hints, dunning recipient) |
+| `payment` (upstream) | `payment_id`, `invoice_id`, `amount_cents`, `paid_at` (created/updated by Clear via Invoice API after a confirmed match) |
+
+`outstanding_cents` = `invoice.total_cents − sum(allocated payment amounts)`, as
+reported by the Invoice upstream. Clear never recomputes invoice tax or totals.
 
 ---
 
