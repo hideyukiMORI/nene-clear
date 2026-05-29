@@ -1,6 +1,6 @@
 # Invoice Upstream Contract — what NeNe Clear needs from NeNe Invoice
 
-**Status: proposed (binding once accepted by both repos).**
+**Status: accepted (binding) — agreed by both repos 2026-05-30.**
 
 This document has two audiences:
 
