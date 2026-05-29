@@ -21,11 +21,12 @@ See also: [`requirements.md`](./requirements.md), [`domain-model.md`](./domain-m
    precedence over every other product goal.
 2. **No silent deviation.** Any departure from the rules in this document — even
    temporary — requires an **ADR** and **explicit review sign-off by a tax/
-   accounting professional (税理士)** recorded in that ADR. Code may not merge a
-   deviation without it.
+   accounting professional (licensed tax accountant / 税理士)** recorded in that ADR.
+   Code may not merge a deviation without it.
 3. **Engineering is not the legal authority.** This document is engineering's
    binding interpretation of the rules. When a requirement is unclear, **stop
-   and consult a 税理士** — do not guess. Record the resolved interpretation here.
+   and consult a licensed tax accountant (税理士)** — do not guess. Record the
+   resolved interpretation here.
 4. **Single source of truth for figures.** Every monetary and tax figure is
    computed once in the UseCase layer. The PDF, API, and stored copy render the
    exact same values; no layer recalculates independently.
@@ -39,9 +40,9 @@ comply with*; it is not legal advice.
 
 | Area | Rule set |
 | --- | --- |
-| Consumption tax | 消費税法（標準税率 10% / 軽減税率 8%） |
-| Qualified invoice | 適格請求書等保存方式（インボイス制度） |
-| Stored records | 電子帳簿保存法（電子取引データ・写しの保存） |
+| Consumption tax | Consumption Tax Act (standard 10% / reduced 8%) |
+| Qualified invoice | Qualified Invoice System (適格請求書等保存方式) |
+| Stored records | Act on Electronic Books and Records Preservation |
 
 When any of these change (rate changes, new statutory fields, retention rule
 changes), treat it as a compliance defect until the product is updated, and open
@@ -49,27 +50,28 @@ a P0 Issue.
 
 ---
 
-## 2. Qualified invoice (適格請求書) — mandatory content
+## 2. Qualified invoice — mandatory content
 
 When `is_qualified_invoice = true`, the system **MUST** enforce and render **all**
-of the following. Missing any required field **MUST** block issuance.
+fields required under the Qualified Invoice System. Missing any required field
+**MUST** block issuance. PDF rendering uses **Japanese statutory labels** on
+the document; this section describes the data rules in English.
 
-### Issuer (供給者)
-- Legal name (氏名又は名称)
-- Address (住所又は所在地)
-- **Registration number** (登録番号), format `T` + 13 digits — see §4
-- Transaction / issue date (取引年月日・交付年月日)
+### Issuer (supplier)
+- Legal name or trade name
+- Address
+- **Registration number**, format `T` + 13 digits — see §4
+- Transaction date and issue date
 
-### Buyer (交付を受ける者)
-- Name (氏名又は名称)
+### Buyer (recipient)
+- Name
 - Address when applicable
 
 ### Transaction details
-- Description per line (取引内容); reduced-rate items (軽減税率対象) **MUST** be
-  clearly marked
-- **Taxable amount per tax rate** (税率ごとに区分して合計した対価の額)
-- **Consumption tax amount per tax rate** (税率ごとの消費税額)
-- Total billed amount (請求金額)
+- Description per line; reduced-rate (8%) items **MUST** be clearly marked
+- **Taxable amount per tax rate** (aggregated per rate category)
+- **Consumption tax amount per tax rate**
+- Total billed amount
 
 These figures are statutory. They are not cosmetic PDF fields — they are
 validated in the UseCase before any document is issued or rendered.
@@ -85,8 +87,8 @@ validated in the UseCase before any document is issued or rendered.
   [ADR 0004](../adr/0004-tax-rounding-per-rate.md). Per-line rounding is
   **prohibited** because it can round more than once per rate within one
   document.
-- The per-rate consumption tax figure produced here is exactly the
-  税率ごとの消費税額 the qualified invoice must display.
+- The per-rate consumption tax figure produced here is exactly the amount the
+  qualified invoice must display per rate category.
 
 ---
 
@@ -105,8 +107,8 @@ validated in the UseCase before any document is issued or rendered.
 
 - **Issued documents are immutable.** Once an invoice is `issued`, its line
   items, tax figures, totals, dates, and number **MUST NOT** be edited or
-  deleted. Corrections are made by issuing a **credit note / 修正適格請求書**
-  (Phase 4+), never by mutating or removing the original.
+  deleted. Corrections are made by issuing a **credit note / corrected qualified
+  invoice** (Phase 4+), never by mutating or removing the original.
 - **Sequential numbering with no compliance-breaking gaps.** Quote and invoice
   numbers are assigned in sequence per organization and year. The system **MUST
   NOT** silently reuse, back-fill, or delete numbers in a way that hides a
@@ -116,7 +118,7 @@ validated in the UseCase before any document is issued or rendered.
 
 ---
 
-## 6. Retention of issued copies (写しの保存)
+## 6. Retention of issued copies
 
 - The system **MUST** retain a copy of every **issued** qualified invoice (and
   the figures used to produce it).
@@ -147,10 +149,33 @@ validated in the UseCase before any document is issued or rendered.
 
 ---
 
-## 9. How this rule applies to every change
+## 9. Payment reconciliation and dunning (Expansion #1)
+
+From Expansion #1 onward, bank import, payment matching, and dunning are
+**binding compliance surfaces**. All rules in
+[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
+apply with the same force as sections 1–8 above.
+
+Summary (non-exhaustive — the linked document is authoritative):
+
+- **`paid_at` MUST reflect bank value date** when reconciled from import.
+- **Partial payments, overpayments, and transfer-fee mismatches** MUST follow
+  documented allocation rules; no silent write-offs.
+- **Imported bank lines and match history** MUST be immutable, retained, and
+  searchable per the Act on Electronic Books and Records Preservation.
+- **Dunning** is operator-controlled professional reminder only; default
+  templates MUST NOT threaten legal action or auto-compute statutory interest
+  claims on outstanding balance.
+- **Human confirmation** MUST finalize reconciliation unless a future ADR
+  defines a narrow auto-match exception with professional sign-off.
+
+---
+
+## 10. How this rule applies to every change
 
 Any change that touches quotes, invoices, payments, tax calculation, document
-numbering, PDF rendering, or retention **MUST**:
+numbering, PDF rendering, retention, bank import, reconciliation, or dunning
+**MUST**:
 
 1. Be reviewed against this document and [`../review/compliance.md`](../review/compliance.md).
 2. State compliance impact in the PR.

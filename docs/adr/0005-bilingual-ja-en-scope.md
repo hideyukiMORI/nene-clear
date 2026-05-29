@@ -45,11 +45,10 @@ NeNe Clear localizes to **Japanese (primary) and English (secondary) only**.
   (適格請求書) PDF renders its legally required fields in Japanese because it is
   a legal document under Japanese law. English applies to the operator's working
   UI chrome, navigation, and guides — not to the statutory invoice content.
-- **Development docs are unaffected.** Source-of-truth docs, OpenAPI text, and
-  API error metadata remain **English** per the existing language policy
-  (`docs/inheritance-from-nene2.md`); Issues, PRs, commits, and `.cursor/rules/`
-  continue to allow Japanese. This ADR governs **product localization**, not the
-  repository's documentation language.
+- **Development docs are English.** Source-of-truth docs, OpenAPI text, API error
+  metadata, Issues, PRs, and commits are **English** per
+  [ADR 0008](../adr/0008-english-only-repository-documentation.md). This ADR
+  governs **product UI localization**, not repository documentation language.
 
 ## Consequences
 

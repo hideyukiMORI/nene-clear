@@ -2,13 +2,10 @@
 
 **NeNe Clear** (*Clear billing from quote to cash.*)
 
-This document records **ideals** (理想), **philosophy** (理念・哲学), and
-**non‑negotiable beliefs** for the product. It complements
-[`product-vision.md`](./product-vision.md) (scope and personas) and
-[`expansion-roadmap.md`](./expansion-roadmap.md) (feature sequence).
-
-Canonical language: **English**. Maintainer intent in Japanese appears in
-§8 where it aids nuance; public API and OpenAPI remain English.
+This document records **ideals**, **philosophy**, and **non‑negotiable beliefs**
+for the product. It complements [`product-vision.md`](./product-vision.md) (scope
+and personas) and [`expansion-roadmap.md`](./expansion-roadmap.md) (feature
+sequence).
 
 Product name: [ADR 0007](../adr/0007-product-identity-nene-clear.md).
 
@@ -37,13 +34,14 @@ punishment for being small.
 
 ### 1.3 Compliance is structure, not paperwork
 
-適格請求書 and tax rules are not PDF decoration. They are **validation rules**
-in the API — the same rules whether a human clicks "Issue" or an agent calls
-`createInvoice` via MCP.
+Qualified invoice and consumption tax rules are not PDF decoration. They are
+**validation rules** in the API — the same rules whether a human clicks
+"Issue" or an agent calls `createInvoice` via MCP.
 
 **Ideal:** A tax reviewer finds **zero deviations** from documented compliance
-([`accounting-compliance.md`](./accounting-compliance.md)); any change requires
-ADR and professional sign-off.
+([`accounting-compliance.md`](./accounting-compliance.md),
+[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md));
+any change requires ADR and professional sign-off.
 
 ### 1.4 AI everywhere — but responsibility stays in the system
 
@@ -94,7 +92,8 @@ Especially for **payment reconciliation** (Expansion #1):
 - A human **confirms** → audit log → `payment` + invoice status update.
 
 Automatic clearing without confirmation is a liability, not a feature, until
-explicitly ADR'd for a defined low-risk subset.
+explicitly ADR'd for a defined low-risk subset. See
+[`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
 
 ### 2.3 Same contract for GUI and MCP
 
@@ -113,7 +112,8 @@ NeNe Records, Corpus, and Concierge remain upstream/downstream **via HTTP only**
 
 Admin UI: **Japanese + English** (ADR 0005). Statutory invoice content:
 **Japanese**. The product serves non-Japanese founders running Japan-registered
-entities — compliance is fixed; UI language is flexible.
+entities — compliance is fixed; UI language is flexible. Repository docs are
+**English only** (ADR 0008).
 
 ---
 
@@ -136,7 +136,7 @@ If most answers are no, reconsider or split the work.
 
 | We are not | Why |
 | --- | --- |
-| A general ledger | freee / MF territory; we export CSV instead |
+| A general ledger | freee / Money Forward territory; we export CSV instead |
 | A bank | We import CSV; we do not hold deposits |
 | A payment gateway (Phase 1–3 core) | Manual record first; PSP optional later |
 | A WordPress plugin | Sibling app on same origin is fine |
@@ -149,9 +149,9 @@ If most answers are no, reconsider or split the work.
 
 | Reading | Meaning |
 | --- | --- |
-| **Clear (verb)** | 消込 — reconcile bank lines to invoices |
-| **Clear (adjective)** | 明快 — transparent status: draft, issued, overdue, paid |
-| **Clear (verb)** | クリア — remove Excel chaos; one system of record |
+| **Clear (verb)** | Reconcile bank lines to invoices |
+| **Clear (adjective)** | Transparent status: draft, issued, overdue, paid |
+| **Clear (verb)** | Remove Excel chaos; one system of record |
 
 One word, three readings — same as Records / Corpus / Concierge in the NeNe
 family.
@@ -174,33 +174,39 @@ Back office (same server or VPS)
 
 ---
 
-## 7. Document map
+## 7. Maintainer intent
+
+> **Free quote-to-cash from Excel and memory.**
+>
+> Qualified invoices are API-enforced rules, not PDF cosmetics. Data stays on
+> hosting the operator already pays for — no extra SaaS bill. In the AI era,
+> humans confirm, AI proposes, and the audit trail remains — all three at once
+> for a self-hosted back-office OSS.
+>
+> The name **Clear** means both **reconciliation** and **clarity**. We will not
+> shrink to "invoice PDF generator only."
+
+---
+
+## 8. Document map
 
 | Question | Read |
 | --- | --- |
 | Why does the product exist? | This file + `product-vision.md` |
 | What do we build in v1? | `requirements.md` |
 | What comes after MVP? | `expansion-roadmap.md` |
+| Reconciliation & dunning rules? | `payment-reconciliation-dunning-compliance.md` |
 | What is the product called? | ADR 0007 — **NeNe Clear** |
 | What are exact spellings? | `terminology.md` |
-
----
-
-## 8. Maintainer intent (理念 — 日本語)
-
-> **見積から入金までを、Excel と記憶から解放する。**
->
-> 適格請求書は「PDF の体裁」ではなく、API が守るルール。データは自分のレンタルサーバーに置き、SaaS 月額を増やさない。AI 時代だからこそ、人間が確定し、AI が提案し、記録が残る — その三つを同時に満たすバックオフィス OSS。
->
-> 名前 **Clear** は「消込」と「明快」の両方。請求書 PDF だけのツールにはならない。
 
 ---
 
 ## Related
 
 - ADR 0007: Product identity
+- ADR 0008: English-only repository docs
 - [`product-vision.md`](./product-vision.md)
 - [`expansion-roadmap.md`](./expansion-roadmap.md)
 - [`accounting-compliance.md`](./accounting-compliance.md)
 
-Last updated: 2026-05-29 (Issue #31)
+Last updated: 2026-05-29
