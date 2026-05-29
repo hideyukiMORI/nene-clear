@@ -2,27 +2,34 @@
 
 Entry point for AI agents working on **NeNe Clear** (private repo `nene-clear`).
 
+## Domain split (read first)
+
+| Product | Repository | Domain |
+| --- | --- | --- |
+| **NeNe Invoice** | `nene-invoice` | Quote, invoice, payment management |
+| **NeNe Clear** | `nene-clear` (this) | Payment reconciliation & dunning |
+
+**Not upper compatible.** See [ADR 0009](docs/adr/0009-separate-from-nene-invoice.md).
+
 ## Read First
 
-- **Portfolio strategy (external):** [publication-strategy `docs/products/nene-clear.md`](https://github.com/hideyukiMORI/publication-strategy/blob/main/docs/products/nene-clear.md)
+- **Domain boundary:** `docs/adr/0009-separate-from-nene-invoice.md`
+- **Portfolio strategy:** [publication-strategy `docs/products/nene-clear.md`](https://github.com/hideyukiMORI/publication-strategy/blob/main/docs/products/nene-clear.md)
 - **Philosophy:** `docs/explanation/philosophy.md`
 - **Product vision:** `docs/explanation/product-vision.md`
-- **Expansion roadmap (1–5):** `docs/explanation/expansion-roadmap.md`
-- **Reconciliation & dunning (binding):** `docs/explanation/payment-reconciliation-dunning-compliance.md`
-- **Accounting compliance (binding):** `docs/explanation/accounting-compliance.md`
+- **Scope vs Invoice:** `docs/explanation/scope-boundary.md`
 - **Requirements:** `docs/explanation/requirements.md`
-- **Terminology (binding):** `docs/explanation/terminology.md`
+- **Reconciliation & dunning (binding):** `docs/explanation/payment-reconciliation-dunning-compliance.md`
+- **Invoice upstream:** `docs/integrations/sibling-products.md`
 - **Current work:** `docs/todo/current.md`
 - **Roadmap:** `docs/roadmap.md`
-- **Language policy:** ADR 0008 — English-only repository docs
 
 ## Operating Rules
 
 - Issue-driven; no direct commits to `main`
-- Do **not** edit `nene-invoice` for Clear product work — this repo is canonical
-- Strategy changes → update `publication-strategy` first, then product docs here
+- Do **not** add quote/invoice/PDF features here — **`nene-invoice` owns billing documents**
+- Do **not** describe Clear as replacing or superseding Invoice
 - Namespace: `NeneClear\`; money: integer cents
-- Compliance deviations require ADR + licensed tax/accounting professional sign-off
 
 ## Framework
 

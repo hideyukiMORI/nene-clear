@@ -1,8 +1,11 @@
 # Payment Reconciliation & Dunning — Binding Compliance Rules
 
-**Status: binding (non-negotiable) for Expansion #1 and all payment-matching /
-dunning features.** This document is the source of truth for how NeNe Clear
-implements **payment reconciliation** and **dunning** in a
+**Status: binding (non-negotiable) for all payment-matching and dunning
+features in NeNe Clear.** This is the **core product domain** — not a post-MVP
+expansion. NeNe Invoice owns billing documents (ADR 0009).
+
+This document is the source of truth for how NeNe Clear implements
+**payment reconciliation** and **dunning** in a
 way that accounting and tax professionals can review without finding silent
 deviations from documented practice.
 
@@ -14,7 +17,7 @@ interpretation is unclear, **stop and consult a licensed tax accountant
 an ADR and update this document.
 
 See also: [`accounting-compliance.md`](./accounting-compliance.md),
-[`expansion-roadmap.md`](./expansion-roadmap.md) (Expansion #1),
+[`scope-boundary.md`](./scope-boundary.md),
 [`philosophy.md`](./philosophy.md) (human confirms, AI proposes),
 [`../review/compliance.md`](../review/compliance.md).
 
