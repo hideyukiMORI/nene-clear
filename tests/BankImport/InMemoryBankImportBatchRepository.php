@@ -30,6 +30,24 @@ final class InMemoryBankImportBatchRepository implements BankImportBatchReposito
         return false;
     }
 
+    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    {
+        $matches = array_values(array_filter(
+            $this->byId,
+            static fn (BankImportBatch $b): bool => $b->organizationId === $organizationId,
+        ));
+
+        return array_slice($matches, $offset, $limit);
+    }
+
+    public function countByOrganization(int $organizationId): int
+    {
+        return count(array_filter(
+            $this->byId,
+            static fn (BankImportBatch $b): bool => $b->organizationId === $organizationId,
+        ));
+    }
+
     public function save(BankImportBatch $batch): int
     {
         $id = $batch->id ?? $this->nextId++;

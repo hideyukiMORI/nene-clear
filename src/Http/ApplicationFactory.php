@@ -9,14 +9,30 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\RuntimeApplicationFactory;
+use Nene2\Http\UtcClock;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Auth\AuthRouteRegistrar;
 use NeneClear\Auth\Capability;
 use NeneClear\Auth\CapabilityMiddleware;
+use NeneClear\Auth\CapabilityRule;
 use NeneClear\Auth\GetCurrentUserHandler;
 use NeneClear\Auth\InvalidCredentialsExceptionHandler;
 use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginHandler;
 use NeneClear\Auth\LoginUseCase;
+use NeneClear\BankImport\BankAccountNotFoundExceptionHandler;
+use NeneClear\BankImport\BankCsvParser;
+use NeneClear\BankImport\BankImportRouteRegistrar;
+use NeneClear\BankImport\DuplicateBankImportExceptionHandler;
+use NeneClear\BankImport\ImportBankCsvHandler;
+use NeneClear\BankImport\ImportBankCsvUseCase;
+use NeneClear\BankImport\InvalidBankCsvExceptionHandler;
+use NeneClear\BankImport\ListBankImportBatchesHandler;
+use NeneClear\BankImport\ListBankTransactionsHandler;
+use NeneClear\BankImport\ListUnmatchedTransactionsHandler;
+use NeneClear\BankImport\PdoBankAccountRepository;
+use NeneClear\BankImport\PdoBankImportBatchRepository;
+use NeneClear\BankImport\PdoBankTransactionRepository;
 use NeneClear\Organization\CreateOrganizationHandler;
 use NeneClear\Organization\CreateOrganizationUseCase;
 use NeneClear\Organization\DeleteOrganizationHandler;
@@ -106,17 +122,40 @@ final class ApplicationFactory
                 new DeleteUserHandler(new DeleteUserUseCase($users), $json),
             );
 
+            $bankAccounts = new PdoBankAccountRepository($query);
+            $batches = new PdoBankImportBatchRepository($query);
+            $transactions = new PdoBankTransactionRepository($query);
+            $importUseCase = new ImportBankCsvUseCase(
+                $bankAccounts,
+                $batches,
+                $transactions,
+                new PdoAuditEventRepository($query),
+                new BankCsvParser(),
+                new UtcClock(),
+            );
+            $routeRegistrars[] = new BankImportRouteRegistrar(
+                new ImportBankCsvHandler($importUseCase, $json),
+                new ListBankImportBatchesHandler($batches, $json),
+                new ListBankTransactionsHandler($transactions, $json),
+                new ListUnmatchedTransactionsHandler($transactions, $json),
+            );
+
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationAlreadyExistsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UserNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UserAlreadyExistsExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new DuplicateBankImportExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new BankAccountNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new InvalidBankCsvExceptionHandler($problemDetails);
 
             $authMiddleware = [
                 new BearerTokenMiddleware($problemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),
                 new CapabilityMiddleware($problemDetails, [
-                    '/admin/organizations' => Capability::ManageOrganizations,
-                    '/admin/users' => Capability::ManageUsers,
+                    '/admin/organizations' => CapabilityRule::same(Capability::ManageOrganizations),
+                    '/admin/users' => CapabilityRule::same(Capability::ManageUsers),
+                    '/admin/bank-import-batches' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
+                    '/admin/bank-transactions' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                 ]),
             ];
         }

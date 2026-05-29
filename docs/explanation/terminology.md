@@ -149,6 +149,7 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `organization-already-exists` | Create rejected — slug already taken |
 | `user-not-found` | User id not found |
 | `user-already-exists` | Create rejected — email already taken |
+| `bank-account-not-found` | Bank account id not found / not in caller's org |
 | `bank-import-batch-not-found` | Import batch id not found |
 | `bank-transaction-not-found` | Bank transaction id not found |
 | `reconciliation-not-found` | Reconciliation id not found |
