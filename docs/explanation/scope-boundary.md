@@ -47,6 +47,7 @@ if compliance impact.
 ## Related
 
 - [ADR 0009](../adr/0009-separate-from-nene-invoice.md)
+- [`scope-contract.md`](./scope-contract.md) — the binding GOAL / DO / DON'T charter
 - [`product-vision.md`](./product-vision.md)
 - [`requirements.md`](./requirements.md)
 

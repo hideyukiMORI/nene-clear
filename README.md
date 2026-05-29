@@ -33,6 +33,8 @@ Operators who need both install **two sibling apps** connected via HTTP.
 | Topic | Document |
 | --- | --- |
 | **Domain boundary (read first)** | [`docs/adr/0009-separate-from-nene-invoice.md`](./docs/adr/0009-separate-from-nene-invoice.md) |
+| **Scope contract (GOAL / DO / DON'T)** | [`docs/explanation/scope-contract.md`](./docs/explanation/scope-contract.md) |
+| **Invoice upstream contract** | [`docs/integrations/invoice-upstream-contract.md`](./docs/integrations/invoice-upstream-contract.md) |
 | **Philosophy** | [`docs/explanation/philosophy.md`](./docs/explanation/philosophy.md) |
 | **Product vision** | [`docs/explanation/product-vision.md`](./docs/explanation/product-vision.md) |
 | **Requirements** | [`docs/explanation/requirements.md`](./docs/explanation/requirements.md) |

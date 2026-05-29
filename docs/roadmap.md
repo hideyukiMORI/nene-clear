@@ -17,8 +17,10 @@ Operators self-host Clear beside NeNe Invoice to:
 
 - Governance docs, ADR 0001/0002/0009 ✅
 - Product vision scoped to reconciliation/dunning ✅
+- Scope contract + legal spine (ADR 0010–0013) ✅
+- Invoice upstream contract (hand-off to nene-invoice) ✅
 - NENE2 scaffold + `GET /health` 🔲 Issue #4+
-- Invoice upstream client contract 🔲
+- Professional review gate (税理士/公認会計士; 弁護士 for dunning) 🔲 before Phase 1/2
 
 ## Phase 1: Reconciliation API
 

@@ -28,9 +28,11 @@ Last updated: 2026-05-29
 ## Next steps
 
 1. Issue #4 — NENE2 runtime scaffold + `GET /health`
-2. Invoice upstream OpenAPI client (read invoices, write payments on match)
-3. Phase 1 — bank import + reconciliation API
-4. Phase 2 — admin UI + dunning
+2. Hand off [`invoice-upstream-contract.md`](../integrations/invoice-upstream-contract.md) → open implementation Issue in `nene-invoice`
+3. Secure professional review gate sign-off (税理士/公認会計士; 弁護士 for dunning) — compliance §9
+4. Invoice upstream OpenAPI client (read invoices, write payments on match)
+5. Phase 1 — bank import + reconciliation API
+6. Phase 2 — admin UI + dunning
 
 ## Handoff
 

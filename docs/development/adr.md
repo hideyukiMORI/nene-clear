@@ -29,6 +29,10 @@ docs/adr/
 ├── 0007-product-identity-nene-clear.md
 ├── 0008-english-only-repository-documentation.md
 ├── 0009-separate-from-nene-invoice.md
+├── 0010-payment-system-of-record.md
+├── 0011-dunning-self-collection-only.md
+├── 0012-electronic-records-bank-data.md
+├── 0013-no-journal-entries-no-bad-debt.md
 └── NNNN-short-title.md
 ```
 

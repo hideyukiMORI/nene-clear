@@ -30,15 +30,20 @@ Do not delete items to pass. Mark `N/A` only when genuinely not applicable.
 
 ## Checklist — reconciliation & dunning
 
+- [ ] Invoice remains the payment/outstanding system of record; Clear writes back via the upstream contract (idempotency key + `external_reference`) — no local payment SSOT (ADR 0010).
 - [ ] `paid_at` uses bank value date when matched from import (unless documented override).
 - [ ] Partial payments update `partially_paid` / `paid` correctly; no over-allocation without overpayment flow.
 - [ ] Transfer-fee mismatch handled per compliance doc §2.4 — no silent write-off.
-- [ ] Overpayment creates `client_credit`; excess not discarded.
-- [ ] Multi-invoice allocation sums to bank transaction amount.
+- [ ] Overpayment creates `client_credit`; excess not discarded (Invoice rejects over-allocation).
+- [ ] Multi-invoice allocation sums to bank transaction amount; appropriation is operator-directed, not silent auto (§2.9, 民法488–491).
 - [ ] Match reversal creates audit record; no hard delete of payment/bank history.
 - [ ] Human confirmation required before match is final (unless ADR exception).
-- [ ] Bank import batch stores file hash, actor, timestamp; imported lines immutable.
+- [ ] Bank import immutable; corrections via reversal batch with audit history (真実性の確保, ADR 0012); search by date/amount/counterparty available (§3.3).
+- [ ] No journal entries posted; no 貸倒 determination — pause/mark is operational only (ADR 0013, §7).
+- [ ] Aging is informational only; no prescription/time-bar (消滅時効) determination (§8).
 - [ ] Dunning only for issued/partially_paid/overdue with outstanding > 0.
-- [ ] Dunning send logged; minimum interval enforced for scheduled sends.
-- [ ] Default dunning templates: no threats, no auto statutory interest on balance.
+- [ ] Dunning is self-collection of the operator's own receivables; no third-party 取立代行, no agency/lawyer impersonation (弁護士法72条, §4.8, ADR 0011).
+- [ ] Dunning send logged; minimum interval enforced; send reflects latest reconciliation state (no reminding a paid invoice).
+- [ ] Default dunning templates: no threats/false claims, no auto statutory interest on balance (§4.4, §4.5).
 - [ ] CSV export columns suitable for advisor handoff (document in PR if changed).
+- [ ] Professional review gate (§9) satisfied for the milestone: 税理士/公認会計士 (reconciliation/retention/export), 弁護士 (dunning) — sign-off recorded.
