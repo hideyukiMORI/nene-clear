@@ -27,8 +27,8 @@ NeNe Clear coding standards split by surface. **Full policies live in the dedica
 - **Monetary values:** integer cents everywhere — no floats in DB or JSON
 - **Placement violations block merge** — see backend standards
 - Public docs, OpenAPI text, and API error metadata: **English**
-- Issues, PRs, commits, `.cursor/rules/`: **Japanese allowed**
-- **Never integrate billing into sibling products** — ADR 0002
+- Issues, PRs, commits, `.cursor/rules/`: **English only** (ADR 0008)
+- **Never integrate reconciliation/dunning into sibling products** — ADR 0002
 
 ---
 

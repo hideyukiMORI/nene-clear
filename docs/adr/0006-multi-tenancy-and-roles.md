@@ -25,8 +25,8 @@ repository, and route — far more costly than building tenant-aware from day on
 Alternatives considered:
 
 1. **Single-tenant first, retrofit later** — rejected; a later `organization_id`
-   migration across all billing tables plus auth rework is high-risk and
-   re-opens compliance-sensitive code (issued documents, numbering).
+   migration across all reconciliation tables plus auth rework is high-risk and
+   re-opens compliance-sensitive code (bank import integrity, audit, retention).
 2. **Separate install per tenant only** — rejected; does not serve agencies and
    duplicates operations; the data model should still be tenant-aware.
 3. **Multi-tenant foundation, mirroring NeNe Records** (chosen) — tenant-aware
@@ -40,19 +40,24 @@ architecture.
 
 ### Tenancy
 
-- Every tenant-scoped table carries **`organization_id`** (`company_settings`,
-  `clients`, `quotes`, `invoices`, `line_items`, `payments`,
-  `document_sequences`, `users`).
+> The entity and capability examples below were corrected to NeNe Clear's
+> domain (reconciliation & dunning) per [ADR 0009](./0009-separate-from-nene-invoice.md).
+> The tenancy/role **decision** is unchanged.
+
+- Every tenant-scoped table carries **`organization_id`** (`clear_settings`,
+  `bank_import_batches`, `bank_transactions`, `payment_reconciliations`,
+  `client_credits`, `dunning_notices`, `audit_events`, `users`).
 - The **organization** (`organizations` table) is the tenant. Each organization
-  is an independent **issuer** of qualified invoices, with its own
-  `company_settings` (legal name, address, **registration number**, bank info).
+  is an independent **operator** running reconciliation and dunning, with its own
+  `clear_settings` (Invoice upstream API URL/token, registered bank accounts,
+  dunning defaults).
 - Per-request **organization resolution** runs in middleware before authorization
   (mirroring `OrgResolverMiddleware`). Supported modes: **`single`** (default —
   one organization per install), `path` (`/{org-slug}/…`), `subdomain`, and
   `custom_domain`. The resolved organization id is held in a request-scoped holder
   and **every repository query is org-scoped**.
-- Document numbering sequences are **per organization and year** (already in
-  `domain-model.md`); tenancy makes the scope explicit.
+- Clear issues **no** statutory document numbers (those belong to `nene-invoice`).
+  Import provenance is keyed per organization by `file_hash` + `bank_import_batch_id`.
 
 ### Roles and capabilities
 
@@ -62,13 +67,14 @@ resolver and enforced by `CapabilityMiddleware` (mirroring NeNe Records):
 | Role | Scope | Capabilities |
 | --- | --- | --- |
 | **`superadmin`** | Cross-tenant (platform operator) | All, **including `manage_organizations`**. `organization_id` may be `NULL`. |
-| **`admin`** | Single organization | All **except** `manage_organizations` — manages the org's **users**, **company settings** (issuer profile), and billing. |
-| **`member`** | Single organization | Billing operator — create/edit/send quotes & invoices, record payments (`manage_billing`, `view_billing`). **Cannot** manage users or settings. |
-| **`viewer`** | Single organization | Read-only (`view_billing`). Optional; Phase 3+. |
+| **`admin`** | Single organization | All **except** `manage_organizations` — manages the org's **users**, **Clear settings** (upstream config, bank accounts, dunning defaults), reconciliation, and dunning. |
+| **`member`** | Single organization | Reconciliation operator — import bank CSV, confirm/reverse matches (`manage_reconciliation`), send dunning when granted (`send_dunning`). **Cannot** manage users or settings. |
+| **`viewer`** | Single organization | Read-only (`view_reconciliation`) — matched/unmatched lists, dunning history. Optional; Phase 2+. |
 
-Capabilities (billing-specific; the set differs from NeNe Records' content
-capabilities): `manage_organizations`, `manage_users`, `manage_company_settings`,
-`manage_billing`, `view_billing`.
+Capabilities (reconciliation/dunning-specific; the set differs from NeNe
+Records' content capabilities): `manage_organizations`, `manage_users`,
+`manage_clear_settings`, `manage_reconciliation`, `view_reconciliation`,
+`send_dunning`.
 
 - **Superadmin manages organizations** (`/admin/organizations` — create, list,
   delete tenants).
@@ -78,10 +84,12 @@ capabilities): `manage_organizations`, `manage_users`, `manage_company_settings`
 
 ### Compliance interaction
 
-- Each organization's issuer registration number and issued documents are scoped
-  to that organization; cross-tenant reads are prohibited. This does not relax any
-  rule in [`../explanation/accounting-compliance.md`](../explanation/accounting-compliance.md) —
-  immutability, numbering, and retention apply **per organization**.
+- Each organization's bank transactions, reconciliation links, client credits,
+  and dunning history are scoped to that organization; cross-tenant reads are
+  prohibited. This does not relax any rule in
+  [`../explanation/accounting-compliance.md`](../explanation/accounting-compliance.md)
+  or [`../explanation/payment-reconciliation-dunning-compliance.md`](../explanation/payment-reconciliation-dunning-compliance.md) —
+  immutability, retention, and audit apply **per organization**.
 
 ## Consequences
 

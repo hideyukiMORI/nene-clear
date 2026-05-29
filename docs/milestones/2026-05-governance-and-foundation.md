@@ -21,4 +21,4 @@ Goal: establish NeNe Clear engineering discipline and product design before bill
 
 Phase 0+ — NENE2 runtime scaffold, health endpoint, OpenAPI stub, CI (Issues #4–#7).
 
-Then Phase 1 — Core billing API (clients, quotes, invoices, payments).
+Then Phase 1 — Reconciliation API (Invoice upstream client, bank import, matching, audit). See [`../roadmap.md`](../roadmap.md).

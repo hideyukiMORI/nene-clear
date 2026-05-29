@@ -14,7 +14,7 @@ alwaysApply: true
 - NeNe Clear: self-hosted OSS **reconciliation & dunning** — not quote/invoice (ADR 0009).
 - **Do not add quote/invoice/PDF features** — `nene-invoice` owns 見積・請求・入金 (ADR 0009).
 - **Not upper compatible** with `nene-invoice`. Separate domain, separate DB.
-- **Accounting/tax compliance is binding.** Changes to billing, tax, numbering, PDF, retention, bank import, reconciliation, or dunning MUST follow `docs/explanation/accounting-compliance.md` and `docs/explanation/payment-reconciliation-dunning-compliance.md`. Deviations require ADR + licensed professional sign-off.
+- **Compliance is binding.** Changes to bank import, reconciliation, allocation, client credit, dunning, retention, or audit MUST follow `docs/explanation/payment-reconciliation-dunning-compliance.md` (authoritative) and `docs/explanation/accounting-compliance.md`. Deviations require ADR + licensed professional sign-off.
 - **Money: integer cents only** (no floats). Typed boundaries, OpenAPI/MCP (NENE2 inheritance).
 - **Naming:** all identifiers MUST match `docs/explanation/terminology.md`. No typos or unregistered terms.
 - **Repository docs: English only** (ADR 0008). Admin UI locales: ja + en (ADR 0005).

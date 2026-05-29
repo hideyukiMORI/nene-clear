@@ -23,9 +23,9 @@ See also: `docs/inheritance-from-nene2.md`.
 Use Conventional Commit style as the prefix:
 
 - `docs/1-governance-foundation`
-- `feat/5-client-crud`
-- `fix/12-tax-rate-validation`
-- `test/8-invoice-pdf-generation`
+- `feat/5-bank-csv-import`
+- `fix/12-allocation-overpayment-credit`
+- `test/8-dunning-minimum-interval`
 
 ## PR Requirements
 

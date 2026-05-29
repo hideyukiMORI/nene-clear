@@ -7,7 +7,7 @@ NeNe Clear inherits engineering governance from [NENE2](https://github.com/hidey
 | Layer | Repository | Role |
 | --- | --- | --- |
 | Framework runtime | [NENE2](https://github.com/hideyukiMORI/NENE2) | HTTP runtime, DI, middleware, Problem Details, OpenAPI/MCP patterns |
-| Application platform | **NeNe Clear** (this repo) | Quote, invoice, payment, client, PDF, admin UI |
+| Application platform | **NeNe Clear** (this repo) | Bank import, payment reconciliation, client credit, dunning, admin UI |
 | Sibling products | [nene-records](https://github.com/hideyukiMORI/nene-records), [nene-corpus](https://github.com/hideyukiMORI/nene-corpus), [nene-concierge](https://github.com/hideyukiMORI/nene-concierge) | Optional upstream HTTP integrations |
 | Reference trials | [NENE2-FT](https://github.com/hideyukiMORI/NENE2-FT) | Patterns and friction notes from field trials |
 
@@ -48,9 +48,9 @@ Install NENE2 as a Composer dependency and treat `vendor/hideyukimori/nene2/docs
 
 | Topic | NeNe Clear choice |
 | --- | --- |
-| Product goal | API-first quote and invoice platform (not general accounting) |
+| Product goal | API-first payment reconciliation & dunning platform (not general accounting, not invoice issuance — ADR 0009) |
 | Public Problem Details base URL | `https://nene-clear.dev/problems/` |
-| Coding standards | `docs/development/coding-standards.md` — NENE2 baseline + billing additions |
+| Coding standards | `docs/development/coding-standards.md` — NENE2 baseline + reconciliation/dunning additions |
 | Backend standards | `docs/development/backend-standards.md` — PHP/API strict policy |
 | Monetary values | Integer **cents** in DB and JSON; no floats |
 | Language policy | **English** for all repository docs, Issues, PRs, commits, OpenAPI, API errors (ADR 0008); admin UI **ja + en** only (ADR 0005) |
@@ -60,12 +60,12 @@ Install NENE2 as a Composer dependency and treat `vendor/hideyukimori/nene2/docs
 
 Record these in ADRs or product docs when they stabilize:
 
-- Client / quote / invoice / payment domain model
-- Japan qualified invoice field validation rules
+- Bank import, reconciliation, client-credit, and dunning domain model
+- Invoice upstream API client contract (read invoices/clients, write payments)
 - Payment reconciliation and dunning compliance rules
-- PDF generation strategy (server-side, no client-side tax calculation)
-- Admin frontend vs public document download boundaries
-- MCP tool catalog for billing operations
+- Degraded-mode behavior when the Invoice API is unavailable
+- Admin frontend boundaries (no public document download — Clear issues no documents)
+- MCP tool catalog for reconciliation/dunning operations
 - Release versioning of the NeNe Clear product (`v0.x` until first stable API)
 
 ## When upstream and local docs conflict

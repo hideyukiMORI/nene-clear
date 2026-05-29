@@ -9,9 +9,10 @@ NeNe Clear admin UI will follow sibling product conventions:
 - API client maps **snake_case** JSON without renaming fields
 - UI strings in locale catalogs — **ja (primary) + en (secondary) only**; no
   hardcoded strings, no other locales (ADR 0005)
-- Statutory invoice content rendered in Japanese regardless of UI locale (legal
-  document); en applies to UI chrome and operator guides
-- No admin JWT in public document download pages
+- Outbound Japanese correspondence (dunning notices) and statutory labels from
+  upstream invoices render in Japanese regardless of UI locale; en applies to UI
+  chrome and operator guides
+- Admin JWT never exposed to unauthenticated pages
 
 When `frontend/` lands, expand this document with component layout, test strategy, and build output paths (`public_html/admin/`).
 

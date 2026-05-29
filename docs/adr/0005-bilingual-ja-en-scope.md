@@ -6,9 +6,11 @@ accepted
 
 ## Context
 
-NeNe Clear is built around the Japan invoice system (適格請求書, consumption
-tax rates, per-rate rounding — see ADR 0004). The domain rules are
-Japan-specific and cannot be localized away.
+NeNe Clear is built around Japanese reconciliation and dunning practice — bank
+deposit evidence under the Act on Electronic Books and Records Preservation
+(電子帳簿保存法), accounts-receivable clearance (消込), and professional
+overdue reminders (督促) bounded by the Civil Code and Interest Rate Act. These
+domain rules are Japan-specific and cannot be localized away.
 
 The operator base is shifting: more non-Japanese people now run businesses
 **inside Japan**. They operate under Japanese accounting and tax rules but are
@@ -19,7 +21,8 @@ Going further to arbitrary multilingual support (e.g. zh, ko, fr, es) does not.
 A non-Japanese-accounting locale serves no real operator, because every operator
 — regardless of native language — is subject to the same Japanese statutory
 rules. Each added UI locale increases translation surface, review burden, and
-the risk of mistranslating tax/legal terms, without serving the actual audience.
+the risk of mistranslating accounting/legal terms, without serving the actual
+audience.
 
 Alternatives considered:
 
@@ -41,10 +44,11 @@ NeNe Clear localizes to **Japanese (primary) and English (secondary) only**.
 - **Out of scope:** any additional UI locale. Pull requests adding other locales
   are declined unless a future ADR supersedes this decision. This is a
   deliberate product non-goal, not a missing feature.
-- **Statutory document content stays Japanese.** The qualified invoice
-  (適格請求書) PDF renders its legally required fields in Japanese because it is
-  a legal document under Japanese law. English applies to the operator's working
-  UI chrome, navigation, and guides — not to the statutory invoice content.
+- **Operator-facing legal/statutory text stays Japanese.** Dunning notice
+  content sent to Japanese clients, and any statutory labels surfaced from
+  upstream invoices, render in Japanese. English applies to the operator's
+  working UI chrome, navigation, and guides — not to outbound Japanese
+  correspondence.
 - **Development docs are English.** Source-of-truth docs, OpenAPI text, API error
   metadata, Issues, PRs, and commits are **English** per
   [ADR 0008](../adr/0008-english-only-repository-documentation.md). This ADR

@@ -25,7 +25,7 @@ docs(governance): align issue-driven workflow with NENE2 upstream (#1)
 ```
 
 ```text
-feat(invoice): add qualified invoice PDF generation UseCase (#12)
+feat(reconciliation): add bank CSV import and confirm-match UseCase (#12)
 ```
 
 ## Issue number

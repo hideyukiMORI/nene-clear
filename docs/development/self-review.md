@@ -22,7 +22,7 @@ If an item is not applicable, mark it mentally as `N/A`. Do not delete checklist
 
 | File | Use for |
 | --- | --- |
-| `compliance.md` | **Binding.** Any change touching quotes, invoices, payments, tax, numbering, PDF, or retention |
+| `compliance.md` | **Binding.** Any change touching bank import, reconciliation, allocation, client credit, dunning, retention, or audit |
 | `backend-api.md` | Endpoints, handlers, validation, HTTP behavior |
 | `openapi-contract.md` | OpenAPI schemas, examples, contract tests |
 | `database.md` | Migrations, repositories, soft delete |

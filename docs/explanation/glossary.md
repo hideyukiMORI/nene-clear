@@ -6,31 +6,46 @@ Canonical English terms for NeNe Clear public docs, OpenAPI, and code comments.
 > **spelling** of every term and identifier (entities, fields, status values,
 > slugs) lives in the single source of truth
 > [`terminology.md`](./terminology.md) — spellings here MUST conform to it.
+>
+> **Domain (ADR 0009):** NeNe Clear covers **payment reconciliation and
+> dunning**. Quote, invoice, and qualified-invoice concepts belong to
+> [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice); they appear
+> here only as **upstream read models**.
 
 | Term | Definition | Avoid |
 | --- | --- | --- |
-| **organization** | The tenant — an independent issuer with its own users, issuer profile, and billing data (ADR 0006) | "tenant" / "account" / "company" in code identifiers |
+| **organization** | The tenant — an independent operator with its own users, Clear settings, and reconciliation data (ADR 0006) | "tenant" / "account" / "company" in code identifiers |
 | **superadmin** | Cross-tenant platform role; manages organizations (`manage_organizations`) | "root", "owner", "superuser" in code |
-| **admin** | Organization-scoped role; manages the org's users, issuer settings, and billing | "manager" |
-| **member** | Organization-scoped billing operator; creates/sends documents and records payments; no user/settings management | "user", "staff" in code identifiers |
+| **admin** | Organization-scoped role; manages users, Clear settings, reconciliation, and dunning | "manager" |
+| **member** | Organization-scoped operator; confirms/reverses matches and sends dunning when granted; no user/settings management | "user", "staff" in code identifiers |
+| **viewer** | Organization-scoped read-only role; sees matched/unmatched lists and dunning history | "guest" |
 | **organization resolution** | Per-request selection of the tenant; modes `single` (default) / `path` / `subdomain` / `custom_domain` | "tenant detection" |
-| **quote** | An estimate (見積書) sent to a client before work is confirmed; may convert to an invoice | "estimate" in code identifiers |
-| **invoice** | A billing document (請求書) issued to a client | "bill" |
-| **qualified invoice** | Japan invoice system compliant document (適格請求書) with required issuer, tax, and registration fields | mixing Japanese in API field names |
-| **issuer** | The operator's company that issues quotes and invoices (自社) | "seller", "supplier" in code |
-| **client** | Customer / buyer (取引先) in the billing system | "customer" in code identifiers |
-| **line item** | A single row on a quote or invoice (品名, quantity, unit price, tax rate) | "row", "detail" |
-| **payment** | A recorded receipt against an invoice (入金) | "receipt" (PDF noun) |
-| **registration number** | Japan invoice registration number (インボイス登録番号), format `T` + 13 digits. API validation is **syntax only** — format, not existence or check digit | "T-number" without context; treating regex pass as proof of validity |
-| **cents** | Integer amount in the **smallest currency unit**. For JPY (the only Phase 1–3 currency) one "cent" is one 円, so `total_cents = 1000` means ¥1,000. The suffix is a fixed internal convention, not a sub-yen unit | float or DECIMAL money; reading `_cents` as 1/100 yen |
-| **tax rate bps** | Tax rate in basis points (1000 = 10.00%, 800 = 8.00%) | float percentages in DB |
-| **quote-to-cash** | Flow from estimate through invoice to payment | "order-to-cash" (ERP term) |
-| **Tier A** | Shared hosting deployment (ZIP + web installer + MySQL) | "rental server" in code |
-| **Tier B** | Docker / VPS deployment | "cloud tier" |
+| **reconciliation** (消込) | A confirmed link between one bank transaction (or a portion) and one or more upstream invoice payments | "matching" as a stored noun; "clearing" in code identifiers |
+| **bank transaction** | One imported credit (deposit) line on the operator's bank account | "deposit row", "ledger line" |
+| **bank import batch** | One CSV import with provenance (file hash, source filename, actor, timestamp) | "upload", "job" |
+| **allocation** | One row of a reconciliation assigning an amount from a bank transaction to a single invoice (一括入金の按分) | "split", "distribution" in code |
+| **partial payment** | A bank credit that covers only part of an invoice's outstanding balance; invoice becomes `partially_paid` upstream | "underpayment" |
+| **overpayment** | A bank credit exceeding the invoice outstanding; the excess is recorded as **client credit**, never discarded | "surplus", "extra" |
+| **client credit** | An overpayment balance held for a client and applied to a future invoice only by explicit operator action | "prepayment", "deposit" |
+| **transfer fee mismatch** (振込手数料) | When the client pays net of bank transfer fee, so the credit is less than the invoice total; resolved by partial payment, fee absorption, or separate expense — never a silent write-off | "shortfall write-off" |
+| **reversal** | Undoing a confirmed reconciliation by creating a reversal record (never a hard delete); upstream invoice outstanding is restored | "unmatch delete", "rollback" |
+| **dunning** (督促) | Operator-controlled professional payment reminders for overdue/unpaid invoices, with logged send history; **not** debt collection or legal enforcement | "collection", "chasing" |
+| **dunning notice** | One immutable send record (invoice, recipient, outstanding at send, template version, actor, timestamp) | "reminder log row" without the audit fields |
+| **minimum interval** | The shortest allowed gap between dunning notices for the same invoice (default 7 days) | "cooldown", "throttle" in docs |
+| **upstream / Invoice upstream** | NeNe Invoice, the required HTTP source of truth for invoices, outstanding balances, and payments (ADR 0009) | "backend", "billing service" loosely |
+| **invoice** (upstream read model) | A billing document (請求書) owned by NeNe Invoice; Clear reads its number, dates, outstanding, and status read-only | treating it as a Clear-owned entity; recomputing its tax |
+| **client** (upstream read model) | Customer / buyer (取引先) owned by NeNe Invoice; Clear reads name/contact for match hints and dunning | "customer" in code identifiers; storing as SSOT |
+| **payment** (upstream) | A receipt against an invoice (入金); Clear creates/updates it via the Invoice API after a confirmed match, and stores only the link | recording payments as a primary Clear workflow |
+| **outstanding balance** | `invoice.total_cents − sum(allocated payments)` for an invoice, as reported by the Invoice upstream | recomputing locally from cached figures |
+| **degraded mode** | Operation when the Invoice API is unavailable: bank import still works, but match confirmation (which writes upstream) is blocked with an operator warning | "offline mode" |
+| **paid_at** | The date a deposit was credited (bank value date), written to the upstream payment on match — not the date the operator clicked confirm | "match date", "confirm date" |
+| **cents** | Integer amount in the **smallest currency unit**. For JPY (the only Phase 1–3 currency) one "cent" is one 円, so `amount_cents = 1000` means ¥1,000. The suffix is a fixed internal convention, not a sub-yen unit | float or DECIMAL money; reading `_cents` as 1/100 yen |
+| **overdue** | An upstream invoice past `due_at` with unpaid balance — a computed flag owned by Invoice, mirrored read-only for dunning eligibility | treating it as a Clear-owned stored status |
+| **audit event** | An immutable record of an import, match, reversal, dunning send, or credit creation (who / when / what) | "log line" without actor/timestamp |
+| **Tier A** | Shared hosting deployment (ZIP + web installer + MySQL), beside NeNe Invoice on the same server | "rental server" in code |
+| **Tier B** | Docker / VPS deployment — Invoice + Clear as two services | "cloud tier" |
 | **handler** | HTTP entry point class | "controller" |
 | **use case** | Business logic class with `execute()` | "service" (UseCase sense) |
-| **sync PDF download** | Single HTTP response returning PDF bytes | "streaming PDF" |
-| **overdue** | Invoice past `due_at` with unpaid balance — computed status | stored status in Phase 1 (optional) |
-| **UI locale** | Admin UI / operator-facing language. Bound to **ja (primary) + en (secondary) only** — not multilingual (ADR 0005). Distinct from the English-only dev-docs language policy | adding locales beyond ja/en; conflating UI locale with statutory invoice language |
+| **UI locale** | Admin UI / operator-facing language. Bound to **ja (primary) + en (secondary) only** — not multilingual (ADR 0005). Distinct from the English-only dev-docs language policy | adding locales beyond ja/en |
 
 When adding terms, update this table in the same PR.

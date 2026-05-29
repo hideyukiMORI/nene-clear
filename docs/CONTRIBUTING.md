@@ -40,8 +40,8 @@ Do not commit passwords, tokens, private URLs, production credentials, or local 
 Sensitive keys for this product include:
 
 - Admin JWT secrets
-- Upstream API bearer tokens (NeNe Records, NeNe Concierge)
-- SMTP credentials for invoice email delivery
+- Invoice upstream API bearer token (and optional NeNe Records / NeNe Concierge tokens)
+- SMTP credentials for dunning email delivery
 
 ## Engineering Theme
 
@@ -50,7 +50,7 @@ NeNe Clear should stay readable, secure, and self-hostable:
 - strict, typed, explicit boundaries (inherited from NENE2)
 - decoupled use cases and infrastructure
 - OpenAPI contracts before client assumptions
-- Japan invoice compliance fields validated at API layer
+- Reconciliation/dunning compliance enforced at the API layer; no quote/invoice/tax/PDF logic (ADR 0009)
 - MCP access only through documented HTTP boundaries
 - **never** merge into or embed inside NeNe Records (ADR 0002)
 
