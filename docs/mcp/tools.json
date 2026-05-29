@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "source": "docs/openapi/openapi.yaml",
+  "description": "NeNe Clear MCP tool catalog. Read-only tools only. Tool names mirror OpenAPI operationId exactly. Mutation tools (confirmMatch, reverseReconciliation, applyClientCredit, importBankCsv, reverseBankImportBatch, and Phase 2 sendDunningNotice) are intentionally absent until authentication, capability, audit, request-id, and human-confirmation behavior are implemented — see docs/integrations/mcp-tools.md.",
+  "tools": [
+    {
+      "name": "getHealth",
+      "title": "Health",
+      "description": "Read the health endpoint through the documented public API.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "getHealth", "method": "GET", "path": "/health" },
+      "inputSchema": { "type": "object", "additionalProperties": false, "properties": {} },
+      "responseSchemaRef": "#/components/schemas/HealthResponse"
+    },
+    {
+      "name": "listUnmatchedTransactions",
+      "title": "List Unmatched Transactions",
+      "description": "List bank deposit lines that are still unmatched or partially matched.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "listUnmatchedTransactions", "method": "GET", "path": "/admin/bank-transactions/unmatched" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "offset": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "responseSchemaRef": "#/components/schemas/BankTransactionListResponse"
+    },
+    {
+      "name": "listBankTransactions",
+      "title": "List Bank Transactions",
+      "description": "List imported bank deposit lines, searchable by date, amount, counterparty, and status.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "listBankTransactions", "method": "GET", "path": "/admin/bank-transactions" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": { "type": "string", "enum": ["unmatched", "partially_matched", "matched", "voided"] },
+          "value_date_from": { "type": "string", "format": "date" },
+          "value_date_to": { "type": "string", "format": "date" },
+          "amount_min_cents": { "type": "integer" },
+          "amount_max_cents": { "type": "integer" },
+          "counterparty": { "type": "string" },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "offset": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "responseSchemaRef": "#/components/schemas/BankTransactionListResponse"
+    },
+    {
+      "name": "getBankTransactionById",
+      "title": "Get Bank Transaction",
+      "description": "Read a single imported bank deposit line by id.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "getBankTransactionById", "method": "GET", "path": "/admin/bank-transactions/{id}" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": { "id": { "type": "integer", "format": "int64" } }
+      },
+      "responseSchemaRef": "#/components/schemas/BankTransaction"
+    },
+    {
+      "name": "listBankImportBatches",
+      "title": "List Bank Import Batches",
+      "description": "List bank CSV import batches and their provenance.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "listBankImportBatches", "method": "GET", "path": "/admin/bank-import-batches" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "offset": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "responseSchemaRef": "#/components/schemas/BankImportBatchListResponse"
+    },
+    {
+      "name": "getBankImportBatchById",
+      "title": "Get Bank Import Batch",
+      "description": "Read a single bank CSV import batch by id.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "getBankImportBatchById", "method": "GET", "path": "/admin/bank-import-batches/{id}" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": { "id": { "type": "integer", "format": "int64" } }
+      },
+      "responseSchemaRef": "#/components/schemas/BankImportBatch"
+    },
+    {
+      "name": "listUpstreamInvoices",
+      "title": "List Upstream Invoices",
+      "description": "List open/overdue invoices with outstanding balances from the NeNe Invoice upstream (read-only proxy).",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "listUpstreamInvoices", "method": "GET", "path": "/admin/upstream/invoices" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": { "type": "string", "enum": ["issued", "partially_paid", "paid"] },
+          "overdue": { "type": "boolean" },
+          "client_id": { "type": "integer", "format": "int64" },
+          "outstanding_gt": { "type": "integer", "format": "int64" },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "offset": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "responseSchemaRef": "#/components/schemas/UpstreamInvoiceListResponse"
+    },
+    {
+      "name": "getUpstreamInvoiceById",
+      "title": "Get Upstream Invoice",
+      "description": "Read a single upstream invoice by id (read-only proxy).",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "getUpstreamInvoiceById", "method": "GET", "path": "/admin/upstream/invoices/{id}" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": { "id": { "type": "integer", "format": "int64" } }
+      },
+      "responseSchemaRef": "#/components/schemas/UpstreamInvoice"
+    },
+    {
+      "name": "proposeMatch",
+      "title": "Propose Match",
+      "description": "Return ranked match suggestions for a bank transaction. Read-only: it writes nothing and finalizes nothing; a human must confirm separately.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "proposeMatch", "method": "POST", "path": "/admin/reconciliations/propose" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bank_transaction_id"],
+        "properties": { "bank_transaction_id": { "type": "integer", "format": "int64" } }
+      },
+      "responseSchemaRef": "#/components/schemas/ProposeMatchResponse"
+    },
+    {
+      "name": "listReconciliations",
+      "title": "List Reconciliations",
+      "description": "List confirmed and reversed reconciliations.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "listReconciliations", "method": "GET", "path": "/admin/reconciliations" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": { "type": "string", "enum": ["confirmed", "reversed"] },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "offset": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "responseSchemaRef": "#/components/schemas/ReconciliationListResponse"
+    },
+    {
+      "name": "getReconciliationById",
+      "title": "Get Reconciliation",
+      "description": "Read a single reconciliation by id, including its allocations.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "getReconciliationById", "method": "GET", "path": "/admin/reconciliations/{id}" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id"],
+        "properties": { "id": { "type": "integer", "format": "int64" } }
+      },
+      "responseSchemaRef": "#/components/schemas/Reconciliation"
+    },
+    {
+      "name": "listClientCredits",
+      "title": "List Client Credits",
+      "description": "List overpayment credit balances.",
+      "safety": "read",
+      "source": { "type": "openapi", "operationId": "listClientCredits", "method": "GET", "path": "/admin/client-credits" },
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "status": { "type": "string", "enum": ["open", "partially_applied", "applied"] },
+          "client_id": { "type": "integer", "format": "int64" },
+          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
+          "offset": { "type": "integer", "minimum": 0 }
+        }
+      },
+      "responseSchemaRef": "#/components/schemas/ClientCreditListResponse"
+    }
+  ]
+}

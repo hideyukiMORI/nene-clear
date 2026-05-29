@@ -37,4 +37,4 @@ Agents must not commit:
 - Lead capture API gaps → Issue in **nene-concierge**.
 - Framework bugs → Issue in **NENE2**.
 
-See also: `docs/integrations/sibling-products.md`, ADR 0002.
+See also: `docs/integrations/mcp-tools.md` (tool catalog & policy), `docs/integrations/sibling-products.md`, ADR 0002.

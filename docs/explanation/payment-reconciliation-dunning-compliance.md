@@ -350,7 +350,7 @@ The system MUST:
 
 - Keep **issued invoice tax figures immutable** after issue
 - Record **payment dates** accurately for advisor export
-- Export CSV columns: invoice number, issue date, paid_at, amount_cents, tax breakdown (from invoice), match id
+- Export CSV columns: invoice number, issue date, paid_at, amount_cents, tax breakdown (from invoice), match id — full column design in [`csv-export.md`](./csv-export.md)
 
 Tax advisor uses export to prepare returns; NeNe Clear does not file.
 
