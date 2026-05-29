@@ -2,7 +2,14 @@
 
 NeNe Clear backend policy for PHP API code. Adapted from [NeNe Records](https://github.com/hideyukiMORI/nene-records) and [NeNe Corpus](https://github.com/hideyukiMORI/nene-corpus) backend standards for a **payment reconciliation & dunning OSS** on NENE2.
 
-**Framework baseline:** NENE2 `docs/development/` — deviate only via local ADR.
+**Framework baseline (binding):** NeNe Clear MUST follow NENE2 conventions per
+[`nene2-compliance.md`](./nene2-compliance.md) — the concrete framework symbols
+to reuse (`JsonResponseFactory`, `ProblemDetailsResponseFactory`, `Router`,
+`PaginationQuery`/`PaginationResponse`, `RequestScopedHolder`,
+`BearerTokenMiddleware`, `DatabaseQueryExecutorInterface`, `ServiceProviderInterface`,
+`ValidationError`/`ValidationException`, …), the Handler→UseCase→Repository flow,
+DI wiring, validation layering, errors, auth/tenancy, DB, and OpenAPI. Deviate
+from NENE2 framework behavior only via a local ADR.
 
 **Naming and terms:** [`naming-conventions.md`](./naming-conventions.md), [`glossary.md`](../explanation/glossary.md).
 

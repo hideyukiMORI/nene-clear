@@ -15,6 +15,7 @@ alwaysApply: true
 - **Do not add quote/invoice/PDF features** — `nene-invoice` owns 見積・請求・入金 (ADR 0009).
 - **Not upper compatible** with `nene-invoice`. Separate domain, separate DB.
 - **Compliance is binding.** Changes to bank import, reconciliation, allocation, client credit, dunning, retention, or audit MUST follow `docs/explanation/payment-reconciliation-dunning-compliance.md` (authoritative) and `docs/explanation/accounting-compliance.md`. Deviations require ADR + licensed professional sign-off.
+- **Follow NENE2 conventions (binding):** comply with `docs/development/nene2-compliance.md` — Handler→UseCase→Repository, explicit DI/service providers, layered validation, Problem Details, and **reuse framework objects** (`JsonResponseFactory`, `Router`, `PaginationQuery`, `BearerTokenMiddleware`, `DatabaseQueryExecutorInterface`, `ValidationError`/`ValidationException`, …) instead of reinventing them.
 - **Money: integer cents only** (no floats). Typed boundaries, OpenAPI/MCP (NENE2 inheritance).
 - **Naming:** all identifiers MUST match `docs/explanation/terminology.md`. No typos or unregistered terms.
 - **Repository docs: English only** (ADR 0008). Admin UI locales: ja + en (ADR 0005).

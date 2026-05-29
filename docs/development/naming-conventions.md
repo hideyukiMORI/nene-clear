@@ -15,7 +15,7 @@ Authoritative naming rules for NeNe Clear code, API contracts, database objects,
 **Terminology registry (canonical spellings):** [`docs/explanation/terminology.md`](../explanation/terminology.md)
 **Glossary (product term meanings):** [`docs/explanation/glossary.md`](../explanation/glossary.md)
 
-**Framework baseline:** NENE2 [`domain-layer.md`](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/domain-layer.md) and [`database-migrations.md`](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/database-migrations.md). This document is the NeNe Clear override and extension list.
+**Framework baseline:** NENE2 [`domain-layer.md`](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/domain-layer.md) and [`database-migrations.md`](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/database-migrations.md), mapped to binding Clear rules in [`nene2-compliance.md`](./nene2-compliance.md) (§4 naming, §7 framework objects). This document is the NeNe Clear override and extension list.
 
 ---
 

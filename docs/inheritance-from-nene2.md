@@ -19,6 +19,7 @@ These policies are adopted with the same intent as NENE2 and sibling NeNe produc
 
 | Topic | Local document |
 | --- | --- |
+| **NENE2 coding conventions (binding map)** | `docs/development/nene2-compliance.md` |
 | Issue-driven workflow | `docs/workflow.md` |
 | Conventional Commits | `docs/development/commit-conventions.md` |
 | Self-review before PR | `docs/development/self-review.md` |
