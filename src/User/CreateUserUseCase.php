@@ -1,0 +1,41 @@
+<?php
+
+declare(strict_types=1);
+
+namespace NeneClear\User;
+
+final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
+{
+    public function __construct(
+        private UserRepositoryInterface $users,
+    ) {
+    }
+
+    public function execute(CreateUserInput $input): User
+    {
+        if ($this->users->existsByEmail($input->email)) {
+            throw new UserAlreadyExistsException($input->email);
+        }
+
+        // With a password the account is active; without one it is invited and
+        // cannot log in until a password is set (the hash is a random placeholder).
+        $status = $input->password !== null ? UserStatus::Active : UserStatus::Invited;
+        $hash = password_hash($input->password ?? bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
+
+        $id = $this->users->save(new User(
+            email: $input->email,
+            role: $input->role,
+            status: $status,
+            passwordHash: $hash,
+            organizationId: $input->organizationId,
+        ));
+
+        $created = $this->users->findById($id);
+
+        if ($created === null) {
+            throw new UserNotFoundException($id);
+        }
+
+        return $created;
+    }
+}

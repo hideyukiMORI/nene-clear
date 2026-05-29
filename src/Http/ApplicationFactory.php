@@ -29,7 +29,20 @@ use NeneClear\Organization\OrganizationAlreadyExistsExceptionHandler;
 use NeneClear\Organization\OrganizationNotFoundExceptionHandler;
 use NeneClear\Organization\OrganizationRouteRegistrar;
 use NeneClear\Organization\PdoOrganizationRepository;
+use NeneClear\User\CreateUserHandler;
+use NeneClear\User\CreateUserUseCase;
+use NeneClear\User\DeleteUserHandler;
+use NeneClear\User\DeleteUserUseCase;
+use NeneClear\User\GetUserByIdHandler;
+use NeneClear\User\GetUserByIdUseCase;
+use NeneClear\User\ListUsersHandler;
+use NeneClear\User\ListUsersUseCase;
 use NeneClear\User\PdoUserRepository;
+use NeneClear\User\UpdateUserHandler;
+use NeneClear\User\UpdateUserUseCase;
+use NeneClear\User\UserAlreadyExistsExceptionHandler;
+use NeneClear\User\UserNotFoundExceptionHandler;
+use NeneClear\User\UserRouteRegistrar;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Server\RequestHandlerInterface;
 
@@ -85,15 +98,25 @@ final class ApplicationFactory
                 new GetOrganizationByIdHandler(new GetOrganizationByIdUseCase($organizations), $json),
                 new DeleteOrganizationHandler(new DeleteOrganizationUseCase($organizations), $json),
             );
+            $routeRegistrars[] = new UserRouteRegistrar(
+                new ListUsersHandler(new ListUsersUseCase($users), $json),
+                new CreateUserHandler(new CreateUserUseCase($users), $json),
+                new GetUserByIdHandler(new GetUserByIdUseCase($users), $json),
+                new UpdateUserHandler(new UpdateUserUseCase($users), $json),
+                new DeleteUserHandler(new DeleteUserUseCase($users), $json),
+            );
 
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationAlreadyExistsExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new UserNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new UserAlreadyExistsExceptionHandler($problemDetails);
 
             $authMiddleware = [
                 new BearerTokenMiddleware($problemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),
                 new CapabilityMiddleware($problemDetails, [
                     '/admin/organizations' => Capability::ManageOrganizations,
+                    '/admin/users' => Capability::ManageUsers,
                 ]),
             ];
         }
