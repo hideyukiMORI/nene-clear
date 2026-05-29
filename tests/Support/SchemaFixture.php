@@ -42,4 +42,80 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createBankAccounts(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE bank_accounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                bank_name TEXT NOT NULL,
+                bank_branch TEXT NOT NULL DEFAULT \'\',
+                account_type TEXT NOT NULL,
+                account_number TEXT NOT NULL,
+                csv_encoding TEXT NOT NULL DEFAULT \'utf8\',
+                csv_date_format TEXT NOT NULL,
+                csv_date_column INTEGER NOT NULL,
+                csv_amount_column INTEGER NOT NULL,
+                csv_counterparty_column INTEGER NOT NULL,
+                csv_header_rows INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT,
+                updated_at TEXT
+            )'
+        );
+    }
+
+    public static function createBankImportBatches(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE bank_import_batches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                bank_account_id INTEGER NOT NULL,
+                file_hash TEXT NOT NULL,
+                source_filename TEXT NOT NULL,
+                row_count INTEGER NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT \'imported\',
+                imported_by INTEGER NOT NULL,
+                imported_at TEXT NOT NULL,
+                reversed_at TEXT,
+                reversal_reason TEXT,
+                created_at TEXT,
+                updated_at TEXT,
+                UNIQUE (organization_id, file_hash)
+            )'
+        );
+    }
+
+    public static function createBankTransactions(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE bank_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                bank_import_batch_id INTEGER NOT NULL,
+                bank_account_id INTEGER NOT NULL,
+                value_date TEXT NOT NULL,
+                amount_cents INTEGER NOT NULL,
+                counterparty_text TEXT NOT NULL DEFAULT \'\',
+                line_key TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT \'unmatched\',
+                created_at TEXT
+            )'
+        );
+    }
+
+    public static function createAuditEvents(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE audit_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                actor_user_id INTEGER NOT NULL,
+                occurred_at TEXT NOT NULL,
+                payload_json TEXT NOT NULL
+            )'
+        );
+    }
 }
