@@ -56,6 +56,7 @@ domain folders are **PascalCase singular**.
 | Tenant | `Organization` | `organizations` | `organization_id` |
 | Operator account | `User` | `users` | `user_id` |
 | Clear settings (singleton per org) | `ClearSettings` (entity); `Settings` (folder) | `clear_settings` | — (one per `organization_id`) |
+| Registered company bank account + CSV profile | `BankAccount` | `bank_accounts` | `bank_account_id` |
 | Bank CSV import batch | `BankImportBatch` | `bank_import_batches` | `bank_import_batch_id` |
 | Imported bank deposit line | `BankTransaction` | `bank_transactions` | `bank_transaction_id` |
 | Confirmed match link | `PaymentReconciliation` | `payment_reconciliations` | `payment_reconciliation_id` |
@@ -107,6 +108,9 @@ them here first.
 | Import file hash | `file_hash` (SHA-256 hex) | `hash`, `checksum`, `sha256` |
 | Import source filename | `source_filename` | `filename`, `file_name` |
 | Import row count | `row_count` | `lines`, `count` |
+| Per-line duplicate key | `line_key` | `row_key`, `dedupe_key` |
+| Upstream token env-var name (not the secret) | `upstream_token_ref` | `upstream_token`, `bearer_token` |
+| Bank account fields | `bank_name`, `bank_branch`, `account_type`, `account_number` | `branch`, `acct_no` |
 | Allocation amount | `amount_cents` | `allocated_cents`, `alloc_cents` |
 | Payment date written upstream | `paid_at` | `payment_date`, `paidAt` |
 | Reversal reason | `reversal_reason` | `reason`, `reverse_note` |
@@ -118,7 +122,7 @@ them here first.
 | Upstream invoice id | `invoice_id` | `upstream_invoice_id`, `invoiceId` |
 | Upstream client id | `client_id` | `upstream_client_id`, `clientId` |
 | Upstream payment id | `payment_id` | `upstream_payment_id`, `paymentId` |
-| Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `payment_reconciliation_id`, `client_credit_id` | camelCase, abbreviations |
+| Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `bank_account_id`, `payment_reconciliation_id`, `client_credit_id` | camelCase, abbreviations |
 | Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`, `actor_id` (use role-specific names above) |
 | Audit event type | `event_type` | `type`, `action` |
 | List envelope | `items`, `limit`, `offset` | `data`, `results`, `count` |
