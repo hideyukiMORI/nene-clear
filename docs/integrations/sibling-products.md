@@ -25,6 +25,10 @@ These are **separate products** — not upper compatible, not a migration path.
 
 Clear **must not** duplicate invoice issuance, PDF generation, or tax calculation.
 
+The **binding contract** — exact endpoints, payment write-back rules, and the
+invariants Invoice must guarantee (and the hand-off checklist for the Invoice
+team) — is in [`invoice-upstream-contract.md`](./invoice-upstream-contract.md).
+
 ### Environment variables (planned)
 
 | Variable | Purpose |
