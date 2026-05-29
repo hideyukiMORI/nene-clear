@@ -146,6 +146,7 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `insufficient-capability` | Authenticated but lacks required capability |
 | `organization-not-resolved` | Tenant could not be resolved for the request |
 | `organization-not-found` | Organization id/slug not found |
+| `organization-already-exists` | Create rejected — slug already taken |
 | `user-not-found` | User id not found |
 | `bank-import-batch-not-found` | Import batch id not found |
 | `bank-transaction-not-found` | Bank transaction id not found |
