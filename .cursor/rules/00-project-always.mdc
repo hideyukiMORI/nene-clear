@@ -1,18 +1,19 @@
 ---
-description: NeNe Clear 全作業共通の正本と安全方針
+description: NeNe Clear project rules and canonical docs
 alwaysApply: true
 ---
 
 # Project Rules
 
-- 正本は `README.md`、`AGENTS.md`、`docs/CONTRIBUTING.md`、`docs/inheritance-from-nene2.md`、`docs/development/`、`docs/workflow.md`。
-- AI/エージェントは作業前に `AGENTS.md` と関連 docs を確認する。
-- フレームワーク挙動は NENE2 upstream（`vendor/hideyukimori/nene2/docs/`）を参照する。製品ルールはこのリポジトリの docs を優先する。
-- **sibling 製品に統合しない。** 依存方向は `NeNe Clear → upstream API` のみ（ADR 0002）。
-- 秘密情報、トークン、パスワード、ローカル `.env`、生成物をコミットしない。
-- 変更は依頼範囲と Issue の目的に留め、無関係な整形やリファクタを混ぜない。
-- NeNe Clear はセルフホスト OSS の見積・請求・入金管理 — 適格請求書対応、Admin UI、PDF。
-- **会計・税務コンプライアンスは拘束ルール（非交渉）。** 請求・税・採番・PDF・保存の変更は `docs/explanation/accounting-compliance.md` 順守必須。逸脱は ADR ＋ 税理士確認なしに禁止。専門家がレビューしても逸脱ゼロを満たす。
-- 金額は **integer cents**（float 禁止）。実装は疎結合、型安全、OpenAPI/MCP 境界を優先（NENE2 継承）。
-- **命名規則は絶対順守・タイポ厳禁。** 全識別子は用語レジストリ `docs/explanation/terminology.md`（唯一の真実）と完全一致。スペルゆれ・未登録語はマージ禁止、追加/改名は同一 PR でレジストリ更新。
-- Cursor ルールと docs が食い違う場合は docs を先に更新し、このルールは短く保つ。
+- Canonical docs: `README.md`, `AGENTS.md`, `docs/CONTRIBUTING.md`, `docs/inheritance-from-nene2.md`, `docs/development/`, `docs/workflow.md`.
+- Read `AGENTS.md` and relevant docs before editing.
+- Framework behavior: NENE2 upstream (`vendor/hideyukimori/nene2/docs/`). Product rules: this repo.
+- **Do not merge into sibling products.** Dependency direction: `NeNe Clear → upstream API` only (ADR 0002).
+- Never commit secrets, tokens, passwords, local `.env`, or generated artifacts.
+- Keep changes scoped to the Issue; no unrelated formatting or refactors.
+- NeNe Clear: self-hosted OSS quote, invoice, payment, reconciliation, dunning — qualified invoice compliant.
+- **Accounting/tax compliance is binding.** Changes to billing, tax, numbering, PDF, retention, bank import, reconciliation, or dunning MUST follow `docs/explanation/accounting-compliance.md` and `docs/explanation/payment-reconciliation-dunning-compliance.md`. Deviations require ADR + licensed professional sign-off.
+- **Money: integer cents only** (no floats). Typed boundaries, OpenAPI/MCP (NENE2 inheritance).
+- **Naming:** all identifiers MUST match `docs/explanation/terminology.md`. No typos or unregistered terms.
+- **Repository docs: English only** (ADR 0008). Admin UI locales: ja + en (ADR 0005).
+- If Cursor rules conflict with docs, update docs first; keep rules concise.

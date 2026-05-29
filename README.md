@@ -6,7 +6,7 @@
 
 **Clear billing from quote to cash — self-hosted for Japan SMB.**
 
-**NeNe Clear** (*見積から入金まで、明快に。*) is a billing platform on [NENE2](https://github.com/hideyukiMORI/NENE2): quotes, **qualified invoice** (適格請求書) PDFs, payment tracking, reconciliation, and dunning — on shared hosting or Docker.
+**NeNe Clear** is a billing platform on [NENE2](https://github.com/hideyukiMORI/NENE2): quotes, qualified invoice PDFs, payment tracking, bank reconciliation, and dunning — on shared hosting or Docker.
 
 > **Repository:** private until Phase 3 launch-ready. Portfolio strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.com/hideyukiMORI/publication-strategy/blob/main/docs/products/nene-clear.md).
 
@@ -15,6 +15,7 @@
 - **Japan invoice compliance** — registration number, tax rates, qualified invoice PDF
 - **Self-hosted OSS** — MIT; Tier A shared hosting or Tier B Docker/VPS
 - **Quote-to-cash** — estimate → invoice → collect → **clear**
+- **Professional-grade reconciliation** — bank import, human-confirmed matching, audit trail
 - **AI-readable** — OpenAPI + MCP; human confirms, AI proposes
 - **Sibling to NeNe ecosystem** — HTTP integration with Records / Concierge / Corpus
 
@@ -25,6 +26,8 @@
 | **Philosophy** | [`docs/explanation/philosophy.md`](./docs/explanation/philosophy.md) |
 | **Product vision** | [`docs/explanation/product-vision.md`](./docs/explanation/product-vision.md) |
 | **Expansion roadmap (1–5)** | [`docs/explanation/expansion-roadmap.md`](./docs/explanation/expansion-roadmap.md) |
+| **Reconciliation & dunning (binding)** | [`docs/explanation/payment-reconciliation-dunning-compliance.md`](./docs/explanation/payment-reconciliation-dunning-compliance.md) |
+| **Accounting compliance (binding)** | [`docs/explanation/accounting-compliance.md`](./docs/explanation/accounting-compliance.md) |
 | **Requirements** | [`docs/explanation/requirements.md`](./docs/explanation/requirements.md) |
 | **Agents** | [`AGENTS.md`](./AGENTS.md) |
 | **Roadmap** | [`docs/roadmap.md`](./docs/roadmap.md) |

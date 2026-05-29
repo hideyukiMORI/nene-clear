@@ -3,30 +3,38 @@
 Private canonical repo for **NeNe Clear**. Strategy SSOT:
 [publication-strategy `docs/products/nene-clear.md`](https://github.com/hideyukiMORI/publication-strategy/blob/main/docs/products/nene-clear.md).
 
-## 一言
+## One-liner
 
-見積→請求→入金→**消込**まで。日本 SMB・自前ホスト・適格請求書・MCP 対応。
+Quote → invoice → payment → **reconciliation**. Japan SMB · self-hosted · qualified invoice · MCP-ready.
 
-## 絶対禁止
+## Hard rules
 
-- `nene-invoice` への製品変更（実験 repo は触らない）
-- `main` 直 commit
-- Issue なしの変更
+- Do **not** edit `nene-invoice` for Clear product work
+- No direct commits to `main`
+- No changes without a GitHub Issue
+- Repository docs are **English only** (ADR 0008)
 
-## 拡張ロードマップ（順序固定）
+## Expansion order (fixed)
 
-1. 入金消込・督促
-2. 発注・納品
-3. 契約更新
-4. 小規模サブスク
-5. 経費最小版
+1. Payment reconciliation & dunning
+2. Purchase order & delivery note
+3. Contract renewal
+4. Small-scale subscription billing
+5. Minimal expense reimbursement
 
-詳細: `docs/explanation/expansion-roadmap.md`
+Details: `docs/explanation/expansion-roadmap.md`
 
-## 正本
+## Compliance docs (binding)
 
-| 目的 | パス |
+| Topic | Path |
 | --- | --- |
-| 哲学 | `docs/explanation/philosophy.md` |
+| Invoice & tax | `docs/explanation/accounting-compliance.md` |
+| Reconciliation & dunning | `docs/explanation/payment-reconciliation-dunning-compliance.md` |
+
+## Canonical paths
+
+| Purpose | Path |
+| --- | --- |
+| Philosophy | `docs/explanation/philosophy.md` |
 | TODO | `docs/todo/current.md` |
-| 命名 | `docs/development/naming-conventions.md` |
+| Naming | `docs/development/naming-conventions.md` |

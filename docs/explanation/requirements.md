@@ -37,10 +37,10 @@ All tenant-scoped entities below carry **`organization_id`** (ADR 0006).
 | --- | --- | --- |
 | **organization** | Tenant | name, slug (unique), plan, is_active, custom_domain (optional), external_id (optional) |
 | **user** | Operator account | email (unique), password_hash, role (superadmin/admin/member/viewer), organization_id (NULL for superadmin), status (active/invited) |
-| **company_settings** | Issuer (自社) profile — **per organization** | organization_id, legal_name, address, phone, email, **registration_number**, bank_name, bank_branch, account_type, account_number, logo_url (optional) |
-| **client** | Buyer (取引先) | name, contact_name, email, billing_address, **registration_number** (optional for B2B qualified invoice) |
-| **quote** | Estimate (見積書) | client_id, quote_number, issued_at, valid_until, status, subtotal_cents, tax_cents, total_cents, notes |
-| **invoice** | Bill (請求書) | client_id, quote_id (optional), invoice_number, issued_at, due_at, status, subtotal_cents, tax_cents, total_cents, **is_qualified_invoice** |
+| **company_settings** | Issuer profile — **per organization** | organization_id, legal_name, address, phone, email, **registration_number**, bank_name, bank_branch, account_type, account_number, logo_url (optional) |
+| **client** | Buyer / customer | name, contact_name, email, billing_address, **registration_number** (optional for B2B qualified invoice) |
+| **quote** | Estimate / quotation | client_id, quote_number, issued_at, valid_until, status, subtotal_cents, tax_cents, total_cents, notes |
+| **invoice** | Bill / invoice | client_id, quote_id (optional), invoice_number, issued_at, due_at, status, subtotal_cents, tax_cents, total_cents, **is_qualified_invoice** |
 | **line_item** | Row on quote or invoice | parent_type (quote/invoice), parent_id, description, quantity, unit_price_cents, tax_rate_bps, sort_order |
 | **payment** | Payment record | invoice_id, paid_at, amount_cents, method (bank_transfer/cash/other), notes |
 
@@ -48,7 +48,7 @@ All money: **integer cents**. Tax rate: **basis points** (1000 = 10.00%).
 
 ---
 
-## 3. Japan qualified invoice (適格請求書) — required fields
+## 3. Japan qualified invoice — required fields
 
 > **Binding compliance.** The rules in this section are governed by
 > [`accounting-compliance.md`](./accounting-compliance.md) (non-negotiable). A
@@ -59,22 +59,22 @@ When `is_qualified_invoice = true`, the system must enforce and render:
 
 ### Issuer (supplier)
 
-- [ ] Legal name (氏名又は名称)
-- [ ] Address (住所又は所在地)
-- [ ] **Registration number** (登録番号) — format `T` + 13 digits
-- [ ] Issue date (請求書の交付年月日)
+- [ ] Legal name or trade name
+- [ ] Address
+- [ ] **Registration number** — format `T` + 13 digits
+- [ ] Issue date
 
 ### Buyer (optional on simplified invoices, required for full B2B)
 
-- [ ] Name (氏名又は名称)
-- [ ] Address (住所又は所在地) — when provided
+- [ ] Name
+- [ ] Address — when provided
 
 ### Transaction details
 
-- [ ] Line items: description (取引内容), tax rate per line or document
-- [ ] Taxable amount per rate category (税率ごとの対価の額)
-- [ ] Consumption tax per rate category (税率ごとの消費税額)
-- [ ] Total billing amount (請求金額)
+- [ ] Line items: description, tax rate per line or document
+- [ ] Taxable amount per rate category
+- [ ] Consumption tax per rate category
+- [ ] Total billing amount
 
 ### Validation rules (API layer)
 
@@ -179,13 +179,13 @@ Quote numbers and invoice numbers: auto-increment per organization with configur
 | Item | Reason |
 | --- | --- |
 | General ledger / journal entries | Different product category; export to accounting SaaS instead |
-| Payroll / 給与 | Out of scope |
-| Expense receipts / 経費精算 | Out of scope |
+| Payroll | Out of scope |
+| Expense receipts (full reimbursement) | Out of scope until Expansion #5 |
 | Inventory / stock | NeNe Shop territory |
-| PEPPOL / 電子インボイス network | Phase 4+ research; PDF first |
+| PEPPOL / structured e-invoice network | Phase 4+ research; PDF first |
 | Multi-currency | JPY only for Phase 1–3 |
 | Multilingual UI beyond ja/en | Domain locked to Japanese rules; UI bound to Japanese + English (ADR 0005) |
-| Consumption tax filing (申告) | Operator exports data; no tax return generation |
+| Consumption tax filing | Operator exports data; no tax return generation |
 
 ---
 
@@ -200,9 +200,27 @@ Quote numbers and invoice numbers: auto-increment per organization with configur
 
 ---
 
+## 10. Expansion #1 — payment reconciliation & dunning (requirements summary)
+
+Full binding rules: [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
+
+| Requirement | Phase |
+| --- | --- |
+| Bank CSV import with batch provenance (hash, actor, timestamp) | E1-a |
+| `bank_transaction` list unmatched / matched | E1-a |
+| Human-confirmed match → `payment` + `payment_reconciliation` | E1-b |
+| Partial payment, overpayment → `client_credit`, transfer-fee rules | E1-b |
+| Match reversal with audit (no hard delete) | E1-b |
+| Rule-based match suggestions (non-final until confirmed) | E1-c |
+| Dunning templates (Japanese primary), send log, minimum interval | E1-d |
+| CSV export for accounting import | E1-d |
+
+---
+
 ## Related
 
 - **Compliance (binding):** [`accounting-compliance.md`](./accounting-compliance.md)
+- **Reconciliation & dunning (binding):** [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md)
 - Domain model: [`domain-model.md`](./domain-model.md)
 - Naming: [`../development/naming-conventions.md`](../development/naming-conventions.md)
 - Roadmap: [`../roadmap.md`](../roadmap.md)

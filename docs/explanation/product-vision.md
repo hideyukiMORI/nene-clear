@@ -7,7 +7,7 @@ NeNe Clear is a self-hosted quote and invoice platform built on [NENE2](https://
 
 ## Origin
 
-Every Japan SMB must issue **qualified invoices** (適格請求書) under the invoice system (インボイス制度). SaaS accounting tools (freee, Money Forward, Yayoi) solve this well but charge recurring fees and hold financial data on vendor infrastructure. Many micro-businesses on **shared hosting** already run their website on the same server — they want billing documents without another monthly subscription.
+Every Japan SMB must issue **qualified invoices** under the Qualified Invoice System. SaaS accounting tools (freee, Money Forward, Yayoi) solve this well but charge recurring fees and hold financial data on vendor infrastructure. Many micro-businesses on **shared hosting** already run their website on the same server — they want billing documents without another monthly subscription.
 
 NeNe Clear offers an alternative: **run quote and invoice management on infrastructure you control**, with source code you can audit, and optional integration with sibling NeNe products for catalog and lead capture.
 
@@ -19,8 +19,8 @@ Operators and AI agents can:
 
 - register company issuer profile (name, address, invoice registration number, bank details)
 - manage **clients** (buyers) with billing addresses
-- create **quotes** (見積書) with line items and tax breakdown
-- convert accepted quotes to **invoices** (請求書) with one action
+- create **quotes** with line items and tax breakdown
+- convert accepted quotes to **invoices** with one action
 - issue **qualified invoice** PDFs that meet Japan invoice system requirements
 - record **payments** and see overdue / unpaid status at a glance
 - optionally import product names from [NeNe Records](https://github.com/hideyukiMORI/nene-records) or create draft clients from [NeNe Concierge](https://github.com/hideyukiMORI/nene-concierge) leads
@@ -44,9 +44,9 @@ Docker Compose for local development and production. Same API and admin UI as Ti
 
 A growing segment: founders and staff who are not native Japanese speakers but
 run a company registered in Japan. They are bound by the same Japanese invoice
-and tax rules, but operate the admin UI more comfortably in English. NeNe
-Invoice serves them with an **English admin UI**, while statutory documents
-remain Japanese — see [ADR 0005](../adr/0005-bilingual-ja-en-scope.md).
+and tax rules, but operate the admin UI more comfortably in English. NeNe Clear
+serves them with an **English admin UI**, while statutory documents remain
+Japanese — see [ADR 0005](../adr/0005-bilingual-ja-en-scope.md).
 
 **Multi-tenant hosting operators**
 
@@ -71,13 +71,14 @@ The same pattern applies to **small manufacturers**, **creative agencies**, **eq
 
 NeNe Clear optimizes for **quote-to-cash for B2B SMB**:
 
-1. Operator registers **issuer profile** (自社情報 + インボイス登録番号).
-2. Operator adds **clients** (取引先).
-3. Operator creates a **quote** with line items (品名, 数量, 単価, 税率).
-4. Client accepts → operator converts quote to **invoice** (請求書).
+1. Operator registers **issuer profile** (legal name, address, invoice registration number).
+2. Operator adds **clients** (buyers).
+3. Operator creates a **quote** with line items (description, quantity, unit price, tax rate).
+4. Client accepts → operator converts quote to **invoice**.
 5. System generates **qualified invoice PDF** with required fields.
 6. Operator sends PDF by email or download link.
 7. Client pays → operator records **payment** → invoice marked paid.
+8. (Expansion #1) Operator imports bank CSV → confirms match → outstanding cleared with audit trail.
 
 **Not the primary story:** full double-entry bookkeeping, payroll, expense reimbursement, inventory, or POS. Those belong to other products or Phase 4+ integrations.
 
@@ -154,7 +155,7 @@ See also [`requirements.md`](./requirements.md#explicit-non-goals).
 - **Not** inventory management or POS (NeNe Shop is a separate future product)
 - **Not** a WordPress plugin (coexist on same domain is fine)
 - **Not** embedded inside NeNe Records or other sibling repos
-- **Not** e-invoice (電子インボイス) PEPPOL network transmission in Phase 1–3 — PDF + email first
+- **Not** structured e-invoice (PEPPOL) network transmission in Phase 1–3 — PDF + email first
 - **Not** payment gateway integration in Phase 1 — manual payment recording first; Stripe/PayPay in Phase 4+
 - **Not** multilingual beyond Japanese and English — UI locales bound to ja/en by [ADR 0005](../adr/0005-bilingual-ja-en-scope.md)
 

@@ -1,6 +1,6 @@
 # Commit Message Conventions
 
-NeNe Clear uses Conventional Commits, inherited from [NENE2](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/commit-conventions.md) and sibling NeNe products.
+NeNe Clear uses Conventional Commits, inherited from [NENE2](https://github.com/hideyukiMORI/NENE2/blob/main/docs/development/commit-conventions.md) with English descriptions per [ADR 0008](../adr/0008-english-only-repository-documentation.md).
 
 ## Format
 
@@ -15,17 +15,17 @@ NeNe Clear uses Conventional Commits, inherited from [NENE2](https://github.com/
 ## Language
 
 - Keep `type`, `scope`, `BREAKING CHANGE`, and other Conventional Commits keywords in **English**.
-- Write the **description and body in Japanese**.
+- Write the **description and body in English**.
 - Include the related GitHub Issue number in the **subject** for all work.
 
 Example:
 
 ```text
-docs(governance): Issue 駆動ワークフローを NENE2 正本に整合する (#1)
+docs(governance): align issue-driven workflow with NENE2 upstream (#1)
 ```
 
 ```text
-feat(invoice): 適格請求書 PDF 生成 UseCase を追加する (#12)
+feat(invoice): add qualified invoice PDF generation UseCase (#12)
 ```
 
 ## Issue number

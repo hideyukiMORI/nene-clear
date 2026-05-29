@@ -53,7 +53,7 @@ Install NENE2 as a Composer dependency and treat `vendor/hideyukimori/nene2/docs
 | Coding standards | `docs/development/coding-standards.md` — NENE2 baseline + billing additions |
 | Backend standards | `docs/development/backend-standards.md` — PHP/API strict policy |
 | Monetary values | Integer **cents** in DB and JSON; no floats |
-| Language policy | English for public docs, OpenAPI, API error metadata; Japanese allowed in Issues, PRs, commits, `.cursor/rules/` |
+| Language policy | **English** for all repository docs, Issues, PRs, commits, OpenAPI, API errors (ADR 0008); admin UI **ja + en** only (ADR 0005) |
 | Review checklists | `docs/review/` — task-specific lists for this product |
 
 ## NeNe Clear–specific (not inherited)
@@ -61,7 +61,8 @@ Install NENE2 as a Composer dependency and treat `vendor/hideyukimori/nene2/docs
 Record these in ADRs or product docs when they stabilize:
 
 - Client / quote / invoice / payment domain model
-- Japan qualified invoice (適格請求書) field validation rules
+- Japan qualified invoice field validation rules
+- Payment reconciliation and dunning compliance rules
 - PDF generation strategy (server-side, no client-side tax calculation)
 - Admin frontend vs public document download boundaries
 - MCP tool catalog for billing operations

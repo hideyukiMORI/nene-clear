@@ -8,7 +8,7 @@ Operators can self-host a billing platform that:
 
 - manages clients and company issuer profile
 - creates quotes and converts them to invoices
-- issues Japan qualified invoice (適格請求書) compliant PDFs
+- issues Japan qualified invoice compliant PDFs
 - tracks payment status and overdue items
 - runs on **Tier A** shared hosting or **Tier B** Docker/VPS
 - optionally integrates with NeNe Records and NeNe Concierge via HTTP
@@ -73,11 +73,13 @@ Goal: connect to sibling products.
 
 After Phase 1–3 core billing is stable, implement in this order:
 
-1. **Payment reconciliation & dunning** — 入金消込・督促管理
-2. **Purchase order & delivery note** — 発注書・納品書管理
-3. **Contract term & renewal** — 契約期限・更新管理
-4. **Small-scale subscription billing** — 小規模サブスク請求管理
-5. **Minimal expense reimbursement** — 経費申請の最小版
+1. **Payment reconciliation & dunning**
+2. **Purchase order & delivery note**
+3. **Contract term & renewal**
+4. **Small-scale subscription billing**
+5. **Minimal expense reimbursement**
+
+Compliance for #1: [`docs/explanation/payment-reconciliation-dunning-compliance.md`](./explanation/payment-reconciliation-dunning-compliance.md).
 
 Full scope, prerequisites, and MVP boundaries: [`docs/explanation/expansion-roadmap.md`](./explanation/expansion-roadmap.md).
 
