@@ -1,0 +1,1699 @@
+openapi: 3.1.0
+info:
+  title: NeNe Clear API
+  version: 0.1.0
+  description: >
+    NeNe Clear — payment reconciliation and dunning (入金消込・督促管理).
+    This file is the source of truth for Clear's public JSON API contract.
+    Phase 1 scope: multi-tenant auth/RBAC, clear settings, bank CSV import,
+    read-only Invoice upstream proxy, reconciliation (propose/confirm/reverse),
+    and client credit. Dunning is Phase 2 and is not in this file yet.
+    NeNe Clear does NOT issue invoices or compute tax — invoice figures are read
+    from the NeNe Invoice upstream (see docs/integrations/invoice-upstream-contract.md).
+    Conventions follow NENE2 (docs/development/nene2-compliance.md): RFC 9457
+    Problem Details (application/problem+json), snake_case JSON, integer cents,
+    items/limit/offset list envelope. Identifiers are governed by
+    docs/explanation/terminology.md.
+servers:
+  - url: http://localhost:8080
+    description: Local Docker development server
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+    description: Health and runtime endpoints.
+  - name: Auth
+    description: Login and current-user.
+  - name: Organization
+    description: Tenant management (superadmin).
+  - name: User
+    description: Operator accounts within an organization (admin).
+  - name: Settings
+    description: Clear settings — Invoice upstream config and registered bank accounts.
+  - name: BankImport
+    description: Bank CSV import batches and their imported deposit lines.
+  - name: BankTransaction
+    description: Imported bank deposit lines (immutable evidence).
+  - name: UpstreamInvoice
+    description: Read-only proxy of NeNe Invoice open/overdue invoices.
+  - name: Reconciliation
+    description: Match proposal, confirmation, reversal (human-confirmed).
+  - name: ClientCredit
+    description: Overpayment credit balances and their application.
+
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Health endpoint
+      description: Operational health check. Unauthenticated.
+      operationId: getHealth
+      security: []
+      responses:
+        '200':
+          description: Service healthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: NeNe Clear
+        '503':
+          description: One or more checks failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in
+      description: Exchange email and password for a JWT bearer token.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              ok:
+                value:
+                  email: operator@example.co.jp
+                  password: "********"
+      responses:
+        '200':
+          description: Authentication succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Wrong email or password.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                invalidCredentials:
+                  value:
+                    type: https://nene-clear.dev/problems/invalid-credentials
+                    title: Invalid Credentials
+                    status: 401
+                    detail: Email or password is incorrect.
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/auth/me:
+    get:
+      tags: [Auth]
+      summary: Current user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/organizations:
+    get:
+      tags: [Organization]
+      summary: List organizations
+      description: Cross-tenant. Requires capability `manage_organizations`.
+      operationId: listOrganizations
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: A page of organizations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Organization]
+      summary: Create organization
+      operationId: createOrganization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationRequest'
+      responses:
+        '201':
+          description: Organization created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/organizations/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Organization]
+      summary: Get organization by id
+      operationId: getOrganizationById
+      responses:
+        '200':
+          description: The organization.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Organization]
+      summary: Delete organization
+      operationId: deleteOrganization
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/users:
+    get:
+      tags: [User]
+      summary: List users
+      description: Requires capability `manage_users`.
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: A page of users.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [User]
+      summary: Create user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [User]
+      summary: Get user by id
+      operationId: getUserById
+      responses:
+        '200':
+          description: The user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [User]
+      summary: Update user
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: User updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [User]
+      summary: Delete user
+      operationId: deleteUser
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/clear-settings:
+    get:
+      tags: [Settings]
+      summary: Get clear settings
+      description: >
+        Invoice upstream config and registered bank accounts for the
+        organization. The upstream token itself is never returned — only the env
+        var name (`upstream_token_ref`). Requires `manage_clear_settings`.
+      operationId: getClearSettings
+      responses:
+        '200':
+          description: The clear settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [Settings]
+      summary: Update clear settings
+      description: Update upstream config and the registered bank accounts (with CSV profiles).
+      operationId: updateClearSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClearSettingsRequest'
+      responses:
+        '200':
+          description: Updated settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClearSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/clear-settings/test-upstream:
+    post:
+      tags: [Settings]
+      summary: Test the Invoice upstream connection
+      operationId: testUpstreamConnection
+      responses:
+        '200':
+          description: Connection test result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpstreamConnectionTestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/bank-import-batches:
+    get:
+      tags: [BankImport]
+      summary: List bank import batches
+      operationId: listBankImportBatches
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: A page of import batches.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankImportBatchListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [BankImport]
+      summary: Import a bank CSV
+      description: >
+        Upload a bank CSV for a registered bank account. The file is parsed with
+        that account's CSV profile, stored as immutable bank transactions, and a
+        SHA-256 file hash is recorded for duplicate detection. Requires
+        `manage_reconciliation`.
+      operationId: importBankCsv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [bank_account_id, file]
+              properties:
+                bank_account_id:
+                  type: integer
+                  format: int64
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Import batch created with imported lines.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankImportBatch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Duplicate import (same file hash already imported).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                duplicate:
+                  value:
+                    type: https://nene-clear.dev/problems/duplicate-bank-import
+                    title: Duplicate Bank Import
+                    status: 409
+                    detail: A batch with this file hash was already imported.
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/bank-import-batches/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [BankImport]
+      summary: Get import batch by id
+      operationId: getBankImportBatchById
+      responses:
+        '200':
+          description: The import batch.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankImportBatch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/bank-import-batches/{id}/reverse:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [BankImport]
+      summary: Reverse an import batch
+      description: >
+        Void the batch and its imported lines via a reversal (never a hard
+        delete). Lines that are already matched must be unmatched first.
+      operationId: reverseBankImportBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReverseRequest'
+      responses:
+        '200':
+          description: Batch reversed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankImportBatch'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InvalidStateTransition'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/bank-transactions:
+    get:
+      tags: [BankTransaction]
+      summary: List bank transactions
+      description: >
+        Searchable by transaction date, amount, counterparty, and status
+        (電子帳簿保存法 search requirement). Requires `view_reconciliation`.
+      operationId: listBankTransactions
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/BankTransactionStatus'
+        - name: value_date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: value_date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: amount_min_cents
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: amount_max_cents
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: counterparty
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of bank transactions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTransactionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/bank-transactions/unmatched:
+    get:
+      tags: [BankTransaction]
+      summary: List unmatched bank transactions
+      description: Convenience filter for `status=unmatched` / `partially_matched`.
+      operationId: listUnmatchedTransactions
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: A page of unmatched bank transactions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTransactionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/bank-transactions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [BankTransaction]
+      summary: Get bank transaction by id
+      operationId: getBankTransactionById
+      responses:
+        '200':
+          description: The bank transaction.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BankTransaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/upstream/invoices:
+    get:
+      tags: [UpstreamInvoice]
+      summary: List upstream invoices (read proxy)
+      description: >
+        Read-only proxy to NeNe Invoice. Returns open/overdue invoices with
+        outstanding balances for matching and dunning eligibility. Clear never
+        recomputes these figures.
+      operationId: listUpstreamInvoices
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/UpstreamInvoiceStatus'
+        - name: overdue
+          in: query
+          schema:
+            type: boolean
+        - name: client_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: outstanding_gt
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: A page of upstream invoices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpstreamInvoiceListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/upstream/invoices/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [UpstreamInvoice]
+      summary: Get upstream invoice by id (read proxy)
+      operationId: getUpstreamInvoiceById
+      responses:
+        '200':
+          description: The upstream invoice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpstreamInvoice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Invoice not found upstream.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                notFound:
+                  value:
+                    type: https://nene-clear.dev/problems/upstream-invoice-not-found
+                    title: Upstream Invoice Not Found
+                    status: 404
+                    detail: The referenced invoice was not found upstream.
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/reconciliations/propose:
+    post:
+      tags: [Reconciliation]
+      summary: Propose matches for a bank transaction
+      description: >
+        Returns ranked match suggestions. Read-only — it writes nothing and
+        finalizes nothing. A human must confirm via `confirmMatch`.
+      operationId: proposeMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProposeMatchRequest'
+      responses:
+        '200':
+          description: Ranked suggestions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposeMatchResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/reconciliations:
+    get:
+      tags: [Reconciliation]
+      summary: List reconciliations
+      operationId: listReconciliations
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ReconciliationStatus'
+      responses:
+        '200':
+          description: A page of reconciliations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [Reconciliation]
+      summary: Confirm a match (human-confirmed)
+      description: >
+        Allocate a bank transaction across one or more upstream invoices and
+        write the resulting payment(s) to NeNe Invoice. Over-allocation beyond an
+        invoice's outstanding is rejected; the excess is recorded as client
+        credit. Appropriation across invoices is operator-directed. Requires
+        `manage_reconciliation`.
+      operationId: confirmMatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmMatchRequest'
+            examples:
+              partial:
+                summary: Two-invoice allocation of one deposit
+                value:
+                  bank_transaction_id: 5001
+                  allocations:
+                    - invoice_id: 123
+                      amount_cents: 50000
+                    - invoice_id: 124
+                      amount_cents: 60000
+      responses:
+        '201':
+          description: Reconciliation confirmed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reconciliation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InvalidStateTransition'
+        '422':
+          description: >
+            Validation failed, or an allocation exceeds the invoice outstanding.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                allocationExceedsOutstanding:
+                  value:
+                    type: https://nene-clear.dev/problems/allocation-exceeds-outstanding
+                    title: Allocation Exceeds Outstanding
+                    status: 422
+                    detail: Allocation 120000 exceeds invoice 123 outstanding 110000.
+                    invoice_id: 123
+                    outstanding_cents: 110000
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/reconciliations/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Reconciliation]
+      summary: Get reconciliation by id
+      operationId: getReconciliationById
+      responses:
+        '200':
+          description: The reconciliation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reconciliation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/reconciliations/{id}/reverse:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [Reconciliation]
+      summary: Reverse a reconciliation
+      description: >
+        Void the upstream payment(s) and restore the invoice outstanding, recompute
+        the bank transaction status, and reverse any client credit created by this
+        match. Never a hard delete. Requires `manage_reconciliation`.
+      operationId: reverseReconciliation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReverseRequest'
+      responses:
+        '200':
+          description: Reconciliation reversed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reconciliation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/InvalidStateTransition'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/client-credits:
+    get:
+      tags: [ClientCredit]
+      summary: List client credits
+      operationId: listClientCredits
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ClientCreditStatus'
+        - name: client_id
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: A page of client credits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientCreditListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/client-credits/{id}/apply:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [ClientCredit]
+      summary: Apply a client credit to an invoice
+      description: >
+        Apply remaining credit (or a portion) to a chosen upstream invoice via an
+        idempotent payment. Explicit operator action only — never automatic.
+        Requires `manage_reconciliation`.
+      operationId: applyClientCredit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyClientCreditRequest'
+      responses:
+        '200':
+          description: Credit applied; updated credit returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientCredit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: HS256 JWT for operator/service authentication (BearerTokenMiddleware).
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+            example: Bearer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            unauthorized:
+              value:
+                type: https://nene-clear.dev/problems/unauthorized
+                title: Unauthorized
+                status: 401
+                detail: A valid bearer token is required.
+    Forbidden:
+      description: Authenticated but lacking the required capability.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            insufficientCapability:
+              value:
+                type: https://nene-clear.dev/problems/insufficient-capability
+                title: Insufficient Capability
+                status: 403
+                detail: Your role lacks the capability required for this action.
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            notFound:
+              value:
+                type: https://nene-clear.dev/problems/bank-transaction-not-found
+                title: Not Found
+                status: 404
+                detail: The requested resource was not found.
+    InvalidStateTransition:
+      description: The requested state change is not allowed from the current state.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            invalidStateTransition:
+              value:
+                type: https://nene-clear.dev/problems/invalid-state-transition
+                title: Invalid State Transition
+                status: 409
+                detail: This reconciliation is already reversed.
+    ValidationFailed:
+      description: The request body, query, or path parameters contain invalid values.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetails'
+          examples:
+            validationFailed:
+              value:
+                type: https://nene-clear.dev/problems/validation-failed
+                title: Validation Failed
+                status: 422
+                detail: The request contains invalid values.
+                errors:
+                  - field: value_date
+                    message: A valid date is required.
+                    code: required
+    PayloadTooLarge:
+      description: The request body exceeds the configured size limit.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            payloadTooLarge:
+              value:
+                type: https://nene-clear.dev/problems/payload-too-large
+                title: Payload Too Large
+                status: 413
+                detail: The uploaded file exceeds the configured size limit.
+    UpstreamUnavailable:
+      description: The NeNe Invoice upstream is unreachable (degraded mode).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            upstreamUnavailable:
+              value:
+                type: https://nene-clear.dev/problems/upstream-invoice-unavailable
+                title: Upstream Invoice Unavailable
+                status: 503
+                detail: The Invoice API is unreachable; match confirmation is blocked.
+    InternalServerError:
+      description: The server encountered an unexpected condition.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            internalServerError:
+              value:
+                type: https://nene-clear.dev/problems/internal-server-error
+                title: Internal Server Error
+                status: 500
+                detail: The server encountered an unexpected condition.
+
+  schemas:
+    ProblemDetails:
+      type: object
+      description: RFC 9457 Problem Details response.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: https://nene-clear.dev/problems/bank-transaction-not-found
+        title:
+          type: string
+          example: Not Found
+        status:
+          type: integer
+          format: int32
+          minimum: 400
+          maximum: 599
+          example: 404
+        detail:
+          type: string
+        instance:
+          type: string
+      additionalProperties: true
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          required: [errors]
+          properties:
+            errors:
+              type: array
+              minItems: 1
+              items:
+                $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      type: object
+      required: [field, message, code]
+      properties:
+        field:
+          type: string
+          example: value_date
+        message:
+          type: string
+          example: A valid date is required.
+        code:
+          type: string
+          example: required
+      additionalProperties: false
+
+    HealthResponse:
+      type: object
+      required: [status, service]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        service:
+          type: string
+          example: NeNe Clear
+        checks:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [ok, error]
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 1
+      additionalProperties: false
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: JWT bearer token.
+        user:
+          $ref: '#/components/schemas/User'
+      additionalProperties: false
+
+    UserRole:
+      type: string
+      enum: [superadmin, admin, member, viewer]
+    UserStatus:
+      type: string
+      enum: [active, invited]
+    User:
+      type: object
+      required: [user_id, organization_id, email, role, status]
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Null for superadmin (cross-tenant).
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+    UserListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+    CreateUserRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/UserRole'
+        password:
+          type: string
+          minLength: 8
+      additionalProperties: false
+    UpdateUserRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+      additionalProperties: false
+
+    Organization:
+      type: object
+      required: [organization_id, slug, name]
+      properties:
+        organization_id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+        name:
+          type: string
+    OrganizationListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+    CreateOrganizationRequest:
+      type: object
+      required: [slug, name]
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      additionalProperties: false
+
+    AccountType:
+      type: string
+      enum: [ordinary, current]
+    BankAccount:
+      type: object
+      required: [bank_account_id, bank_name, account_type, account_number]
+      properties:
+        bank_account_id:
+          type: integer
+          format: int64
+        bank_name:
+          type: string
+        bank_branch:
+          type: string
+        account_type:
+          $ref: '#/components/schemas/AccountType'
+        account_number:
+          type: string
+        csv_encoding:
+          type: string
+          example: shift_jis
+        csv_date_format:
+          type: string
+          example: Y/m/d
+    ClearSettings:
+      type: object
+      required: [organization_id, upstream_base_url, bank_accounts]
+      properties:
+        organization_id:
+          type: integer
+          format: int64
+        upstream_base_url:
+          type: string
+          format: uri
+        upstream_token_ref:
+          type: string
+          description: Name of the env var holding the upstream bearer token (never the secret).
+          example: NENE_INVOICE_BEARER_TOKEN
+        dunning_min_interval_days:
+          type: integer
+          default: 7
+        bank_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankAccount'
+    UpdateClearSettingsRequest:
+      type: object
+      properties:
+        upstream_base_url:
+          type: string
+          format: uri
+        upstream_token_ref:
+          type: string
+        dunning_min_interval_days:
+          type: integer
+        bank_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankAccount'
+      additionalProperties: false
+    UpstreamConnectionTestResponse:
+      type: object
+      required: [reachable]
+      properties:
+        reachable:
+          type: boolean
+        detail:
+          type: string
+
+    BankImportBatchStatus:
+      type: string
+      enum: [imported, reversed]
+    BankImportBatch:
+      type: object
+      required: [bank_import_batch_id, organization_id, bank_account_id, file_hash, source_filename, row_count, status, imported_at]
+      properties:
+        bank_import_batch_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        bank_account_id:
+          type: integer
+          format: int64
+        file_hash:
+          type: string
+          description: SHA-256 hex of the imported file.
+        source_filename:
+          type: string
+        row_count:
+          type: integer
+        status:
+          $ref: '#/components/schemas/BankImportBatchStatus'
+        imported_at:
+          type: string
+          format: date-time
+        reversal_reason:
+          type: string
+          nullable: true
+    BankImportBatchListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankImportBatch'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    BankTransactionStatus:
+      type: string
+      enum: [unmatched, partially_matched, matched, voided]
+    BankTransaction:
+      type: object
+      required: [bank_transaction_id, organization_id, bank_import_batch_id, bank_account_id, value_date, amount_cents, status]
+      properties:
+        bank_transaction_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        bank_import_batch_id:
+          type: integer
+          format: int64
+        bank_account_id:
+          type: integer
+          format: int64
+        value_date:
+          type: string
+          format: date
+          description: Bank value date (入金日 / 取引日).
+        amount_cents:
+          type: integer
+          format: int64
+        counterparty_text:
+          type: string
+        status:
+          $ref: '#/components/schemas/BankTransactionStatus'
+    BankTransactionListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BankTransaction'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    UpstreamInvoiceStatus:
+      type: string
+      enum: [issued, partially_paid, paid]
+    UpstreamInvoice:
+      type: object
+      description: Read-only model owned by NeNe Invoice.
+      required: [invoice_id, invoice_number, total_cents, outstanding_cents, status]
+      properties:
+        invoice_id:
+          type: integer
+          format: int64
+        invoice_number:
+          type: string
+        client_id:
+          type: integer
+          format: int64
+        issued_at:
+          type: string
+          format: date
+        due_at:
+          type: string
+          format: date
+        total_cents:
+          type: integer
+          format: int64
+        outstanding_cents:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/UpstreamInvoiceStatus'
+        overdue:
+          type: boolean
+        currency:
+          type: string
+          enum: [JPY]
+    UpstreamInvoiceListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpstreamInvoice'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    ProposeMatchRequest:
+      type: object
+      required: [bank_transaction_id]
+      properties:
+        bank_transaction_id:
+          type: integer
+          format: int64
+      additionalProperties: false
+    MatchSuggestion:
+      type: object
+      required: [invoice_id, amount_cents, score]
+      properties:
+        invoice_id:
+          type: integer
+          format: int64
+        invoice_number:
+          type: string
+        amount_cents:
+          type: integer
+          format: int64
+        outstanding_cents:
+          type: integer
+          format: int64
+        score:
+          type: number
+          format: float
+          description: Confidence 0..1 (rules-based in Phase 1).
+        reason:
+          type: string
+          description: Why this invoice was suggested (e.g. exact amount, invoice number in counterparty).
+    ProposeMatchResponse:
+      type: object
+      required: [bank_transaction_id, suggestions]
+      properties:
+        bank_transaction_id:
+          type: integer
+          format: int64
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchSuggestion'
+
+    Allocation:
+      type: object
+      required: [invoice_id, amount_cents]
+      properties:
+        invoice_id:
+          type: integer
+          format: int64
+        amount_cents:
+          type: integer
+          format: int64
+      additionalProperties: false
+    ReconciliationAllocation:
+      type: object
+      required: [reconciliation_allocation_id, invoice_id, amount_cents]
+      properties:
+        reconciliation_allocation_id:
+          type: integer
+          format: int64
+        invoice_id:
+          type: integer
+          format: int64
+        amount_cents:
+          type: integer
+          format: int64
+        payment_id:
+          type: integer
+          format: int64
+          description: Upstream payment id returned by NeNe Invoice.
+        external_reference:
+          type: string
+          example: clear:recon:777
+    ConfirmMatchRequest:
+      type: object
+      required: [bank_transaction_id, allocations]
+      properties:
+        bank_transaction_id:
+          type: integer
+          format: int64
+        allocations:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/Allocation'
+        reason_code:
+          type: string
+          description: Required for fee absorption; recorded in the audit trail.
+      additionalProperties: false
+    ReconciliationStatus:
+      type: string
+      enum: [confirmed, reversed]
+    Reconciliation:
+      type: object
+      required: [payment_reconciliation_id, organization_id, bank_transaction_id, status, allocations]
+      properties:
+        payment_reconciliation_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        bank_transaction_id:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/ReconciliationStatus'
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReconciliationAllocation'
+        confirmed_at:
+          type: string
+          format: date-time
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
+        reversal_reason:
+          type: string
+          nullable: true
+    ReconciliationListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reconciliation'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    ClientCreditStatus:
+      type: string
+      enum: [open, partially_applied, applied]
+    ClientCredit:
+      type: object
+      required: [client_credit_id, organization_id, client_id, amount_cents, remaining_cents, status]
+      properties:
+        client_credit_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        client_id:
+          type: integer
+          format: int64
+        amount_cents:
+          type: integer
+          format: int64
+        remaining_cents:
+          type: integer
+          format: int64
+        status:
+          $ref: '#/components/schemas/ClientCreditStatus'
+        source_bank_transaction_id:
+          type: integer
+          format: int64
+    ClientCreditListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClientCredit'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+    ApplyClientCreditRequest:
+      type: object
+      required: [invoice_id, amount_cents]
+      properties:
+        invoice_id:
+          type: integer
+          format: int64
+        amount_cents:
+          type: integer
+          format: int64
+      additionalProperties: false
+
+    ReverseRequest:
+      type: object
+      required: [reversal_reason]
+      properties:
+        reversal_reason:
+          type: string
+          minLength: 1
+      additionalProperties: false
