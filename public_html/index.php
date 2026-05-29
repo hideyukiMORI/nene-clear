@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use Dotenv\Dotenv;
+use Nene2\Config\DatabaseConfig;
+use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\PdoConnectionFactory;
+use Nene2\Database\PdoDatabaseQueryExecutor;
 use Nene2\Http\ResponseEmitter;
 use NeneClear\Http\ApplicationFactory;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -17,9 +21,43 @@ if (is_file($root . '/.env')) {
     Dotenv::createImmutable($root)->safeLoad();
 }
 
-$debug = (($_ENV['APP_DEBUG'] ?? getenv('APP_DEBUG') ?: 'false')) === 'true';
+$env = static fn (string $key, string $default = ''): string => (string) ($_ENV[$key] ?? getenv($key) ?: $default);
 
-$application = ApplicationFactory::create(debug: $debug, allowedOrigins: []);
+$debug = $env('APP_DEBUG', 'false') === 'true';
+$jwtSecret = $env('NENE_CLEAR_JWT_SECRET') ?: null;
+
+// Resilient DB wiring: if the database is unconfigured or unreachable, the app
+// still boots and serves /health. Authenticated routes activate only when both
+// the executor and a JWT secret are available (see ApplicationFactory).
+$query = (static function () use ($env): ?DatabaseQueryExecutorInterface {
+    try {
+        $adapter = $env('DB_ADAPTER', 'sqlite');
+        $config = $adapter === 'mysql'
+            ? new DatabaseConfig(
+                url: $env('DATABASE_URL') ?: null,
+                environment: $env('DB_ENV', 'production'),
+                adapter: 'mysql',
+                host: $env('DB_HOST', '127.0.0.1'),
+                port: (int) $env('DB_PORT', '3306'),
+                name: $env('DB_NAME', 'nene_clear'),
+                user: $env('DB_USER', 'nene_clear'),
+                password: $env('DB_PASSWORD'),
+                charset: $env('DB_CHARSET', 'utf8mb4'),
+            )
+            : DatabaseConfig::sqlite($env('DB_NAME') ?: dirname(__DIR__) . '/database/nene_clear.sqlite3');
+
+        return new PdoDatabaseQueryExecutor(new PdoConnectionFactory($config));
+    } catch (\Throwable) {
+        return null;
+    }
+})();
+
+$application = ApplicationFactory::create(
+    debug: $debug,
+    allowedOrigins: [],
+    query: $query,
+    jwtSecret: $jwtSecret,
+);
 
 $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
