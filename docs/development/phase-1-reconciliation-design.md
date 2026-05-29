@@ -194,6 +194,10 @@ Per [`domain-model.md`](../explanation/domain-model.md). Enforced in UseCases:
 
 ## 4. API surface (Phase 1)
 
+The concrete contract is [`../openapi/openapi.yaml`](../openapi/openapi.yaml)
+(OpenAPI 3.1) — the table below is the index; the YAML is the source of truth and
+what runtime contract tests read.
+
 JSON, OpenAPI 3.1, RFC 9457 Problem Details (base `https://nene-clear.dev/problems/`),
 snake_case bodies, `items`/`limit`/`offset` list envelope. Admin mutating routes
 under `/admin/…`; `GET /health` unauthenticated. Auth: JWT bearer; capability
