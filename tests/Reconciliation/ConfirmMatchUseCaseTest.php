@@ -156,6 +156,63 @@ final class ConfirmMatchUseCaseTest extends TestCase
         ));
     }
 
+    public function test_idempotency_key_returns_same_reconciliation_on_replay(): void
+    {
+        $txId = $this->makeTx(100000);
+        $this->makeInvoice(1, 100000);
+
+        $first = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [new AllocationInput(1, 100000)],
+            actorUserId: 42,
+            idempotencyKey: 'key-abc-123',
+        ));
+
+        // Replay with the same key — use case returns same reconciliation
+        $replay = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [new AllocationInput(1, 100000)],
+            actorUserId: 42,
+            idempotencyKey: 'key-abc-123',
+        ));
+
+        self::assertSame($first->reconciliationId, $replay->reconciliationId);
+        self::assertTrue($replay->idempotentReplay);
+        // Upstream should have been called only once
+        self::assertCount(1, $this->invoiceClient->paymentsFor(1));
+    }
+
+    public function test_different_idempotency_key_creates_new_reconciliation(): void
+    {
+        $txId = $this->makeTx(100000);
+        $this->makeInvoice(1, 100000);
+
+        $first = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [new AllocationInput(1, 100000)],
+            actorUserId: 42,
+            idempotencyKey: 'key-abc-111',
+        ));
+
+        // Restore invoice outstanding and tx status for second confirm
+        $this->makeInvoice(2, 50000);
+        $txId2 = $this->makeTx(50000);
+
+        $second = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId2,
+            allocations: [new AllocationInput(2, 50000)],
+            actorUserId: 42,
+            idempotencyKey: 'key-abc-222',
+        ));
+
+        self::assertNotSame($first->reconciliationId, $second->reconciliationId);
+        self::assertFalse($second->idempotentReplay);
+    }
+
     public function test_unknown_transaction_throws_not_found(): void
     {
         $this->expectException(BankTransactionNotFoundException::class);

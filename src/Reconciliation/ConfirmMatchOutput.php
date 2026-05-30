@@ -8,6 +8,7 @@ final readonly class ConfirmMatchOutput
 {
     public function __construct(
         public int $reconciliationId,
+        public bool $idempotentReplay = false,
     ) {
     }
 }

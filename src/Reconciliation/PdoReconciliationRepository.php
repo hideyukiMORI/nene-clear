@@ -9,7 +9,7 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 final readonly class PdoReconciliationRepository implements ReconciliationRepositoryInterface
 {
     private const string RECON_COLUMNS = 'id, organization_id, bank_transaction_id, status, reason_code, '
-        . 'confirmed_by, confirmed_at, reversed_at, reversal_reason';
+        . 'confirmed_by, confirmed_at, reversed_at, reversal_reason, idempotency_key';
 
     private const string ALLOC_COLUMNS = 'id, organization_id, payment_reconciliation_id, invoice_id, '
         . 'amount_cents, payment_id, external_reference';
@@ -57,11 +57,21 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
         return (int) ($row['c'] ?? 0);
     }
 
+    public function findByIdempotencyKey(int $organizationId, string $key): ?Reconciliation
+    {
+        $row = $this->query->fetchOne(
+            'SELECT ' . self::RECON_COLUMNS . ' FROM payment_reconciliations WHERE organization_id = ? AND idempotency_key = ?',
+            [$organizationId, $key],
+        );
+
+        return $row !== null ? $this->hydrateReconciliation($row) : null;
+    }
+
     public function save(Reconciliation $reconciliation): int
     {
         $this->query->execute(
-            'INSERT INTO payment_reconciliations (organization_id, bank_transaction_id, status, reason_code, confirmed_by, confirmed_at) '
-            . 'VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO payment_reconciliations (organization_id, bank_transaction_id, status, reason_code, confirmed_by, confirmed_at, idempotency_key) '
+            . 'VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
                 $reconciliation->organizationId,
                 $reconciliation->bankTransactionId,
@@ -69,6 +79,7 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
                 $reconciliation->reasonCode,
                 $reconciliation->confirmedBy,
                 $reconciliation->confirmedAt,
+                $reconciliation->idempotencyKey,
             ],
         );
 
@@ -125,6 +136,7 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
             reasonCode: isset($row['reason_code']) ? (string) $row['reason_code'] : null,
             reversedAt: isset($row['reversed_at']) ? (string) $row['reversed_at'] : null,
             reversalReason: isset($row['reversal_reason']) ? (string) $row['reversal_reason'] : null,
+            idempotencyKey: isset($row['idempotency_key']) ? (string) $row['idempotency_key'] : null,
             id: (int) $row['id'],
         );
     }
