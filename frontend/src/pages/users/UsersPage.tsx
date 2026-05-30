@@ -84,12 +84,28 @@ export default function UsersPage() {
     inviteMutation.mutate()
   }
 
+  // Open/close the invite modal from a clean slate so a prior email or error
+  // never leaks into the next open.
+  function openInvite() {
+    setInviteEmail('')
+    setInviteRole('member')
+    setInviteError(null)
+    setShowInvite(true)
+  }
+
+  function closeInvite() {
+    setShowInvite(false)
+    setInviteEmail('')
+    setInviteRole('member')
+    setInviteError(null)
+  }
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('users.title')}</h1>
         <button
-          onClick={() => setShowInvite(true)}
+          onClick={openInvite}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           {t('users.invite')}
@@ -182,7 +198,7 @@ export default function UsersPage() {
               <div className="flex gap-3 justify-end">
                 <button
                   type="button"
-                  onClick={() => { setShowInvite(false); setInviteError(null) }}
+                  onClick={closeInvite}
                   className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   {t('common.cancel')}
