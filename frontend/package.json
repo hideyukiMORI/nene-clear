@@ -14,7 +14,9 @@
     "type-check": "tsc --noEmit",
     "lint": "eslint src",
     "format": "prettier --write src",
-    "check": "npm run type-check && npm run lint"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "check": "npm run type-check && npm run lint && npm run test:run"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
