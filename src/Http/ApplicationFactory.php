@@ -55,6 +55,7 @@ use NeneClear\Dunning\LogOnlyDunningMailer;
 use NeneClear\Dunning\PdoDunningNoticeRepository;
 use NeneClear\Dunning\SendDunningHandler;
 use NeneClear\Dunning\SendDunningUseCase;
+use NeneClear\Dunning\SmtpDunningMailer;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
@@ -136,6 +137,12 @@ final class ApplicationFactory
         ?DatabaseQueryExecutorInterface $query = null,
         ?string $jwtSecret = null,
         ?InvoiceUpstreamClientInterface $invoiceClient = null,
+        ?string $smtpHost = null,
+        int $smtpPort = 1025,
+        string $smtpUsername = '',
+        string $smtpPassword = '',
+        string $smtpFromAddress = 'noreply@nene-clear.dev',
+        string $smtpFromName = 'NeNe Clear',
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
         $json = new JsonResponseFactory($psr17, $psr17);
@@ -236,9 +243,13 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new DunningTooFrequentExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new DunningNoticeNotFoundExceptionHandler($problemDetails);
 
+            $mailer = $smtpHost !== null && $smtpHost !== ''
+                ? new SmtpDunningMailer($smtpHost, $smtpPort, $smtpFromAddress, $smtpFromName, $smtpUsername, $smtpPassword)
+                : new LogOnlyDunningMailer();
+
             $dunningNotices = new PdoDunningNoticeRepository($query);
             $routeRegistrars[] = new DunningRouteRegistrar(
-                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, new LogOnlyDunningMailer(), $audit, $clock), $dunningNotices, $json),
+                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, $mailer, $audit, $clock), $dunningNotices, $json),
                 new ListDunningNoticesHandler($dunningNotices, $json),
                 new GetDunningNoticeByIdHandler($dunningNotices, $json),
             );

@@ -52,11 +52,19 @@ $query = (static function () use ($env): ?DatabaseQueryExecutorInterface {
     }
 })();
 
+$smtpHost = $env('SMTP_HOST') ?: null;
+
 $application = ApplicationFactory::create(
     debug: $debug,
     allowedOrigins: [],
     query: $query,
     jwtSecret: $jwtSecret,
+    smtpHost: $smtpHost,
+    smtpPort: (int) $env('SMTP_PORT', '1025'),
+    smtpUsername: $env('SMTP_USERNAME'),
+    smtpPassword: $env('SMTP_PASSWORD'),
+    smtpFromAddress: $env('SMTP_FROM_ADDRESS', 'noreply@nene-clear.dev'),
+    smtpFromName: $env('SMTP_FROM_NAME', 'NeNe Clear'),
 );
 
 $psr17 = new Psr17Factory();
