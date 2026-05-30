@@ -151,4 +151,22 @@ describe('401 handling', () => {
     expect(isAuthenticated()).toBe(false)
     expect(window.location.href).toBe('/login')
   })
+
+  it('does NOT redirect on 401 from the login endpoint', async () => {
+    fetchMock.mockResolvedValue(
+      mockResponse({
+        ok: false,
+        status: 401,
+        json: { type: 'invalid-credentials', title: '認証失敗', status: 401, detail: 'wrong' },
+      }),
+    )
+
+    // The login 401 must surface as a normal ApiError (so the form can show it),
+    // not trigger the global redirect.
+    await expect(api.post('/admin/auth/login', {})).rejects.toMatchObject({
+      status: 401,
+      problem: { type: 'invalid-credentials' },
+    })
+    expect(window.location.href).toBe('')
+  })
 })
