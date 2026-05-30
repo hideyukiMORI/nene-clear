@@ -73,6 +73,28 @@ $application = ApplicationFactory::create(
 $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
 
+// SPA fallback: serve the built index.html for browser navigation requests.
+// Browsers send Accept: text/html,... — API clients send Accept: application/json
+// or Accept: */* only. We only intercept when text/html is explicit.
+$path = $request->getUri()->getPath() ?: '/';
+$acceptHeader = $request->getHeaderLine('Accept');
+$wantHtml = str_contains($acceptHeader, 'text/html')
+    && !str_contains($acceptHeader, 'application/json');
+$isSpaRoute = $wantHtml
+    && $request->getMethod() === 'GET'
+    && !str_starts_with($path, '/health')
+    && !str_starts_with($path, '/machine')
+    && !str_starts_with($path, '/assets/');
+
+if ($isSpaRoute) {
+    $spaIndex = __DIR__ . '/assets/index.html';
+    if (is_file($spaIndex)) {
+        header('Content-Type: text/html; charset=utf-8');
+        readfile($spaIndex);
+        exit;
+    }
+}
+
 $response = $application->handle($request);
 
 (new ResponseEmitter())->emit($response);

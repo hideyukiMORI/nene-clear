@@ -1,0 +1,133 @@
+export const ja = {
+  // App
+  'app.title': 'NeNe Clear',
+  'app.loading': '読み込み中…',
+
+  // Nav
+  'nav.dashboard': 'ダッシュボード',
+  'nav.bankImport': '銀行CSV取込',
+  'nav.reconciliation': '消込',
+  'nav.dunning': '督促',
+  'nav.settings': '設定',
+  'nav.users': 'ユーザー',
+  'nav.organizations': '組織管理',
+  'nav.logout': 'ログアウト',
+
+  // Auth
+  'auth.login.title': 'NeNe Clear にサインイン',
+  'auth.login.email': 'メールアドレス',
+  'auth.login.password': 'パスワード',
+  'auth.login.submit': 'サインイン',
+  'auth.login.error': 'メールアドレスまたはパスワードが正しくありません。',
+
+  // Dashboard
+  'dashboard.title': 'ダッシュボード',
+  'dashboard.unmatched': '未消込の取引',
+  'dashboard.recentDunning': '最近の督促',
+  'dashboard.noUnmatched': '未消込の取引はありません',
+
+  // Bank import
+  'bankImport.title': '銀行CSV取込',
+  'bankImport.upload': 'CSVをアップロード',
+  'bankImport.selectFile': 'ファイルを選択',
+  'bankImport.selectAccount': '銀行口座を選択',
+  'bankImport.submit': '取込む',
+  'bankImport.success': '取込完了',
+  'bankImport.batches': '取込履歴',
+  'bankImport.reverse': '取消',
+  'bankImport.confirmReverse': 'このバッチを取消しますか？',
+  'bankImport.reversalReason': '取消理由',
+  'bankImport.status.imported': '取込済',
+  'bankImport.status.reversed': '取消済',
+
+  // Bank transactions
+  'bankTransaction.title': '銀行取引一覧',
+  'bankTransaction.status.unmatched': '未消込',
+  'bankTransaction.status.partially_matched': '一部消込',
+  'bankTransaction.status.matched': '消込済',
+  'bankTransaction.status.voided': '無効',
+  'bankTransaction.valueDate': '入金日',
+  'bankTransaction.amount': '金額',
+  'bankTransaction.counterparty': '振込人名',
+  'bankTransaction.unmatchedOnly': '未消込のみ',
+
+  // Reconciliation
+  'reconciliation.title': '消込',
+  'reconciliation.propose': '消込を提案',
+  'reconciliation.confirm': '消込を確定',
+  'reconciliation.reverse': '消込を取消',
+  'reconciliation.confirmReverse': 'この消込を取消しますか？',
+  'reconciliation.reversalReason': '取消理由',
+  'reconciliation.invoice': '請求書',
+  'reconciliation.allocation': '配賦額',
+  'reconciliation.addAllocation': '配賦を追加',
+  'reconciliation.status.confirmed': '確定済',
+  'reconciliation.status.reversed': '取消済',
+  'reconciliation.list': '消込一覧',
+
+  // Client credit
+  'clientCredit.title': '前受金',
+  'clientCredit.remaining': '残高',
+  'clientCredit.apply': '適用',
+  'clientCredit.status.open': '有効',
+  'clientCredit.status.partially_applied': '一部適用',
+  'clientCredit.status.applied': '適用済',
+
+  // Dunning
+  'dunning.title': '督促',
+  'dunning.send': '督促を送信',
+  'dunning.invoiceId': '請求書ID',
+  'dunning.recipient': '送信先',
+  'dunning.outstanding': '未収残高',
+  'dunning.sentAt': '送信日時',
+  'dunning.sentBy': '送信者',
+  'dunning.history': '督促履歴',
+  'dunning.confirmSend': 'この請求書に督促メールを送信しますか？',
+
+  // Settings
+  'settings.title': '設定',
+  'settings.upstreamUrl': 'Invoice API URL',
+  'settings.dunningInterval': '督促最短間隔（日）',
+  'settings.bankAccounts': '銀行口座',
+  'settings.save': '保存',
+  'settings.saved': '保存しました',
+  'settings.testConnection': '接続テスト',
+  'settings.connectionOk': '接続成功',
+  'settings.connectionFail': '接続失敗',
+
+  // Users
+  'users.title': 'ユーザー管理',
+  'users.invite': 'ユーザーを招待',
+  'users.email': 'メールアドレス',
+  'users.role': 'ロール',
+  'users.status': 'ステータス',
+  'users.role.admin': '管理者',
+  'users.role.member': 'オペレーター',
+  'users.role.viewer': '閲覧者',
+  'users.status.active': '有効',
+  'users.status.invited': '招待中',
+  'users.delete': '削除',
+  'users.confirmDelete': 'このユーザーを削除しますか？',
+
+  // Common
+  'common.save': '保存',
+  'common.cancel': 'キャンセル',
+  'common.delete': '削除',
+  'common.edit': '編集',
+  'common.close': '閉じる',
+  'common.confirm': '確認',
+  'common.back': '戻る',
+  'common.next': '次へ',
+  'common.search': '検索',
+  'common.filter': '絞り込み',
+  'common.all': 'すべて',
+  'common.none': 'なし',
+  'common.loading': '読み込み中…',
+  'common.error': 'エラーが発生しました。',
+  'common.retry': '再試行',
+  'common.noData': 'データがありません。',
+  'common.yen': '¥',
+  'common.pagination.showing': '{{from}}〜{{to}} 件 / {{total}} 件',
+} as const
+
+export type MessageKey = keyof typeof ja
