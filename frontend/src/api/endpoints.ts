@@ -105,8 +105,10 @@ export function confirmMatch(
   reasonCode?: string,
   _idempotencyKey?: string,
 ) {
+  // Backend route is POST /admin/reconciliations (see ReconciliationRouteRegistrar);
+  // there is no /confirm sub-path.
   return api.post<Reconciliation>(
-    `${BASE}/reconciliations/confirm`,
+    `${BASE}/reconciliations`,
     { bank_transaction_id: bankTransactionId, allocations, reason_code: reasonCode },
   )
 }
