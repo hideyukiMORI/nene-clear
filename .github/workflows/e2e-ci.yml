@@ -1,0 +1,54 @@
+name: E2E CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            tests/e2e/package-lock.json
+
+      # Frontend deps are needed because the Playwright webServer runs
+      # `npm run build && npm run preview` from frontend/.
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install E2E dependencies
+        run: npm ci
+        working-directory: tests/e2e
+
+      - name: Install Playwright browser (chromium)
+        run: npx playwright install --with-deps chromium
+        working-directory: tests/e2e
+
+      # The Playwright config builds the SPA and serves it via vite preview;
+      # all API calls are mocked via page.route() (no backend required).
+      - name: Run E2E tests
+        run: npx playwright test
+        working-directory: tests/e2e
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report/
+          retention-days: 7
