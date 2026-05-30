@@ -90,6 +90,27 @@ final class PdoReconciliationRepositoryTest extends TestCase
         self::assertSame(55, $allocs[0]->paymentId);
     }
 
+    public function test_findAllocationsByReconciliation_cross_tenant_returns_empty(): void
+    {
+        $reconId = $this->reconRepo->save($this->makeReconciliation(orgId: 7));
+        $this->reconRepo->saveAllocation(new ReconciliationAllocation(
+            organizationId: 7,
+            reconciliationId: $reconId,
+            invoiceId: 10,
+            amountCents: 100000,
+            paymentId: 55,
+            externalReference: 'clear:recon:1:10',
+        ));
+
+        // org 999 cannot see org 7 allocations
+        $allocs = $this->reconRepo->findAllocationsByReconciliation(999, $reconId);
+        self::assertCount(0, $allocs);
+
+        // org 7 can see its own allocations
+        $allocs = $this->reconRepo->findAllocationsByReconciliation(7, $reconId);
+        self::assertCount(1, $allocs);
+    }
+
     public function test_reverseById(): void
     {
         $id = $this->reconRepo->save($this->makeReconciliation());

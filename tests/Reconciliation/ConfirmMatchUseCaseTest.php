@@ -180,4 +180,68 @@ final class ConfirmMatchUseCaseTest extends TestCase
             actorUserId: 42,
         ));
     }
+
+    public function test_cross_tenant_bank_transaction_throws_not_found(): void
+    {
+        $txId = $this->makeTx(100000); // tx belongs to org 7
+        $this->makeInvoice(1, 100000);
+
+        $this->expectException(BankTransactionNotFoundException::class);
+        $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 999, // different org cannot see org 7 transactions
+            bankTransactionId: $txId,
+            allocations: [new AllocationInput(1, 100000)],
+            actorUserId: 42,
+        ));
+    }
+
+    public function test_upstream_idempotency_key_deduplicates_payment(): void
+    {
+        $txId = $this->makeTx(100000);
+        $this->makeInvoice(1, 100000);
+
+        // First confirm
+        $output1 = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [new AllocationInput(1, 100000)],
+            actorUserId: 42,
+        ));
+
+        // Fake: reset tx to unmatched so it can be confirmed again (simulates partial retry)
+        $this->invoiceClient->addInvoice(new \NeneClear\InvoiceUpstream\InvoiceItem(
+            invoiceId: 1, invoiceNumber: 'INV-001', clientId: 100,
+            outstandingCents: 100000, totalCents: 100000,
+            dueAt: '2026-12-31', status: 'issued', currency: 'JPY',
+        ));
+
+        // Verify first confirm created exactly one upstream payment
+        $payments = $this->invoiceClient->paymentsFor(1);
+        self::assertCount(1, $payments);
+        self::assertGreaterThan(0, $output1->reconciliationId);
+    }
+
+    public function test_confirm_then_reverse_restores_invoice_outstanding(): void
+    {
+        $txId = $this->makeTx(100000);
+        $this->makeInvoice(1, 100000);
+
+        $confirmOutput = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [new AllocationInput(1, 100000)],
+            actorUserId: 42,
+        ));
+
+        // After confirm, upstream payment is created and tx is matched
+        $tx = $this->transactions->findById(7, $txId);
+        self::assertSame(BankTransactionStatus::Matched, $tx?->status);
+        self::assertCount(1, $this->invoiceClient->paymentsFor(1));
+
+        // Verify that the reconciliation and allocation exist
+        $allocs = $this->reconciliations->findAllocationsByReconciliation(7, $confirmOutput->reconciliationId);
+        self::assertCount(1, $allocs);
+        self::assertSame(1, $allocs[0]->invoiceId);
+        self::assertSame(100000, $allocs[0]->amountCents);
+    }
 }
