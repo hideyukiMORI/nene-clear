@@ -40,6 +40,9 @@ use NeneClear\BankImport\PdoBankImportBatchRepository;
 use NeneClear\BankImport\PdoBankTransactionRepository;
 use NeneClear\BankImport\ReverseBankImportBatchHandler;
 use NeneClear\BankImport\ReverseBankImportBatchUseCase;
+use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
+use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
 use NeneClear\Organization\CreateOrganizationHandler;
 use NeneClear\Organization\CreateOrganizationUseCase;
 use NeneClear\Organization\DeleteOrganizationHandler;
@@ -52,6 +55,22 @@ use NeneClear\Organization\OrganizationAlreadyExistsExceptionHandler;
 use NeneClear\Organization\OrganizationNotFoundExceptionHandler;
 use NeneClear\Organization\OrganizationRouteRegistrar;
 use NeneClear\Organization\PdoOrganizationRepository;
+use NeneClear\Reconciliation\AllocationExceedsOutstandingExceptionHandler;
+use NeneClear\Reconciliation\BankTransactionNotMatchableExceptionHandler;
+use NeneClear\Reconciliation\ConfirmMatchHandler;
+use NeneClear\Reconciliation\ConfirmMatchUseCase;
+use NeneClear\Reconciliation\GetReconciliationByIdHandler;
+use NeneClear\Reconciliation\ListClientCreditsHandler;
+use NeneClear\Reconciliation\ListReconciliationsHandler;
+use NeneClear\Reconciliation\PdoClientCreditRepository;
+use NeneClear\Reconciliation\PdoReconciliationRepository;
+use NeneClear\Reconciliation\ProposeMatchHandler;
+use NeneClear\Reconciliation\ProposeMatchUseCase;
+use NeneClear\Reconciliation\ReconciliationAlreadyReversedExceptionHandler;
+use NeneClear\Reconciliation\ReconciliationNotFoundExceptionHandler;
+use NeneClear\Reconciliation\ReconciliationRouteRegistrar;
+use NeneClear\Reconciliation\ReverseReconciliationHandler;
+use NeneClear\Reconciliation\ReverseReconciliationUseCase;
 use NeneClear\User\CreateUserHandler;
 use NeneClear\User\CreateUserUseCase;
 use NeneClear\User\DeleteUserHandler;
@@ -97,6 +116,7 @@ final class ApplicationFactory
         array $allowedOrigins = [],
         ?DatabaseQueryExecutorInterface $query = null,
         ?string $jwtSecret = null,
+        ?InvoiceUpstreamClientInterface $invoiceClient = null,
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
         $json = new JsonResponseFactory($psr17, $psr17);
@@ -154,6 +174,18 @@ final class ApplicationFactory
                 new GetBankTransactionByIdHandler($transactions, $json),
             );
 
+            $upstream = $invoiceClient ?? new FakeInvoiceUpstreamClient();
+            $reconRepo = new PdoReconciliationRepository($query);
+            $creditRepo = new PdoClientCreditRepository($query);
+            $routeRegistrars[] = new ReconciliationRouteRegistrar(
+                new ProposeMatchHandler(new ProposeMatchUseCase($transactions, $upstream, $clock), $json),
+                new ConfirmMatchHandler(new ConfirmMatchUseCase($transactions, $reconRepo, $creditRepo, $upstream, $audit, $clock), $reconRepo, $json),
+                new ListReconciliationsHandler($reconRepo, $json),
+                new GetReconciliationByIdHandler($reconRepo, $json),
+                new ReverseReconciliationHandler(new ReverseReconciliationUseCase($reconRepo, $creditRepo, $transactions, $upstream, $audit, $clock), $reconRepo, $json),
+                new ListClientCreditsHandler($creditRepo, $json),
+            );
+
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationAlreadyExistsExceptionHandler($problemDetails);
@@ -166,6 +198,11 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new BankImportBatchNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankImportBatchAlreadyReversedExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankImportBatchHasMatchedLinesExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new ReconciliationNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new ReconciliationAlreadyReversedExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new AllocationExceedsOutstandingExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new BankTransactionNotMatchableExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new UpstreamInvoiceUnavailableExceptionHandler($problemDetails);
 
             $authMiddleware = [
                 new BearerTokenMiddleware($problemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),
@@ -174,6 +211,8 @@ final class ApplicationFactory
                     '/admin/users' => CapabilityRule::same(Capability::ManageUsers),
                     '/admin/bank-import-batches' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/bank-transactions' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
+                    '/admin/reconciliations' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
+                    '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                 ]),
             ];
         }
