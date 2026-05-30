@@ -8,7 +8,11 @@ interface ClientCreditRepositoryInterface
 {
     public function save(ClientCredit $credit): int;
 
+    public function findById(int $organizationId, int $id): ?ClientCredit;
+
     public function findByReconciliation(int $reconciliationId): ?ClientCredit;
+
+    public function applyAmount(int $id, int $amountCents): ClientCredit;
 
     public function voidByReconciliation(int $reconciliationId): void;
 

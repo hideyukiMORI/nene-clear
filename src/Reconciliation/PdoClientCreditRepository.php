@@ -37,6 +37,36 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
         return $this->query->lastInsertId();
     }
 
+    public function findById(int $organizationId, int $id): ?ClientCredit
+    {
+        $row = $this->query->fetchOne(
+            'SELECT ' . self::COLUMNS . ' FROM client_credits WHERE id = ? AND organization_id = ?',
+            [$id, $organizationId],
+        );
+
+        return $row !== null ? $this->hydrate($row) : null;
+    }
+
+    public function applyAmount(int $id, int $amountCents): ClientCredit
+    {
+        $this->query->execute(
+            'UPDATE client_credits SET remaining_cents = remaining_cents - ? WHERE id = ?',
+            [$amountCents, $id],
+        );
+        $this->query->execute(
+            'UPDATE client_credits SET status = ? WHERE id = ? AND remaining_cents <= 0 AND status = ?',
+            [ClientCreditStatus::Voided->value, $id, ClientCreditStatus::Open->value],
+        );
+
+        $row = $this->query->fetchOne('SELECT ' . self::COLUMNS . ' FROM client_credits WHERE id = ?', [$id]);
+
+        if ($row === null) {
+            throw new \RuntimeException("Client credit $id not found after applyAmount.");
+        }
+
+        return $this->hydrate($row);
+    }
+
     public function findByReconciliation(int $reconciliationId): ?ClientCredit
     {
         $row = $this->query->fetchOne(
