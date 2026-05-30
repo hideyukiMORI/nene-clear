@@ -8,6 +8,8 @@ interface ReconciliationRepositoryInterface
 {
     public function findById(int $organizationId, int $id): ?Reconciliation;
 
+    public function findByIdempotencyKey(int $organizationId, string $key): ?Reconciliation;
+
     /**
      * @return list<Reconciliation>
      */

@@ -125,6 +125,7 @@ final class SchemaFixture
             'CREATE TABLE payment_reconciliations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 organization_id INTEGER NOT NULL,
+                idempotency_key TEXT,
                 bank_transaction_id INTEGER NOT NULL,
                 status TEXT NOT NULL DEFAULT \'confirmed\',
                 reason_code TEXT,
@@ -132,7 +133,8 @@ final class SchemaFixture
                 confirmed_at TEXT NOT NULL,
                 reversed_at TEXT,
                 reversal_reason TEXT,
-                created_at TEXT
+                created_at TEXT,
+                UNIQUE (organization_id, idempotency_key)
             )'
         );
     }

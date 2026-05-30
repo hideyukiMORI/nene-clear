@@ -26,6 +26,15 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
 
     public function execute(ConfirmMatchInput $input): ConfirmMatchOutput
     {
+        // Idempotency: if a key was provided and a reconciliation with that key already
+        // exists for this organization, return it without re-processing.
+        if ($input->idempotencyKey !== null) {
+            $existing = $this->reconciliations->findByIdempotencyKey($input->organizationId, $input->idempotencyKey);
+            if ($existing !== null && $existing->id !== null) {
+                return new ConfirmMatchOutput(reconciliationId: $existing->id, idempotentReplay: true);
+            }
+        }
+
         $tx = $this->transactions->findById($input->organizationId, $input->bankTransactionId);
 
         if ($tx === null) {
@@ -74,6 +83,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
             confirmedBy: $input->actorUserId,
             confirmedAt: $now,
             reasonCode: $input->reasonCode,
+            idempotencyKey: $input->idempotencyKey,
         ));
 
         $totalAllocated = 0;

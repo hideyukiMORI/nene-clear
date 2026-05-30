@@ -15,6 +15,7 @@ final readonly class Reconciliation
         public ?string $reasonCode = null,
         public ?string $reversedAt = null,
         public ?string $reversalReason = null,
+        public ?string $idempotencyKey = null,
         public ?int $id = null,
     ) {
     }

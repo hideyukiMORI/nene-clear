@@ -57,22 +57,26 @@ final readonly class ConfirmMatchHandler
         $reasonCode = isset($body['reason_code']) && is_string($body['reason_code']) ? $body['reason_code'] : null;
         $organizationId = AuthContext::organizationId($request) ?? 0;
 
+        $idempotencyKey = $request->getHeaderLine('Idempotency-Key');
+        $idempotencyKey = $idempotencyKey !== '' ? $idempotencyKey : null;
+
         $output = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: $organizationId,
             bankTransactionId: $bankTransactionId,
             allocations: $allocations,
             actorUserId: AuthContext::userId($request),
             reasonCode: $reasonCode,
+            idempotencyKey: $idempotencyKey,
         ));
 
         $reconciliation = $this->reconciliations->findById($organizationId, $output->reconciliationId)
             ?? throw new ReconciliationNotFoundException($output->reconciliationId);
         $allocs = $this->reconciliations->findAllocationsByReconciliation($organizationId, $output->reconciliationId);
 
-        return $this->response->create(
-            ReconciliationResponse::toArray($reconciliation, $allocs),
-            201,
-            ['Location' => '/admin/reconciliations/' . $output->reconciliationId],
-        );
+        // 200 when returning a previously created reconciliation (idempotency replay), 201 for new creation.
+        $statusCode = $output->idempotentReplay ? 200 : 201;
+        $headers = $statusCode === 201 ? ['Location' => '/admin/reconciliations/' . $output->reconciliationId] : [];
+
+        return $this->response->create(ReconciliationResponse::toArray($reconciliation, $allocs), $statusCode, $headers);
     }
 }

@@ -27,6 +27,17 @@ final class InMemoryReconciliationRepository implements ReconciliationRepository
         return ($r !== null && $r->organizationId === $organizationId) ? $r : null;
     }
 
+    public function findByIdempotencyKey(int $organizationId, string $key): ?Reconciliation
+    {
+        foreach ($this->byId as $r) {
+            if ($r->organizationId === $organizationId && $r->idempotencyKey === $key) {
+                return $r;
+            }
+        }
+
+        return null;
+    }
+
     public function findByOrganization(int $organizationId, ?ReconciliationStatus $status, int $limit, int $offset): array
     {
         $matches = array_values(array_filter(
@@ -59,6 +70,7 @@ final class InMemoryReconciliationRepository implements ReconciliationRepository
             reasonCode: $reconciliation->reasonCode,
             reversedAt: $reconciliation->reversedAt,
             reversalReason: $reconciliation->reversalReason,
+            idempotencyKey: $reconciliation->idempotencyKey,
             id: $id,
         );
 

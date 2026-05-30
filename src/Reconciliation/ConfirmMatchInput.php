@@ -15,6 +15,7 @@ final readonly class ConfirmMatchInput
         public array $allocations,
         public int $actorUserId,
         public ?string $reasonCode = null,
+        public ?string $idempotencyKey = null,
     ) {
     }
 }
