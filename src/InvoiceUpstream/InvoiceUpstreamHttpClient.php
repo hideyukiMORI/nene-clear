@@ -134,18 +134,14 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
             throw new UpstreamInvoiceUnavailableException('Failed to initialise cURL handle.');
         }
 
-        $headers = [
+        // Build as a clean list<string> (no conditional appends that infer
+        // optional offsets, which some curl stubs reject for CURLOPT_HTTPHEADER).
+        $headers = array_values(array_filter([
             'Authorization: Bearer ' . $this->bearerToken,
             'Accept: application/json',
-        ];
-
-        if ($payload !== null) {
-            $headers[] = 'Content-Type: application/json';
-        }
-
-        if ($idempotencyKey !== '') {
-            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
-        }
+            $payload !== null ? 'Content-Type: application/json' : null,
+            $idempotencyKey !== '' ? 'Idempotency-Key: ' . $idempotencyKey : null,
+        ], static fn (?string $h): bool => $h !== null));
 
         \curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
