@@ -20,6 +20,8 @@ final readonly class BankImportBatchResponse
             'row_count' => $batch->rowCount,
             'status' => $batch->status->value,
             'imported_at' => $batch->importedAt,
+            'reversed_at' => $batch->reversedAt,
+            'reversal_reason' => $batch->reversalReason,
         ];
     }
 }

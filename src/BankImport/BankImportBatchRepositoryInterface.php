@@ -18,4 +18,6 @@ interface BankImportBatchRepositoryInterface
     public function findByOrganization(int $organizationId, int $limit, int $offset): array;
 
     public function countByOrganization(int $organizationId): int;
+
+    public function reverseById(int $id, string $reversedAt, string $reversalReason): void;
 }

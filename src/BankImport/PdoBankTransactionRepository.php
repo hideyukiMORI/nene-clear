@@ -36,6 +36,16 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         return $this->query->lastInsertId();
     }
 
+    public function findById(int $organizationId, int $id): ?BankTransaction
+    {
+        $row = $this->query->fetchOne(
+            'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE id = ? AND organization_id = ?',
+            [$id, $organizationId],
+        );
+
+        return $row !== null ? $this->hydrate($row) : null;
+    }
+
     public function countByBatch(int $bankImportBatchId): int
     {
         $row = $this->query->fetchOne(
@@ -60,34 +70,25 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function findByOrganization(int $organizationId, ?BankTransactionStatus $status, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, BankTransactionFilter $filter, int $limit, int $offset): array
     {
-        if ($status === null) {
-            $rows = $this->query->fetchAll(
-                'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE organization_id = ? '
-                . 'ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
-                [$organizationId, $limit, $offset],
-            );
-        } else {
-            $rows = $this->query->fetchAll(
-                'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE organization_id = ? AND status = ? '
-                . 'ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
-                [$organizationId, $status->value, $limit, $offset],
-            );
-        }
+        [$where, $params] = $this->buildWhere($organizationId, $filter);
+        $rows = $this->query->fetchAll(
+            'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE ' . $where
+            . ' ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
+            [...$params, $limit, $offset],
+        );
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function countByOrganization(int $organizationId, ?BankTransactionStatus $status): int
+    public function countByOrganization(int $organizationId, BankTransactionFilter $filter): int
     {
-        $row = $status === null
-            ? $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_transactions WHERE organization_id = ?', [$organizationId])
-            : $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_transactions WHERE organization_id = ? AND status = ?', [$organizationId, $status->value]);
-
-        if ($row === null) {
-            return 0;
-        }
+        [$where, $params] = $this->buildWhere($organizationId, $filter);
+        $row = $this->query->fetchOne(
+            'SELECT COUNT(*) AS c FROM bank_transactions WHERE ' . $where,
+            $params,
+        );
 
         return (int) ($row['c'] ?? 0);
     }
@@ -115,6 +116,58 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         }
 
         return (int) ($row['c'] ?? 0);
+    }
+
+    public function updateStatusById(int $id, BankTransactionStatus $status): void
+    {
+        $this->query->execute(
+            'UPDATE bank_transactions SET status = ? WHERE id = ?',
+            [$status->value, $id],
+        );
+    }
+
+    public function voidByBatchId(int $bankImportBatchId): void
+    {
+        $this->query->execute(
+            'UPDATE bank_transactions SET status = ? WHERE bank_import_batch_id = ? AND status = ?',
+            [BankTransactionStatus::Voided->value, $bankImportBatchId, BankTransactionStatus::Unmatched->value],
+        );
+    }
+
+    /**
+     * @return array{string, list<int|string>}
+     */
+    private function buildWhere(int $organizationId, BankTransactionFilter $filter): array
+    {
+        $wheres = ['organization_id = ?'];
+        $params = [$organizationId];
+
+        if ($filter->status !== null) {
+            $wheres[] = 'status = ?';
+            $params[] = $filter->status->value;
+        }
+        if ($filter->valueDateFrom !== null) {
+            $wheres[] = 'value_date >= ?';
+            $params[] = $filter->valueDateFrom;
+        }
+        if ($filter->valueDateTo !== null) {
+            $wheres[] = 'value_date <= ?';
+            $params[] = $filter->valueDateTo;
+        }
+        if ($filter->amountMinCents !== null) {
+            $wheres[] = 'amount_cents >= ?';
+            $params[] = $filter->amountMinCents;
+        }
+        if ($filter->amountMaxCents !== null) {
+            $wheres[] = 'amount_cents <= ?';
+            $params[] = $filter->amountMaxCents;
+        }
+        if ($filter->counterparty !== null && $filter->counterparty !== '') {
+            $wheres[] = 'LOWER(counterparty_text) LIKE ?';
+            $params[] = '%' . strtolower($filter->counterparty) . '%';
+        }
+
+        return [implode(' AND ', $wheres), $params];
     }
 
     /**

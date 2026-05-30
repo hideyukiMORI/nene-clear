@@ -6,6 +6,7 @@ namespace NeneClear\Tests\BankImport;
 
 use NeneClear\BankImport\BankImportBatch;
 use NeneClear\BankImport\BankImportBatchRepositoryInterface;
+use NeneClear\BankImport\BankImportBatchStatus;
 
 final class InMemoryBankImportBatchRepository implements BankImportBatchRepositoryInterface
 {
@@ -61,8 +62,32 @@ final class InMemoryBankImportBatchRepository implements BankImportBatchReposito
             importedBy: $batch->importedBy,
             importedAt: $batch->importedAt,
             id: $id,
+            reversedAt: $batch->reversedAt,
+            reversalReason: $batch->reversalReason,
         );
 
         return $id;
+    }
+
+    public function reverseById(int $id, string $reversedAt, string $reversalReason): void
+    {
+        $batch = $this->byId[$id] ?? null;
+        if ($batch === null) {
+            return;
+        }
+
+        $this->byId[$id] = new BankImportBatch(
+            organizationId: $batch->organizationId,
+            bankAccountId: $batch->bankAccountId,
+            fileHash: $batch->fileHash,
+            sourceFilename: $batch->sourceFilename,
+            rowCount: $batch->rowCount,
+            status: BankImportBatchStatus::Reversed,
+            importedBy: $batch->importedBy,
+            importedAt: $batch->importedAt,
+            id: $batch->id,
+            reversedAt: $reversedAt,
+            reversalReason: $reversalReason,
+        );
     }
 }
