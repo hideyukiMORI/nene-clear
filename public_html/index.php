@@ -53,6 +53,7 @@ $query = (static function () use ($env): ?DatabaseQueryExecutorInterface {
 })();
 
 $smtpHost = $env('SMTP_HOST') ?: null;
+$invoiceApiBaseUrl = $env('NENE_INVOICE_API_BASE_URL') ?: null;
 
 $application = ApplicationFactory::create(
     debug: $debug,
@@ -65,6 +66,8 @@ $application = ApplicationFactory::create(
     smtpPassword: $env('SMTP_PASSWORD'),
     smtpFromAddress: $env('SMTP_FROM_ADDRESS', 'noreply@nene-clear.dev'),
     smtpFromName: $env('SMTP_FROM_NAME', 'NeNe Clear'),
+    invoiceApiBaseUrl: $invoiceApiBaseUrl,
+    invoiceBearerToken: $env('NENE_INVOICE_BEARER_TOKEN'),
 );
 
 $psr17 = new Psr17Factory();
