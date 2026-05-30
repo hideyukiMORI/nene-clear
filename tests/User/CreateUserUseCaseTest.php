@@ -90,4 +90,20 @@ final class CreateUserUseCaseTest extends TestCase
         self::assertNull($user->organizationId);
         self::assertSame(Role::Superadmin, $user->role);
     }
+
+    public function test_org_scoped_caller_cannot_mint_superadmin(): void
+    {
+        $useCase = new CreateUserUseCase(new InMemoryUserRepository());
+
+        // An org-scoped admin (non-null org) assigning superadmin is privilege
+        // escalation and must be rejected.
+        $this->expectException(\NeneClear\User\RoleNotAssignableException::class);
+
+        $useCase->execute(new CreateUserInput(
+            organizationId: 7,
+            email: 'escalate@org.example',
+            role: Role::Superadmin,
+            password: 'p',
+        ));
+    }
 }

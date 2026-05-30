@@ -33,6 +33,7 @@ final class OrganizationCrudHttpTest extends TestCase
         $this->query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
         SchemaFixture::createOrganizations($this->query);
         SchemaFixture::createUsers($this->query);
+        SchemaFixture::createLoginAttempts($this->query);
 
         $users = new PdoUserRepository($this->query);
         $users->save(new User(

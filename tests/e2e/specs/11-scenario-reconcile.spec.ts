@@ -36,7 +36,7 @@ test('scenario: import → reconcile → reverse → logout keeps state consiste
   await apiRoute(page, '**/admin/bank-transactions?**', (route) => json(route, 200, list(unmatched)))
   await apiRoute(page, '**/admin/reconciliations?**', (route) => json(route, 200, list(history)))
 
-  await apiRoute(page, '**/admin/reconciliations/confirm', (route) => {
+  await apiRoute(page, '**/admin/reconciliations', (route) => {
     unmatched = [] // the deposit is now matched
     history = [reconciliation({ status: 'confirmed' })]
     return json(route, 201, reconciliation({ status: 'confirmed' }))

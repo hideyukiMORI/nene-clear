@@ -92,4 +92,19 @@ final class UpdateUserUseCaseTest extends TestCase
             status: null,
         ));
     }
+
+    public function test_cannot_promote_org_user_to_superadmin(): void
+    {
+        $repo = $this->seedUser(orgId: 7);
+        $useCase = new UpdateUserUseCase($repo);
+
+        $this->expectException(\NeneClear\User\RoleNotAssignableException::class);
+
+        $useCase->execute(new UpdateUserInput(
+            id: 1,
+            callerOrganizationId: 7,
+            role: Role::Superadmin,
+            status: null,
+        ));
+    }
 }

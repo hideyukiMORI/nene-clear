@@ -18,7 +18,7 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
     await apiRoute(page, '**/admin/bank-transactions/unmatched**', (route) =>
       json(route, 200, list([bankTransaction({ amount_cents: 110000 })])),
     )
-    await apiRoute(page, '**/admin/reconciliations/confirm', (route) =>
+    await apiRoute(page, '**/admin/reconciliations', (route) =>
       problem(route, 422, 'allocation-exceeds-outstanding', '消込金額が請求書の未収残高を超えています', undefined, {
         invoice_id: 1,
         outstanding_cents: 50000,
@@ -41,7 +41,7 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
     await apiRoute(page, '**/admin/bank-transactions/unmatched**', (route) =>
       json(route, 200, list([bankTransaction()])),
     )
-    await apiRoute(page, '**/admin/reconciliations/confirm', (route) =>
+    await apiRoute(page, '**/admin/reconciliations', (route) =>
       json(route, 201, reconciliation({ allocations: [] })),
     )
 

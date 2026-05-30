@@ -25,6 +25,12 @@ return [
     'problem.invalid-credentials.title'  => 'Invalid Credentials',
     'problem.invalid-credentials.detail' => 'Email or password is incorrect.',
 
+    'problem.too-many-login-attempts.title'  => 'Too Many Login Attempts',
+    'problem.too-many-login-attempts.detail' => 'Too many login attempts. Please try again later.',
+
+    'problem.role-not-assignable.title'  => 'Role Not Assignable',
+    'problem.role-not-assignable.detail' => 'You are not permitted to assign this role.',
+
     'problem.insufficient-capability.title'  => 'Insufficient Capability',
     'problem.insufficient-capability.detail' => 'Your role lacks the capability required for this action.',
 
