@@ -26,4 +26,5 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 | Compliance | `docs/explanation/payment-reconciliation-dunning-compliance.md` |
 | Invoice upstream contract | `docs/integrations/invoice-upstream-contract.md` |
 | Invoice upstream (overview) | `docs/integrations/sibling-products.md` |
+| Operator guide / system overview | `docs/explanation/operator-guide.md` |
 | TODO | `docs/todo/current.md` |
