@@ -30,4 +30,6 @@ interface InvoiceUpstreamClientInterface
         string $reason,
         string $idempotencyKey,
     ): void;
+
+    public function getClient(int $organizationId, int $clientId): InvoiceClientInfo;
 }
