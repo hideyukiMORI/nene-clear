@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace NeneClear\Auth;
 
-use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Nene2\Http\JsonResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\User\UserRepositoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

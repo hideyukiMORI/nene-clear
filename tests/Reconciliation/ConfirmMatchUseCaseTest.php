@@ -267,9 +267,14 @@ final class ConfirmMatchUseCaseTest extends TestCase
 
         // Fake: reset tx to unmatched so it can be confirmed again (simulates partial retry)
         $this->invoiceClient->addInvoice(new \NeneClear\InvoiceUpstream\InvoiceItem(
-            invoiceId: 1, invoiceNumber: 'INV-001', clientId: 100,
-            outstandingCents: 100000, totalCents: 100000,
-            dueAt: '2026-12-31', status: 'issued', currency: 'JPY',
+            invoiceId: 1,
+            invoiceNumber: 'INV-001',
+            clientId: 100,
+            outstandingCents: 100000,
+            totalCents: 100000,
+            dueAt: '2026-12-31',
+            status: 'issued',
+            currency: 'JPY',
         ));
 
         // Verify first confirm created exactly one upstream payment

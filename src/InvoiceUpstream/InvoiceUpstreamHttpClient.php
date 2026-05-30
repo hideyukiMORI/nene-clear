@@ -118,6 +118,31 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
     }
 
     /**
+     * Request headers as a clean list<string>. The explicit return type keeps
+     * the shape simple so it satisfies the strict curl extension stub
+     * (CURLOPT_HTTPHEADER expects array<int, string>) in every environment.
+     *
+     * @return list<string>
+     */
+    private function buildHeaders(bool $hasJsonBody, string $idempotencyKey): array
+    {
+        $headers = [
+            'Authorization: Bearer ' . $this->bearerToken,
+            'Accept: application/json',
+        ];
+
+        if ($hasJsonBody) {
+            $headers[] = 'Content-Type: application/json';
+        }
+
+        if ($idempotencyKey !== '') {
+            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
+        }
+
+        return $headers;
+    }
+
+    /**
      * @param array<string, mixed>|null $payload
      * @return array<string, mixed>
      */
@@ -134,18 +159,9 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
             throw new UpstreamInvoiceUnavailableException('Failed to initialise cURL handle.');
         }
 
-        // Build as a clean list<string> (no conditional appends that infer
-        // optional offsets, which some curl stubs reject for CURLOPT_HTTPHEADER).
-        $headers = array_values(array_filter([
-            'Authorization: Bearer ' . $this->bearerToken,
-            'Accept: application/json',
-            $payload !== null ? 'Content-Type: application/json' : null,
-            $idempotencyKey !== '' ? 'Idempotency-Key: ' . $idempotencyKey : null,
-        ], static fn (?string $h): bool => $h !== null));
-
         \curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_HTTPHEADER => $this->buildHeaders($payload !== null, $idempotencyKey),
             CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
             CURLOPT_TIMEOUT => self::READ_TIMEOUT,
             CURLOPT_CUSTOMREQUEST => $method,
