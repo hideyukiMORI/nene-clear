@@ -22,8 +22,13 @@ use NeneClear\Auth\LoginHandler;
 use NeneClear\Auth\LoginUseCase;
 use NeneClear\BankImport\BankAccountNotFoundExceptionHandler;
 use NeneClear\BankImport\BankCsvParser;
+use NeneClear\BankImport\BankImportBatchAlreadyReversedExceptionHandler;
+use NeneClear\BankImport\BankImportBatchHasMatchedLinesExceptionHandler;
+use NeneClear\BankImport\BankImportBatchNotFoundExceptionHandler;
 use NeneClear\BankImport\BankImportRouteRegistrar;
+use NeneClear\BankImport\BankTransactionNotFoundExceptionHandler;
 use NeneClear\BankImport\DuplicateBankImportExceptionHandler;
+use NeneClear\BankImport\GetBankTransactionByIdHandler;
 use NeneClear\BankImport\ImportBankCsvHandler;
 use NeneClear\BankImport\ImportBankCsvUseCase;
 use NeneClear\BankImport\InvalidBankCsvExceptionHandler;
@@ -33,6 +38,8 @@ use NeneClear\BankImport\ListUnmatchedTransactionsHandler;
 use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\BankImport\PdoBankImportBatchRepository;
 use NeneClear\BankImport\PdoBankTransactionRepository;
+use NeneClear\BankImport\ReverseBankImportBatchHandler;
+use NeneClear\BankImport\ReverseBankImportBatchUseCase;
 use NeneClear\Organization\CreateOrganizationHandler;
 use NeneClear\Organization\CreateOrganizationUseCase;
 use NeneClear\Organization\DeleteOrganizationHandler;
@@ -122,22 +129,29 @@ final class ApplicationFactory
                 new DeleteUserHandler(new DeleteUserUseCase($users), $json),
             );
 
+            $audit = new PdoAuditEventRepository($query);
             $bankAccounts = new PdoBankAccountRepository($query);
             $batches = new PdoBankImportBatchRepository($query);
             $transactions = new PdoBankTransactionRepository($query);
+            $clock = new UtcClock();
             $importUseCase = new ImportBankCsvUseCase(
                 $bankAccounts,
                 $batches,
                 $transactions,
-                new PdoAuditEventRepository($query),
+                $audit,
                 new BankCsvParser(),
-                new UtcClock(),
+                $clock,
             );
             $routeRegistrars[] = new BankImportRouteRegistrar(
                 new ImportBankCsvHandler($importUseCase, $json),
                 new ListBankImportBatchesHandler($batches, $json),
+                new ReverseBankImportBatchHandler(
+                    new ReverseBankImportBatchUseCase($batches, $transactions, $audit, $clock),
+                    $json,
+                ),
                 new ListBankTransactionsHandler($transactions, $json),
                 new ListUnmatchedTransactionsHandler($transactions, $json),
+                new GetBankTransactionByIdHandler($transactions, $json),
             );
 
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
@@ -148,6 +162,10 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new DuplicateBankImportExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankAccountNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new InvalidBankCsvExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new BankTransactionNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new BankImportBatchNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new BankImportBatchAlreadyReversedExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new BankImportBatchHasMatchedLinesExceptionHandler($problemDetails);
 
             $authMiddleware = [
                 new BearerTokenMiddleware($problemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),

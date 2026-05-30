@@ -20,6 +20,8 @@ final readonly class BankImportBatch
         public int $importedBy,
         public string $importedAt,
         public ?int $id = null,
+        public ?string $reversedAt = null,
+        public ?string $reversalReason = null,
     ) {
     }
 }

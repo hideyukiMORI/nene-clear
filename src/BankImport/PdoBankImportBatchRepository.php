@@ -9,7 +9,7 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 final readonly class PdoBankImportBatchRepository implements BankImportBatchRepositoryInterface
 {
     private const string COLUMNS = 'id, organization_id, bank_account_id, file_hash, source_filename, row_count, '
-        . 'status, imported_by, imported_at';
+        . 'status, imported_by, imported_at, reversed_at, reversal_reason';
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
@@ -73,6 +73,14 @@ final readonly class PdoBankImportBatchRepository implements BankImportBatchRepo
         return (int) ($row['c'] ?? 0);
     }
 
+    public function reverseById(int $id, string $reversedAt, string $reversalReason): void
+    {
+        $this->query->execute(
+            'UPDATE bank_import_batches SET status = ?, reversed_at = ?, reversal_reason = ? WHERE id = ?',
+            [BankImportBatchStatus::Reversed->value, $reversedAt, $reversalReason, $id],
+        );
+    }
+
     /**
      * @param array<string, mixed> $row
      */
@@ -88,6 +96,8 @@ final readonly class PdoBankImportBatchRepository implements BankImportBatchRepo
             importedBy: (int) $row['imported_by'],
             importedAt: (string) $row['imported_at'],
             id: (int) $row['id'],
+            reversedAt: isset($row['reversed_at']) ? (string) $row['reversed_at'] : null,
+            reversalReason: isset($row['reversal_reason']) ? (string) $row['reversal_reason'] : null,
         );
     }
 }
