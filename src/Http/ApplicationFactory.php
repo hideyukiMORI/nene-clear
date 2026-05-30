@@ -45,6 +45,16 @@ use NeneClear\ClearSettings\GetClearSettingsHandler;
 use NeneClear\ClearSettings\PdoClearSettingsRepository;
 use NeneClear\ClearSettings\TestUpstreamConnectionHandler;
 use NeneClear\ClearSettings\UpdateClearSettingsHandler;
+use NeneClear\Dunning\DunningNoticeNotFoundExceptionHandler;
+use NeneClear\Dunning\DunningRouteRegistrar;
+use NeneClear\Dunning\DunningTooFrequentExceptionHandler;
+use NeneClear\Dunning\GetDunningNoticeByIdHandler;
+use NeneClear\Dunning\InvoiceAlreadyPaidExceptionHandler;
+use NeneClear\Dunning\ListDunningNoticesHandler;
+use NeneClear\Dunning\LogOnlyDunningMailer;
+use NeneClear\Dunning\PdoDunningNoticeRepository;
+use NeneClear\Dunning\SendDunningHandler;
+use NeneClear\Dunning\SendDunningUseCase;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
@@ -222,6 +232,16 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new AllocationExceedsOutstandingExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankTransactionNotMatchableExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UpstreamInvoiceUnavailableExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new InvoiceAlreadyPaidExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new DunningTooFrequentExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new DunningNoticeNotFoundExceptionHandler($problemDetails);
+
+            $dunningNotices = new PdoDunningNoticeRepository($query);
+            $routeRegistrars[] = new DunningRouteRegistrar(
+                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, new LogOnlyDunningMailer(), $audit, $clock), $dunningNotices, $json),
+                new ListDunningNoticesHandler($dunningNotices, $json),
+                new GetDunningNoticeByIdHandler($dunningNotices, $json),
+            );
 
             $authMiddleware = [
                 new BearerTokenMiddleware($problemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),
@@ -233,6 +253,7 @@ final class ApplicationFactory
                     '/admin/reconciliations' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/clear-settings' => CapabilityRule::same(Capability::ManageClearSettings),
+                    '/admin/dunning-notices' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::SendDunning),
                 ]),
             ];
         }
