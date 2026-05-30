@@ -35,7 +35,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
             throw new ReconciliationAlreadyReversedException($input->reconciliationId);
         }
 
-        $allocations = $this->reconciliations->findAllocationsByReconciliation($input->reconciliationId);
+        $allocations = $this->reconciliations->findAllocationsByReconciliation($input->organizationId, $input->reconciliationId);
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
         foreach ($allocations as $allocation) {

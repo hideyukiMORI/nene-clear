@@ -67,7 +67,7 @@ final readonly class ConfirmMatchHandler
 
         $reconciliation = $this->reconciliations->findById($organizationId, $output->reconciliationId)
             ?? throw new ReconciliationNotFoundException($output->reconciliationId);
-        $allocs = $this->reconciliations->findAllocationsByReconciliation($output->reconciliationId);
+        $allocs = $this->reconciliations->findAllocationsByReconciliation($organizationId, $output->reconciliationId);
 
         return $this->response->create(
             ReconciliationResponse::toArray($reconciliation, $allocs),

@@ -30,7 +30,7 @@ final readonly class GetReconciliationByIdHandler
             throw new ReconciliationNotFoundException($id);
         }
 
-        $allocs = $this->reconciliations->findAllocationsByReconciliation($id);
+        $allocs = $this->reconciliations->findAllocationsByReconciliation($organizationId, $id);
 
         return $this->response->create(ReconciliationResponse::toArray($reconciliation, $allocs));
     }
