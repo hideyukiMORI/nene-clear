@@ -23,6 +23,21 @@ final readonly class PdoBankAccountRepository implements BankAccountRepositoryIn
         return $row !== null ? $this->hydrate($row) : null;
     }
 
+    public function findByOrganization(int $organizationId): array
+    {
+        $rows = $this->query->fetchAll(
+            'SELECT ' . self::COLUMNS . ' FROM bank_accounts WHERE organization_id = ? ORDER BY id ASC',
+            [$organizationId],
+        );
+
+        return array_map($this->hydrate(...), $rows);
+    }
+
+    public function deleteByOrganization(int $organizationId): void
+    {
+        $this->query->execute('DELETE FROM bank_accounts WHERE organization_id = ?', [$organizationId]);
+    }
+
     public function save(BankAccount $account): int
     {
         $this->query->execute(

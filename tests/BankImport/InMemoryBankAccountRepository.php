@@ -19,6 +19,23 @@ final class InMemoryBankAccountRepository implements BankAccountRepositoryInterf
         return $this->byId[$id] ?? null;
     }
 
+    public function findByOrganization(int $organizationId): array
+    {
+        return array_values(array_filter(
+            $this->byId,
+            static fn (BankAccount $a): bool => $a->organizationId === $organizationId,
+        ));
+    }
+
+    public function deleteByOrganization(int $organizationId): void
+    {
+        foreach ($this->byId as $id => $account) {
+            if ($account->organizationId === $organizationId) {
+                unset($this->byId[$id]);
+            }
+        }
+    }
+
     public function save(BankAccount $account): int
     {
         $id = $account->id ?? $this->nextId++;
