@@ -143,7 +143,8 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
     }
 
     /**
-     * @param array<string, mixed>|null $payload
+     * @param non-empty-string           $method  HTTP verb (GET/POST/…)
+     * @param array<string, mixed>|null  $payload
      * @return array<string, mixed>
      */
     private function request(
