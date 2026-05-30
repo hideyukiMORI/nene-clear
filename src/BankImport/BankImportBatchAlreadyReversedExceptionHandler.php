@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\BankImport;
 
 use Nene2\Error\DomainExceptionHandlerInterface;
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -13,7 +13,7 @@ use Throwable;
 final readonly class BankImportBatchAlreadyReversedExceptionHandler implements DomainExceptionHandlerInterface
 {
     public function __construct(
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
     ) {
     }
 
@@ -24,12 +24,6 @@ final readonly class BankImportBatchAlreadyReversedExceptionHandler implements D
 
     public function handle(Throwable $exception, ServerRequestInterface $request): ResponseInterface
     {
-        return $this->problemDetails->create(
-            $request,
-            'invalid-state-transition',
-            'Invalid State Transition',
-            409,
-            'The batch is already reversed.',
-        );
+        return $this->problemDetails->create($request, 'invalid-state-transition', 409, 'problem.invalid-state-transition.batch-reversed.detail');
     }
 }

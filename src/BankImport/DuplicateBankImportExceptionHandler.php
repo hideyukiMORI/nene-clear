@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\BankImport;
 
 use Nene2\Error\DomainExceptionHandlerInterface;
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -13,7 +13,7 @@ use Throwable;
 final readonly class DuplicateBankImportExceptionHandler implements DomainExceptionHandlerInterface
 {
     public function __construct(
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
     ) {
     }
 
@@ -24,12 +24,6 @@ final readonly class DuplicateBankImportExceptionHandler implements DomainExcept
 
     public function handle(Throwable $exception, ServerRequestInterface $request): ResponseInterface
     {
-        return $this->problemDetails->create(
-            $request,
-            'duplicate-bank-import',
-            'Duplicate Bank Import',
-            409,
-            'A batch with this file hash was already imported.',
-        );
+        return $this->problemDetails->create($request, 'duplicate-bank-import', 409);
     }
 }

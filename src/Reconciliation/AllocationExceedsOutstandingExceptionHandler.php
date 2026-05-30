@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Nene2\Error\DomainExceptionHandlerInterface;
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -13,7 +13,7 @@ use Throwable;
 final readonly class AllocationExceedsOutstandingExceptionHandler implements DomainExceptionHandlerInterface
 {
     public function __construct(
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
     ) {
     }
 
@@ -29,10 +29,8 @@ final readonly class AllocationExceedsOutstandingExceptionHandler implements Dom
         return $this->problemDetails->create(
             $request,
             'allocation-exceeds-outstanding',
-            'Allocation Exceeds Outstanding',
             422,
-            'The allocation amount exceeds the invoice outstanding balance.',
-            [
+            extensions: [
                 'invoice_id' => $exception->invoiceId,
                 'outstanding_cents' => $exception->outstandingCents,
             ],

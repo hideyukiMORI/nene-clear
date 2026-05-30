@@ -8,6 +8,8 @@ use Nene2\Auth\BearerTokenMiddleware;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\JsonResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
+use NeneClear\I18n\MessageCatalog;
 use Nene2\Http\RuntimeApplicationFactory;
 use Nene2\Http\UtcClock;
 use NeneClear\Audit\PdoAuditEventRepository;
@@ -149,7 +151,11 @@ final class ApplicationFactory
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
         $json = new JsonResponseFactory($psr17, $psr17);
-        $problemDetails = new ProblemDetailsResponseFactory($psr17, $psr17, 'https://nene-clear.dev/problems/');
+        $rawProblemDetails = new ProblemDetailsResponseFactory($psr17, $psr17, 'https://nene-clear.dev/problems/');
+        $problemDetails = new LocalizedProblemDetailsFactory(
+            new MessageCatalog(dirname(__DIR__, 2) . '/lang'),
+            $rawProblemDetails,
+        );
 
         $routeRegistrars = [];
         $domainExceptionHandlers = [];
@@ -256,13 +262,13 @@ final class ApplicationFactory
 
             $dunningNotices = new PdoDunningNoticeRepository($query);
             $routeRegistrars[] = new DunningRouteRegistrar(
-                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, $mailer, $audit, $clock), $dunningNotices, $json),
+                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, $mailer, $audit, $clock, new MessageCatalog(dirname(__DIR__, 2) . '/lang')), $dunningNotices, $json),
                 new ListDunningNoticesHandler($dunningNotices, $json),
                 new GetDunningNoticeByIdHandler($dunningNotices, $json),
             );
 
             $authMiddleware = [
-                new BearerTokenMiddleware($problemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),
+                new BearerTokenMiddleware($rawProblemDetails, $jwt, excludedPaths: self::PUBLIC_PATHS),
                 new CapabilityMiddleware($problemDetails, [
                     '/admin/organizations' => CapabilityRule::same(Capability::ManageOrganizations),
                     '/admin/users' => CapabilityRule::same(Capability::ManageUsers),
