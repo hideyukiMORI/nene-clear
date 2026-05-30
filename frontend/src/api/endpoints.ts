@@ -22,16 +22,34 @@ export function listBankImportBatches(params: { limit?: number; offset?: number 
   return api.get<ListEnvelope<BankImportBatch>>(`${BASE}/bank-import-batches?${q}`, signal)
 }
 
-export function importBankCsv(bankAccountId: number, file: File) {
+export async function importBankCsv(bankAccountId: number, file: File) {
   const form = new FormData()
   form.append('bank_account_id', String(bankAccountId))
   form.append('file', file)
   const token = sessionStorage.getItem('nene_clear_token')
-  return fetch(`${BASE}/bank-import-batches`, {
+  const res = await fetch(`${BASE}/bank-import-batches`, {
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
-  }).then(r => r.json())
+  })
+
+  const data = await res.json().catch(() => null)
+
+  // Multipart upload bypasses the JSON api client, so status handling lives here:
+  // a non-2xx response must surface as an error, not be treated as a successful import.
+  if (!res.ok) {
+    const detail =
+      data && typeof data === 'object' && 'detail' in data
+        ? String((data as { detail?: unknown }).detail ?? '')
+        : ''
+    const title =
+      data && typeof data === 'object' && 'title' in data
+        ? String((data as { title?: unknown }).title ?? '')
+        : `Import failed (${res.status})`
+    throw new Error(detail || title)
+  }
+
+  return data
 }
 
 export function reverseBankImportBatch(batchId: number, reversalReason: string) {

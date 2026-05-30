@@ -52,7 +52,10 @@ async function request<T>(
     signal,
   })
 
-  if (res.status === 401) {
+  // A 401 on a normal call means the session expired → clear and bounce to login.
+  // The login endpoint itself is excluded: its 401 is "wrong credentials" and
+  // must surface to the form, not trigger a redirect loop.
+  if (res.status === 401 && !path.includes('/auth/login')) {
     clearToken()
     window.location.href = '/login'
     throw new ApiError(401, { type: 'unauthorized', title: 'Unauthorized', status: 401 })
