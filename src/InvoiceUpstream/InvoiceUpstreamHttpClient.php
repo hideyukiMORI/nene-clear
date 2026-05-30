@@ -195,7 +195,8 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
                 );
             }
 
-            throw new UpstreamInvoiceUnavailableException(sprintf('Invoice API returned 422: %s', $body['detail'] ?? ''));
+            // Intentionally not forwarding $body['detail'] — upstream error internals must not leak to callers.
+            throw new UpstreamInvoiceUnavailableException(sprintf('Invoice API returned 422 with unexpected type: %s', $type));
         }
 
         if ($statusCode >= 400) {
