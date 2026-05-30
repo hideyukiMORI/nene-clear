@@ -14,6 +14,7 @@ use NeneClear\InvoiceUpstream\InvoiceClientInfo;
 use NeneClear\InvoiceUpstream\InvoiceItem;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\I18n\MessageCatalog;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
@@ -40,6 +41,7 @@ final class SendDunningUseCaseTest extends TestCase
             $this->mailer,
             $this->audit,
             new FixedClock('2026-05-31T09:00:00+00:00'),
+            new MessageCatalog(dirname(__DIR__, 2) . '/lang'),
         );
     }
 

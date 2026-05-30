@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Nene2\Error\DomainExceptionHandlerInterface;
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -13,7 +13,7 @@ use Throwable;
 final readonly class CreditExceedsRemainingExceptionHandler implements DomainExceptionHandlerInterface
 {
     public function __construct(
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
     ) {
     }
 
@@ -26,13 +26,6 @@ final readonly class CreditExceedsRemainingExceptionHandler implements DomainExc
     {
         assert($exception instanceof CreditExceedsRemainingException);
 
-        return $this->problemDetails->create(
-            $request,
-            'credit-exceeds-remaining',
-            'Credit Exceeds Remaining Balance',
-            422,
-            'The requested amount exceeds the remaining credit balance.',
-            ['remaining_cents' => $exception->remainingCents],
-        );
+        return $this->problemDetails->create($request, 'credit-exceeds-remaining', 422);
     }
 }

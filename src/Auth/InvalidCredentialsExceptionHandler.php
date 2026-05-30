@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Auth;
 
 use Nene2\Error\DomainExceptionHandlerInterface;
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
@@ -13,7 +13,7 @@ use Throwable;
 final readonly class InvalidCredentialsExceptionHandler implements DomainExceptionHandlerInterface
 {
     public function __construct(
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
     ) {
     }
 
@@ -24,12 +24,6 @@ final readonly class InvalidCredentialsExceptionHandler implements DomainExcepti
 
     public function handle(Throwable $exception, ServerRequestInterface $request): ResponseInterface
     {
-        return $this->problemDetails->create(
-            $request,
-            'invalid-credentials',
-            'Invalid Credentials',
-            401,
-            'Email or password is incorrect.',
-        );
+        return $this->problemDetails->create($request, 'invalid-credentials', 401);
     }
 }

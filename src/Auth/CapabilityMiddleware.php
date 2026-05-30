@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Auth;
 
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -32,7 +32,7 @@ final readonly class CapabilityMiddleware implements MiddlewareInterface
      * @param array<string, CapabilityRule> $prefixRules path prefix => required capabilities
      */
     public function __construct(
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
         private array $prefixRules,
     ) {
     }
@@ -54,13 +54,7 @@ final readonly class CapabilityMiddleware implements MiddlewareInterface
         $role = is_string($roleValue) ? Role::tryFrom($roleValue) : null;
 
         if ($role === null || !$role->has($required)) {
-            return $this->problemDetails->create(
-                $request,
-                'insufficient-capability',
-                'Insufficient Capability',
-                403,
-                'Your role lacks the capability required for this action.',
-            );
+            return $this->problemDetails->create($request, 'insufficient-capability', 403);
         }
 
         return $handler->handle($request);

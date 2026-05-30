@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Auth;
 
-use Nene2\Error\ProblemDetailsResponseFactory;
+use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\User\UserRepositoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -15,7 +15,7 @@ final readonly class GetCurrentUserHandler
     public function __construct(
         private UserRepositoryInterface $users,
         private JsonResponseFactory $response,
-        private ProblemDetailsResponseFactory $problemDetails,
+        private LocalizedProblemDetailsFactory $problemDetails,
     ) {
     }
 
@@ -28,13 +28,7 @@ final readonly class GetCurrentUserHandler
         $user = $userId > 0 ? $this->users->findById($userId) : null;
 
         if ($user === null) {
-            return $this->problemDetails->create(
-                $request,
-                'unauthorized',
-                'Unauthorized',
-                401,
-                'The authenticated user no longer exists.',
-            );
+            return $this->problemDetails->create($request, 'unauthorized', 401);
         }
 
         return $this->response->create([

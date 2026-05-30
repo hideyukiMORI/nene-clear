@@ -10,6 +10,8 @@ use Nene2\Http\ClockInterface;
 use NeneClear\Audit\AuditEvent;
 use NeneClear\Audit\AuditEventRepositoryInterface;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
+use NeneClear\I18n\Locale;
+use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 
 final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
@@ -24,6 +26,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         private DunningMailerInterface $mailer,
         private AuditEventRepositoryInterface $auditEvents,
         private ClockInterface $clock,
+        private MessageCatalog $catalog,
     ) {
     }
 
@@ -51,17 +54,18 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         $client = $this->invoiceClient->getClient($input->organizationId, $invoice->clientId);
 
         $nowStr = $this->clock->now()->format('Y-m-d H:i:s');
-        $subject = sprintf('[Reminder] Invoice %s is overdue', $invoice->invoiceNumber);
+        $subject = sprintf(
+            $this->catalog->get('dunning_email.subject', Locale::Ja),
+            $invoice->invoiceNumber,
+        );
         $body = sprintf(
-            "Dear %s,\n\nThis is a reminder that invoice %s dated %s for ¥%s remains outstanding as of %s.\n\n"
-            . "Outstanding balance: ¥%s\n\nPlease arrange payment at your earliest convenience.\n\n"
-            . 'If you have already made payment, please disregard this notice.',
+            $this->catalog->get('dunning_email.body', Locale::Ja),
             $client->contactName,
             $invoice->invoiceNumber,
             $invoice->dueAt,
-            number_format($invoice->outstandingCents / 100),
+            number_format((int) ($invoice->outstandingCents / 100)),
             $invoice->dueAt,
-            number_format($invoice->outstandingCents / 100),
+            number_format((int) ($invoice->outstandingCents / 100)),
         );
 
         $notice = new DunningNotice(
