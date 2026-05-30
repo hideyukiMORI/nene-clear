@@ -72,24 +72,24 @@ Future adapters for non-Invoice billing sources require ADR.
 
 Binding detail: [`payment-reconciliation-dunning-compliance.md`](./payment-reconciliation-dunning-compliance.md).
 
-### Phase 1 — API
+### Phase 1 — API ✅
 
-- [ ] Invoice upstream client + connection test
-- [ ] Bank CSV import → `bank_import_batch` + `bank_transaction`
-- [ ] List unmatched transactions and open invoices (from upstream)
-- [ ] Manual match confirm → call Invoice payment API + store `payment_reconciliation`
-- [ ] Match reversal with audit (no hard delete)
-- [ ] Partial payment and overpayment flows per compliance doc
-- [ ] OpenAPI + PHPUnit + PHPStan 8
+- [x] Invoice upstream client + connection test
+- [x] Bank CSV import → `bank_import_batch` + `bank_transaction`
+- [x] List unmatched transactions and open invoices (from upstream)
+- [x] Manual match confirm → call Invoice payment API + store `payment_reconciliation`
+- [x] Match reversal with audit (no hard delete)
+- [x] Partial payment and overpayment flows per compliance doc
+- [x] OpenAPI + PHPUnit + PHPStan 8
 
-### Phase 2 — Admin UI
+### Phase 2 — Admin UI ✅
 
-- [ ] Reconciliation workspace (unmatched / suggest / confirm)
-- [ ] Dunning list + send + history
-- [ ] ja + en admin UI (ADR 0005)
-- [ ] Dashboard: unmatched count, overdue count
+- [x] Reconciliation workspace (unmatched / confirm)
+- [x] Dunning list + send + history
+- [x] ja + en admin UI (ADR 0005)
+- [x] Dashboard: unmatched count, recent dunning
 
-### Phase 3 — Tier A
+### Phase 3 — Tier A 🔲
 
 - [ ] Web installer (MySQL, admin user, Invoice API config)
 - [ ] Release ZIP

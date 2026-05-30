@@ -50,9 +50,10 @@ See also: [`inheritance-from-nene2.md`](../inheritance-from-nene2.md),
   (`index.php` front controller + built `assets/`), `frontend/`, `docs/`.
 - **Only `public_html/` is web-exposed.** Never place `src/`, `vendor/`, `.env`,
   frontend source, or tests under it.
-- Clear's planned domain folders: `Organization/`, `Auth/`, `User/`, `Settings/`,
-  `BankImport/`, `Reconciliation/`, `ClientCredit/`, `Dunning/`, `Upstream/`,
-  `Audit/`, `Http/` (see [`backend-standards.md`](./backend-standards.md) §2).
+- Clear's domain folders (`src/`): `Organization/`, `Auth/`, `User/`,
+  `ClearSettings/`, `BankImport/`, `Reconciliation/` (includes client credit),
+  `Dunning/`, `InvoiceUpstream/`, `Audit/`, `I18n/`, `Http/`
+  (see [`backend-standards.md`](./backend-standards.md) §2).
 
 ---
 

@@ -29,14 +29,16 @@ The **binding contract** — exact endpoints, payment write-back rules, and the
 invariants Invoice must guarantee (and the hand-off checklist for the Invoice
 team) — is in [`invoice-upstream-contract.md`](./invoice-upstream-contract.md).
 
-### Environment variables (planned)
+### Environment variables
 
 | Variable | Purpose |
 | --- | --- |
 | `NENE_INVOICE_API_BASE_URL` | Invoice upstream API base URL |
 | `NENE_INVOICE_BEARER_TOKEN` | Service token for Invoice API |
 
-Document in `.env.example` when client lands.
+Both are in `.env.example`. When unset, `InvoiceUpstreamHttpClient` falls back to
+`FakeInvoiceUpstreamClient` and the Invoice contract tests auto-skip. Set them to
+activate the real HTTP client and run the contract suite against a live instance.
 
 ## Optional siblings
 

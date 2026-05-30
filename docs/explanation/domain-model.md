@@ -212,21 +212,21 @@ warning (`upstream-invoice-unavailable`). See
 
 ---
 
-## Planned modules (`src/`)
+## Modules (`src/`)
 
 | Module | Responsibility |
 | --- | --- |
-| `Organization/` | Tenants + per-request resolution (`Organization/Resolution/`) — superadmin CRUD |
-| `Auth/` | JWT login, `Role` / `Capability`, capability middleware |
+| `Organization/` | Tenants — superadmin CRUD |
+| `Auth/` | JWT login, `Role` / `Capability`, capability middleware, login throttle |
 | `User/` | Operator accounts within an organization — admin CRUD |
-| `Settings/` | `ClearSettings` — upstream URL/token, bank accounts, dunning defaults (per organization) |
+| `ClearSettings/` | Upstream URL/token, bank accounts, dunning defaults (per organization) |
 | `BankImport/` | CSV import, `bank_import_batch`, `bank_transaction`, duplicate detection |
-| `Reconciliation/` | Match proposal, confirmation, allocation, reversal |
-| `ClientCredit/` | Overpayment balances and application |
-| `Dunning/` | Templates, send, send history |
-| `Upstream/Invoice/` | Invoice API client (read invoices/clients, write payments) |
-| `Audit/` | Immutable audit events |
-| `Http/` | Shared HTTP plumbing |
+| `Reconciliation/` | Match proposal, confirmation, allocation, reversal, client credit (overpayment) |
+| `Dunning/` | Send + send history (mailer) |
+| `InvoiceUpstream/` | Invoice API client (read invoices/clients, write payments) + fake for tests |
+| `Audit/` | Immutable audit events (with before/after snapshots) |
+| `I18n/` | Message catalog + locale-aware Problem Details (ja/en) |
+| `Http/` | Application factory + shared HTTP plumbing |
 
 ---
 
