@@ -45,9 +45,47 @@ Operators who need both install **two sibling apps** connected via HTTP.
 
 ## Status
 
-**Phase 0** — governance and product design. Runtime scaffold follows Issues #4+.
+**Phase 1 (Reconciliation API) and Phase 2 (Admin UI + Dunning) complete.**
+
+- Multi-tenant JWT/RBAC, bank CSV import, reconciliation (propose / confirm /
+  reverse), client credit, dunning, immutable audit trail — all live.
+- React + TypeScript admin UI (`frontend/`), Japanese + English.
+- Invoice upstream HTTP client + contract tests (activate by setting
+  `NENE_INVOICE_API_BASE_URL` / `NENE_INVOICE_BEARER_TOKEN`).
+- Tests: 208 backend (PHPUnit, PHPStan level 8), 27 frontend (Vitest),
+  43 browser E2E (Playwright). CI runs all three on every push/PR.
+- Login throttling; security assessment in
+  [`docs/security/assessment-2026-05.md`](./docs/security/assessment-2026-05.md).
+
+Next: Phase 3 (Tier A shared-hosting installer / release ZIP) and Phase 4
+(MCP tools, accounting-software CSV export). See [`docs/roadmap.md`](./docs/roadmap.md).
 
 **Billing documents (見積・請求・入金):** [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice) — not this repo.
+
+## Quickstart (local development)
+
+```bash
+# 1. Infrastructure (MySQL 8.4 on :3310, Mailpit on :1025 / web UI :8025)
+docker compose up -d
+cp .env.example .env            # adjust DB_*, NENE_CLEAR_JWT_SECRET as needed
+
+# 2. Backend (PHP 8.4). NENE2 is a local path dependency (../NENE2).
+composer install
+composer migrations:migrate     # apply schema
+php -S localhost:8080 -t public_html/    # or your preferred SAPI
+
+# 3. Frontend admin UI (Node 22)
+npm --prefix frontend install
+npm --prefix frontend run dev   # Vite dev server on :5380, proxies /admin → backend
+
+# Quality gates
+composer check                  # PHPUnit + PHPStan level 8 + PHP-CS-Fixer
+npm --prefix frontend run check # type-check + lint + Vitest
+( cd tests/e2e && npm install && npx playwright test )   # browser E2E
+```
+
+`DB_ADAPTER=sqlite` (the `.env.example` default) needs no container; set
+`DB_ADAPTER=mysql` to use the docker-compose database.
 
 ## Ecosystem
 

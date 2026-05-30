@@ -1,13 +1,15 @@
 # Frontend Standards
 
-**Status:** Phase 2 — not implemented yet. **Binding** once `frontend/` lands.
+**Status:** Implemented (Phase 2). **Binding** for `frontend/`.
 
 NeNe Clear's admin UI follows **NENE2's frontend conventions**
 ([`nene2-compliance.md`](./nene2-compliance.md) §14, NENE2
 `frontend-integration.md` / `view-rendering.md`). This document is the Clear-side
 detail; on any conflict, NENE2's frontend policy wins.
 
-> Until `frontend/` exists, mark frontend self-review items `N/A` in PRs.
+> The SPA lives in `frontend/` (React 19 + TypeScript + Vite). Tests: Vitest
+> unit (`frontend/src/**/*.test.tsx`) + Playwright E2E (`tests/e2e/`). CI runs
+> `npm run check` + build + E2E on every push/PR.
 
 ## 1. Stack & tooling
 
