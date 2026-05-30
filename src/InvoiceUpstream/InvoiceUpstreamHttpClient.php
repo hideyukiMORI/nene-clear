@@ -46,7 +46,7 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
 
     public function getInvoice(int $organizationId, int $invoiceId): InvoiceItem
     {
-        $body = $this->request('GET', '/api/invoices/' . $invoiceId, invoiceId: $invoiceId);
+        $body = $this->request('GET', '/api/invoices/' . $invoiceId, resourceId: $invoiceId);
 
         return new InvoiceItem(
             invoiceId: (int) $body['invoice_id'],
@@ -79,7 +79,7 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
                 'idempotency_key' => $idempotencyKey,
             ],
             idempotencyKey: $idempotencyKey,
-            invoiceId: $invoiceId,
+            resourceId: $invoiceId,
         );
 
         return new InvoicePaymentCreated(
@@ -108,7 +108,7 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
 
     public function getClient(int $organizationId, int $clientId): InvoiceClientInfo
     {
-        $body = $this->request('GET', '/api/clients/' . $clientId, invoiceId: $clientId);
+        $body = $this->request('GET', '/api/clients/' . $clientId, resourceId: $clientId);
 
         return new InvoiceClientInfo(
             clientId: (int) $body['client_id'],
@@ -126,9 +126,9 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
         string $path,
         ?array $payload = null,
         string $idempotencyKey = '',
-        int $invoiceId = 0,
+        int $resourceId = 0,
     ): array {
-        $ch = curl_init(rtrim($this->baseUrl, '/') . $path);
+        $ch = \curl_init(rtrim($this->baseUrl, '/') . $path);
 
         if ($ch === false) {
             throw new UpstreamInvoiceUnavailableException('Failed to initialise cURL handle.');
@@ -147,7 +147,7 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
             $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
         }
 
-        curl_setopt_array($ch, [
+        \curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
@@ -157,13 +157,13 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
         ]);
 
         if ($payload !== null) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_THROW_ON_ERROR));
+            \curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_THROW_ON_ERROR));
         }
 
-        $raw = curl_exec($ch);
-        $curlError = curl_error($ch);
-        $statusCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $raw = \curl_exec($ch);
+        $curlError = \curl_error($ch);
+        $statusCode = (int) \curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        \curl_close($ch);
 
         if ($raw === false || $curlError !== '') {
             throw new UpstreamInvoiceUnavailableException('Invoice API unreachable: ' . $curlError);
@@ -183,14 +183,18 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
         $body = is_array($body) ? $body : [];
 
         if ($statusCode === 404) {
-            throw new UpstreamInvoiceNotFoundException($invoiceId);
+            $type = (string) ($body['type'] ?? '');
+            if (str_ends_with($type, 'client-not-found')) {
+                throw new UpstreamClientNotFoundException($resourceId);
+            }
+            throw new UpstreamInvoiceNotFoundException($resourceId);
         }
 
         if ($statusCode === 422) {
             $type = (string) ($body['type'] ?? '');
             if (str_contains($type, 'payment-exceeds-outstanding')) {
                 throw new AllocationExceedsOutstandingException(
-                    $invoiceId,
+                    $resourceId,
                     (int) ($body['outstanding_cents'] ?? 0),
                 );
             }

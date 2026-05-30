@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Tests\Contract;
 
 use NeneClear\InvoiceUpstream\InvoiceUpstreamHttpClient;
+use NeneClear\InvoiceUpstream\UpstreamClientNotFoundException;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundException;
 use PHPUnit\Framework\TestCase;
 
@@ -88,6 +89,12 @@ final class InvoiceUpstreamContractTest extends TestCase
         self::assertSame($invoices[0]->clientId, $clientInfo->clientId);
         self::assertNotEmpty($clientInfo->contactName);
         self::assertStringContainsString('@', $clientInfo->recipientEmail);
+    }
+
+    public function test_get_client_throws_client_not_found_for_missing(): void
+    {
+        $this->expectException(UpstreamClientNotFoundException::class);
+        $this->client->getClient($this->orgId, PHP_INT_MAX);
     }
 
     public function test_create_and_void_payment_idempotent(): void
