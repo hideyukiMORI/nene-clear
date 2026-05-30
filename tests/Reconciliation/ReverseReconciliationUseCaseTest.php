@@ -138,12 +138,12 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             actorUserId: 42,
         ));
 
-        $credit = $this->clientCredits->findByReconciliation($confirmOutput->reconciliationId);
+        $credit = $this->clientCredits->findByReconciliation(7, $confirmOutput->reconciliationId);
         self::assertSame(ClientCreditStatus::Open, $credit?->status);
 
         $this->reverseUseCase->execute($this->reverseInput($confirmOutput->reconciliationId));
 
-        $credit = $this->clientCredits->findByReconciliation($confirmOutput->reconciliationId);
+        $credit = $this->clientCredits->findByReconciliation(7, $confirmOutput->reconciliationId);
         self::assertSame(ClientCreditStatus::Voided, $credit?->status);
     }
 

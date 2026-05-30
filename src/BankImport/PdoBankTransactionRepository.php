@@ -118,11 +118,11 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         return (int) ($row['c'] ?? 0);
     }
 
-    public function updateStatusById(int $id, BankTransactionStatus $status): void
+    public function updateStatusById(int $organizationId, int $id, BankTransactionStatus $status): void
     {
         $this->query->execute(
-            'UPDATE bank_transactions SET status = ? WHERE id = ?',
-            [$status->value, $id],
+            'UPDATE bank_transactions SET status = ? WHERE id = ? AND organization_id = ?',
+            [$status->value, $id, $organizationId],
         );
     }
 

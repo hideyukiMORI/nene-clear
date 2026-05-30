@@ -97,7 +97,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
 
         $remainder = $tx->amountCents - $totalAllocated;
         $newStatus = $remainder <= 0 ? BankTransactionStatus::Matched : BankTransactionStatus::PartiallyMatched;
-        $this->transactions->updateStatusById($input->bankTransactionId, $newStatus);
+        $this->transactions->updateStatusById($input->organizationId, $input->bankTransactionId, $newStatus);
 
         if ($remainder > 0) {
             $this->clientCredits->save(new ClientCredit(

@@ -22,7 +22,7 @@ interface ReconciliationRepositoryInterface
     /**
      * @return list<ReconciliationAllocation>
      */
-    public function findAllocationsByReconciliation(int $reconciliationId): array;
+    public function findAllocationsByReconciliation(int $organizationId, int $reconciliationId): array;
 
     public function reverseById(int $id, string $reversedAt, string $reversalReason): void;
 }

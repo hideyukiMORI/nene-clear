@@ -47,18 +47,21 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
         return $row !== null ? $this->hydrate($row) : null;
     }
 
-    public function applyAmount(int $id, int $amountCents): ClientCredit
+    public function applyAmount(int $organizationId, int $id, int $amountCents): ClientCredit
     {
         $this->query->execute(
-            'UPDATE client_credits SET remaining_cents = remaining_cents - ? WHERE id = ?',
-            [$amountCents, $id],
+            'UPDATE client_credits SET remaining_cents = remaining_cents - ? WHERE id = ? AND organization_id = ?',
+            [$amountCents, $id, $organizationId],
         );
         $this->query->execute(
-            'UPDATE client_credits SET status = ? WHERE id = ? AND remaining_cents <= 0 AND status = ?',
-            [ClientCreditStatus::Voided->value, $id, ClientCreditStatus::Open->value],
+            'UPDATE client_credits SET status = ? WHERE id = ? AND organization_id = ? AND remaining_cents <= 0 AND status = ?',
+            [ClientCreditStatus::Voided->value, $id, $organizationId, ClientCreditStatus::Open->value],
         );
 
-        $row = $this->query->fetchOne('SELECT ' . self::COLUMNS . ' FROM client_credits WHERE id = ?', [$id]);
+        $row = $this->query->fetchOne(
+            'SELECT ' . self::COLUMNS . ' FROM client_credits WHERE id = ? AND organization_id = ?',
+            [$id, $organizationId],
+        );
 
         if ($row === null) {
             throw new \RuntimeException("Client credit $id not found after applyAmount.");
@@ -67,11 +70,11 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
         return $this->hydrate($row);
     }
 
-    public function findByReconciliation(int $reconciliationId): ?ClientCredit
+    public function findByReconciliation(int $organizationId, int $reconciliationId): ?ClientCredit
     {
         $row = $this->query->fetchOne(
-            'SELECT ' . self::COLUMNS . ' FROM client_credits WHERE reconciliation_id = ? LIMIT 1',
-            [$reconciliationId],
+            'SELECT ' . self::COLUMNS . ' FROM client_credits WHERE reconciliation_id = ? AND organization_id = ? LIMIT 1',
+            [$reconciliationId, $organizationId],
         );
 
         return $row !== null ? $this->hydrate($row) : null;

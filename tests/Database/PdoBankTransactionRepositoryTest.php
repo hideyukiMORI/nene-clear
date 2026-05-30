@@ -139,7 +139,7 @@ final class PdoBankTransactionRepositoryTest extends TestCase
     public function test_updateStatusById(): void
     {
         $id = $this->tx(status: BankTransactionStatus::Unmatched);
-        $this->repo->updateStatusById($id, BankTransactionStatus::Matched);
+        $this->repo->updateStatusById(7, $id, BankTransactionStatus::Matched);
 
         $tx = $this->repo->findById(7, $id);
         self::assertSame(BankTransactionStatus::Matched, $tx?->status);

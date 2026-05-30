@@ -138,7 +138,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $tx = $this->transactions->findById(7, $txId);
         self::assertSame(BankTransactionStatus::Matched, $tx?->status);
 
-        $allocs = $this->reconciliations->findAllocationsByReconciliation($output->reconciliationId);
+        $allocs = $this->reconciliations->findAllocationsByReconciliation(7, $output->reconciliationId);
         self::assertCount(2, $allocs);
     }
 

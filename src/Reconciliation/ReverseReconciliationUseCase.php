@@ -35,7 +35,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
             throw new ReconciliationAlreadyReversedException($input->reconciliationId);
         }
 
-        $allocations = $this->reconciliations->findAllocationsByReconciliation($input->reconciliationId);
+        $allocations = $this->reconciliations->findAllocationsByReconciliation($input->organizationId, $input->reconciliationId);
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
         foreach ($allocations as $allocation) {
@@ -52,7 +52,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
         }
 
         $this->reconciliations->reverseById($input->reconciliationId, $now, $input->reversalReason);
-        $this->transactions->updateStatusById($reconciliation->bankTransactionId, BankTransactionStatus::Unmatched);
+        $this->transactions->updateStatusById($input->organizationId, $reconciliation->bankTransactionId, BankTransactionStatus::Unmatched);
         $this->clientCredits->voidByReconciliation($input->reconciliationId);
 
         $this->auditEvents->record(new AuditEvent(

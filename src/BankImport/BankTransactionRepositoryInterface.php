@@ -33,7 +33,7 @@ interface BankTransactionRepositoryInterface
 
     public function countUnmatchedByOrganization(int $organizationId): int;
 
-    public function updateStatusById(int $id, BankTransactionStatus $status): void;
+    public function updateStatusById(int $organizationId, int $id, BankTransactionStatus $status): void;
 
     public function voidByBatchId(int $bankImportBatchId): void;
 }

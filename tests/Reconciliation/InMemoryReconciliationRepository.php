@@ -81,9 +81,12 @@ final class InMemoryReconciliationRepository implements ReconciliationRepository
         return $id;
     }
 
-    public function findAllocationsByReconciliation(int $reconciliationId): array
+    public function findAllocationsByReconciliation(int $organizationId, int $reconciliationId): array
     {
-        return $this->allocations[$reconciliationId] ?? [];
+        return array_values(array_filter(
+            $this->allocations[$reconciliationId] ?? [],
+            static fn (ReconciliationAllocation $a): bool => $a->organizationId === $organizationId,
+        ));
     }
 
     public function reverseById(int $id, string $reversedAt, string $reversalReason): void

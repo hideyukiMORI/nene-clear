@@ -19,6 +19,6 @@ final readonly class DeleteUserUseCase implements DeleteUserUseCaseInterface
             throw new UserNotFoundException($id);
         }
 
-        $this->users->delete($id);
+        $this->users->delete($callerOrganizationId, $id);
     }
 }

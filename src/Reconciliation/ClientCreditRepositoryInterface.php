@@ -10,9 +10,9 @@ interface ClientCreditRepositoryInterface
 
     public function findById(int $organizationId, int $id): ?ClientCredit;
 
-    public function findByReconciliation(int $reconciliationId): ?ClientCredit;
+    public function findByReconciliation(int $organizationId, int $reconciliationId): ?ClientCredit;
 
-    public function applyAmount(int $id, int $amountCents): ClientCredit;
+    public function applyAmount(int $organizationId, int $id, int $amountCents): ClientCredit;
 
     public function voidByReconciliation(int $reconciliationId): void;
 
