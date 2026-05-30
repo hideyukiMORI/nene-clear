@@ -58,6 +58,7 @@ use NeneClear\Dunning\SendDunningUseCase;
 use NeneClear\Dunning\SmtpDunningMailer;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\InvoiceUpstream\InvoiceUpstreamHttpClient;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
 use NeneClear\Organization\CreateOrganizationHandler;
 use NeneClear\Organization\CreateOrganizationUseCase;
@@ -143,6 +144,8 @@ final class ApplicationFactory
         string $smtpPassword = '',
         string $smtpFromAddress = 'noreply@nene-clear.dev',
         string $smtpFromName = 'NeNe Clear',
+        ?string $invoiceApiBaseUrl = null,
+        string $invoiceBearerToken = '',
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
         $json = new JsonResponseFactory($psr17, $psr17);
@@ -200,7 +203,11 @@ final class ApplicationFactory
                 new GetBankTransactionByIdHandler($transactions, $json),
             );
 
-            $upstream = $invoiceClient ?? new FakeInvoiceUpstreamClient();
+            $upstream = $invoiceClient ?? (
+                $invoiceApiBaseUrl !== null && $invoiceApiBaseUrl !== '' && $invoiceBearerToken !== ''
+                    ? new InvoiceUpstreamHttpClient($invoiceApiBaseUrl, $invoiceBearerToken)
+                    : new FakeInvoiceUpstreamClient()
+            );
             $clearSettings = new PdoClearSettingsRepository($query, $bankAccounts);
             $routeRegistrars[] = new ClearSettingsRouteRegistrar(
                 new GetClearSettingsHandler($clearSettings, $json),
