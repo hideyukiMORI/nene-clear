@@ -59,6 +59,8 @@ use NeneClear\Dunning\SmtpDunningMailer;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamHttpClient;
+use NeneClear\InvoiceUpstream\UpstreamClientNotFoundExceptionHandler;
+use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundExceptionHandler;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
 use NeneClear\Organization\CreateOrganizationHandler;
 use NeneClear\Organization\CreateOrganizationUseCase;
@@ -246,6 +248,8 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new AllocationExceedsOutstandingExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankTransactionNotMatchableExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UpstreamInvoiceUnavailableExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new UpstreamInvoiceNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new UpstreamClientNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new InvoiceAlreadyPaidExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new DunningTooFrequentExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new DunningNoticeNotFoundExceptionHandler($problemDetails);

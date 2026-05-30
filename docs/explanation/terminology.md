@@ -160,7 +160,10 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `allocation-exceeds-outstanding` | Match allocation > invoice outstanding without overpayment handling |
 | `upstream-invoice-unavailable` | Invoice API unreachable; degraded (import-only) mode |
 | `upstream-invoice-not-found` | Referenced invoice not found in Invoice upstream |
-| `dunning-not-eligible` | Invoice not in a dunnable state / outstanding ≤ 0 / interval not elapsed |
+| `upstream-client-not-found` | Referenced client does not exist (or has been soft-deleted) in Invoice upstream |
+| `invoice-not-eligible-for-dunning` | Invoice is already paid, voided, or has no outstanding balance |
+| `dunning-too-frequent` | Dunning interval not elapsed; includes next-allowed datetime in detail |
+| `credit-exceeds-remaining` | Credit application amount exceeds the remaining credit balance |
 
 Add new slugs here before using them. Validation `errors[].field` uses
 snake_case paths (e.g. `body.value_date`); `errors[].code` is snake_case (e.g.

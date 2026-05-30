@@ -147,7 +147,7 @@ final class FakeInvoiceUpstreamClient implements InvoiceUpstreamClientInterface
             throw new UpstreamInvoiceUnavailableException();
         }
 
-        return $this->clients[$clientId] ?? throw new UpstreamInvoiceNotFoundException($clientId);
+        return $this->clients[$clientId] ?? throw new UpstreamClientNotFoundException($clientId);
     }
 
     /** @return list<array{paymentId: int, amountCents: int, paidAt: string, externalReference: string, voided: bool}> */
