@@ -67,10 +67,12 @@ final readonly class ImportBankCsvUseCase implements ImportBankCsvUseCaseInterfa
             actorUserId: $input->actorUserId,
             occurredAt: $now,
             payload: [
-                'bank_import_batch_id' => $batchId,
-                'file_hash' => $fileHash,
-                'row_count' => count($lines),
-                'source_filename' => $input->sourceFilename,
+                'after' => [
+                    'bank_import_batch_id' => $batchId,
+                    'file_hash' => $fileHash,
+                    'row_count' => count($lines),
+                    'source_filename' => $input->sourceFilename,
+                ],
             ],
         ));
 

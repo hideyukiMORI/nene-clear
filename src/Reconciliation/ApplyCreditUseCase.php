@@ -56,7 +56,14 @@ final readonly class ApplyCreditUseCase implements ApplyCreditUseCaseInterface
                 'client_credit_id' => $input->creditId,
                 'invoice_id' => $input->invoiceId,
                 'amount_cents' => $input->amountCents,
-                'remaining_cents' => $updated->remainingCents,
+                'before' => [
+                    'remaining_cents' => $credit->remainingCents,
+                    'status' => $credit->status->value,
+                ],
+                'after' => [
+                    'remaining_cents' => $updated->remainingCents,
+                    'status' => $updated->status->value,
+                ],
             ],
         ));
 

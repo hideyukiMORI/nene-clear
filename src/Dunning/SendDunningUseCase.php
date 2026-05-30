@@ -96,10 +96,17 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             payload: [
                 'dunning_notice_id' => $noticeId,
                 'invoice_id' => $input->invoiceId,
-                'invoice_number' => $invoice->invoiceNumber,
-                'recipient_email' => $client->recipientEmail,
-                'outstanding_cents' => $invoice->outstandingCents,
-                'channel' => self::CHANNEL,
+                'before' => [
+                    'invoice_status' => $invoice->status,
+                    'invoice_outstanding_cents' => $invoice->outstandingCents,
+                    'previous_dunning_sent_at' => $lastNotice?->sentAt,
+                ],
+                'after' => [
+                    'invoice_number' => $invoice->invoiceNumber,
+                    'recipient_email' => $client->recipientEmail,
+                    'outstanding_at_send_cents' => $invoice->outstandingCents,
+                    'channel' => self::CHANNEL,
+                ],
             ],
         ));
 

@@ -62,8 +62,24 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
             occurredAt: $now,
             payload: [
                 'payment_reconciliation_id' => $input->reconciliationId,
-                'bank_transaction_id' => $reconciliation->bankTransactionId,
-                'reversal_reason' => $input->reversalReason,
+                'before' => [
+                    'status' => 'confirmed',
+                    'bank_transaction_id' => $reconciliation->bankTransactionId,
+                    'confirmed_at' => $reconciliation->confirmedAt,
+                    'allocations' => array_map(
+                        static fn (ReconciliationAllocation $a): array => [
+                            'invoice_id' => $a->invoiceId,
+                            'amount_cents' => $a->amountCents,
+                            'payment_id' => $a->paymentId,
+                        ],
+                        $allocations,
+                    ),
+                ],
+                'after' => [
+                    'status' => 'reversed',
+                    'bank_transaction_status' => 'unmatched',
+                    'reversal_reason' => $input->reversalReason,
+                ],
             ],
         ));
 
