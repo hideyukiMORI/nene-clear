@@ -56,9 +56,13 @@ use NeneClear\Organization\OrganizationNotFoundExceptionHandler;
 use NeneClear\Organization\OrganizationRouteRegistrar;
 use NeneClear\Organization\PdoOrganizationRepository;
 use NeneClear\Reconciliation\AllocationExceedsOutstandingExceptionHandler;
+use NeneClear\Reconciliation\ApplyCreditHandler;
+use NeneClear\Reconciliation\ApplyCreditUseCase;
 use NeneClear\Reconciliation\BankTransactionNotMatchableExceptionHandler;
+use NeneClear\Reconciliation\ClientCreditNotFoundExceptionHandler;
 use NeneClear\Reconciliation\ConfirmMatchHandler;
 use NeneClear\Reconciliation\ConfirmMatchUseCase;
+use NeneClear\Reconciliation\CreditExceedsRemainingExceptionHandler;
 use NeneClear\Reconciliation\GetReconciliationByIdHandler;
 use NeneClear\Reconciliation\ListClientCreditsHandler;
 use NeneClear\Reconciliation\ListReconciliationsHandler;
@@ -184,6 +188,7 @@ final class ApplicationFactory
                 new GetReconciliationByIdHandler($reconRepo, $json),
                 new ReverseReconciliationHandler(new ReverseReconciliationUseCase($reconRepo, $creditRepo, $transactions, $upstream, $audit, $clock), $reconRepo, $json),
                 new ListClientCreditsHandler($creditRepo, $json),
+                new ApplyCreditHandler(new ApplyCreditUseCase($creditRepo, $upstream, $audit), $json),
             );
 
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
@@ -200,6 +205,8 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new BankImportBatchHasMatchedLinesExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new ReconciliationNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new ReconciliationAlreadyReversedExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new ClientCreditNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new CreditExceedsRemainingExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new AllocationExceedsOutstandingExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankTransactionNotMatchableExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UpstreamInvoiceUnavailableExceptionHandler($problemDetails);
