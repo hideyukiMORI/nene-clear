@@ -73,6 +73,27 @@ $application = ApplicationFactory::create(
 $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
 
+// SPA fallback: serve the built index.html for browser navigation requests.
+// API calls carry Accept: application/json and are handled by the PHP app.
+// Static assets under /assets/ are served directly by the web server.
+$path = $request->getUri()->getPath() ?: '/';
+$acceptHeader = $request->getHeaderLine('Accept');
+$wantHtml = str_contains($acceptHeader, 'text/html') || str_contains($acceptHeader, '*/*');
+$isSpaRoute = $wantHtml
+    && $request->getMethod() === 'GET'
+    && !str_starts_with($path, '/health')
+    && !str_starts_with($path, '/machine')
+    && !str_starts_with($path, '/assets/');
+
+if ($isSpaRoute) {
+    $spaIndex = __DIR__ . '/assets/index.html';
+    if (is_file($spaIndex)) {
+        header('Content-Type: text/html; charset=utf-8');
+        readfile($spaIndex);
+        exit;
+    }
+}
+
 $response = $application->handle($request);
 
 (new ResponseEmitter())->emit($response);
