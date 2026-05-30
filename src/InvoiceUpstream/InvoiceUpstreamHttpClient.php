@@ -118,7 +118,33 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
     }
 
     /**
-     * @param array<string, mixed>|null $payload
+     * Request headers as a clean list<string>. The explicit return type keeps
+     * the shape simple so it satisfies the strict curl extension stub
+     * (CURLOPT_HTTPHEADER expects array<int, string>) in every environment.
+     *
+     * @return list<string>
+     */
+    private function buildHeaders(bool $hasJsonBody, string $idempotencyKey): array
+    {
+        $headers = [
+            'Authorization: Bearer ' . $this->bearerToken,
+            'Accept: application/json',
+        ];
+
+        if ($hasJsonBody) {
+            $headers[] = 'Content-Type: application/json';
+        }
+
+        if ($idempotencyKey !== '') {
+            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
+        }
+
+        return $headers;
+    }
+
+    /**
+     * @param non-empty-string           $method  HTTP verb (GET/POST/…)
+     * @param array<string, mixed>|null  $payload
      * @return array<string, mixed>
      */
     private function request(
@@ -134,27 +160,15 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
             throw new UpstreamInvoiceUnavailableException('Failed to initialise cURL handle.');
         }
 
-        $headers = [
-            'Authorization: Bearer ' . $this->bearerToken,
-            'Accept: application/json',
-        ];
-
-        if ($payload !== null) {
-            $headers[] = 'Content-Type: application/json';
-        }
-
-        if ($idempotencyKey !== '') {
-            $headers[] = 'Idempotency-Key: ' . $idempotencyKey;
-        }
-
-        \curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_CONNECTTIMEOUT => self::CONNECT_TIMEOUT,
-            CURLOPT_TIMEOUT => self::READ_TIMEOUT,
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_FOLLOWLOCATION => false,
-        ]);
+        // Individual curl_setopt calls rather than curl_setopt_array: the latter's
+        // precise array-shape stub varies between environments (CI's ext-curl stub
+        // rejects shapes the local one accepts). Per-option calls take mixed values.
+        \curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        \curl_setopt($ch, CURLOPT_HTTPHEADER, $this->buildHeaders($payload !== null, $idempotencyKey));
+        \curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, self::CONNECT_TIMEOUT);
+        \curl_setopt($ch, CURLOPT_TIMEOUT, self::READ_TIMEOUT);
+        \curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        \curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
 
         if ($payload !== null) {
             \curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload, JSON_THROW_ON_ERROR));

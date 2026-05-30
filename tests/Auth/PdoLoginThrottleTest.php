@@ -67,7 +67,7 @@ final class PdoLoginThrottleTest extends TestCase
     {
         for ($i = 0; $i < 4; $i++) {
             $this->throttle->recordFailure(self::ID);
-            self::assertSame(0, $this->throttle->secondsUntilUnlocked(self::ID), "not locked after " . ($i + 1));
+            self::assertSame(0, $this->throttle->secondsUntilUnlocked(self::ID), 'not locked after ' . ($i + 1));
         }
 
         $this->throttle->recordFailure(self::ID); // 5th → lock

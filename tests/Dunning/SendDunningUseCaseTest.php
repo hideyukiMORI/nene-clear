@@ -9,12 +9,12 @@ use NeneClear\Dunning\DunningTooFrequentException;
 use NeneClear\Dunning\InvoiceAlreadyPaidException;
 use NeneClear\Dunning\SendDunningInput;
 use NeneClear\Dunning\SendDunningUseCase;
+use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceClientInfo;
 use NeneClear\InvoiceUpstream\InvoiceItem;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
-use NeneClear\I18n\MessageCatalog;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
