@@ -74,11 +74,12 @@ $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
 
 // SPA fallback: serve the built index.html for browser navigation requests.
-// API calls carry Accept: application/json and are handled by the PHP app.
-// Static assets under /assets/ are served directly by the web server.
+// Browsers send Accept: text/html,... — API clients send Accept: application/json
+// or Accept: */* only. We only intercept when text/html is explicit.
 $path = $request->getUri()->getPath() ?: '/';
 $acceptHeader = $request->getHeaderLine('Accept');
-$wantHtml = str_contains($acceptHeader, 'text/html') || str_contains($acceptHeader, '*/*');
+$wantHtml = str_contains($acceptHeader, 'text/html')
+    && !str_contains($acceptHeader, 'application/json');
 $isSpaRoute = $wantHtml
     && $request->getMethod() === 'GET'
     && !str_starts_with($path, '/health')
