@@ -27,10 +27,18 @@ export default defineConfig(({ mode }) => {
     server: {
       port: frontendPort,
       strictPort: true, // fail fast instead of silently bumping to next port
+      // Dev only: forward API + health to the PHP backend.
       proxy: {
         '/admin': { target, changeOrigin: true },
         '/health': { target, changeOrigin: true },
       },
+    },
+    // `vite preview` (used by the E2E suite) must NOT proxy: there is no PHP
+    // backend, all API calls are mocked, and /admin/* document navigations rely
+    // on the SPA history fallback. An explicit empty proxy stops preview from
+    // inheriting server.proxy (behaviour differs across Vite/CI environments).
+    preview: {
+      proxy: {},
     },
     build: {
       outDir: '../public_html/assets',
