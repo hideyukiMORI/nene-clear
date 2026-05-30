@@ -16,6 +16,9 @@ final class FakeInvoiceUpstreamClient implements InvoiceUpstreamClientInterface
     /** @var array<int, list<array{paymentId: int, amountCents: int, paidAt: string, externalReference: string, voided: bool}>> keyed by invoiceId */
     private array $payments = [];
 
+    /** @var array<int, InvoiceClientInfo> keyed by clientId */
+    private array $clients = [];
+
     private int $nextPaymentId = 1;
 
     private bool $unavailable = false;
@@ -23,6 +26,11 @@ final class FakeInvoiceUpstreamClient implements InvoiceUpstreamClientInterface
     public function makeUnavailable(): void
     {
         $this->unavailable = true;
+    }
+
+    public function addClient(InvoiceClientInfo $client): void
+    {
+        $this->clients[$client->clientId] = $client;
     }
 
     public function addInvoice(InvoiceItem $invoice): void
@@ -131,6 +139,15 @@ final class FakeInvoiceUpstreamClient implements InvoiceUpstreamClientInterface
                 return;
             }
         }
+    }
+
+    public function getClient(int $organizationId, int $clientId): InvoiceClientInfo
+    {
+        if ($this->unavailable) {
+            throw new UpstreamInvoiceUnavailableException();
+        }
+
+        return $this->clients[$clientId] ?? throw new UpstreamInvoiceNotFoundException($clientId);
     }
 
     /** @return list<array{paymentId: int, amountCents: int, paidAt: string, externalReference: string, voided: bool}> */

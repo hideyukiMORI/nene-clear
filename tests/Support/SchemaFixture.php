@@ -184,4 +184,24 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createDunningNotices(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE dunning_notices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                invoice_id INTEGER NOT NULL,
+                invoice_number TEXT NOT NULL,
+                client_id INTEGER NOT NULL,
+                recipient_email TEXT NOT NULL,
+                outstanding_cents INTEGER NOT NULL,
+                due_at TEXT NOT NULL,
+                channel TEXT NOT NULL DEFAULT \'log\',
+                sent_by INTEGER NOT NULL,
+                sent_at TEXT NOT NULL,
+                created_at TEXT
+            )'
+        );
+    }
 }
