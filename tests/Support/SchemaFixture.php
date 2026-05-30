@@ -170,4 +170,18 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createClearSettings(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE clear_settings (
+                organization_id INTEGER PRIMARY KEY NOT NULL,
+                upstream_base_url TEXT NOT NULL DEFAULT \'\',
+                upstream_token_ref TEXT NOT NULL DEFAULT \'\',
+                dunning_min_interval_days INTEGER NOT NULL DEFAULT 7,
+                created_at TEXT,
+                updated_at TEXT
+            )'
+        );
+    }
 }

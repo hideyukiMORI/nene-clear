@@ -40,6 +40,11 @@ use NeneClear\BankImport\PdoBankImportBatchRepository;
 use NeneClear\BankImport\PdoBankTransactionRepository;
 use NeneClear\BankImport\ReverseBankImportBatchHandler;
 use NeneClear\BankImport\ReverseBankImportBatchUseCase;
+use NeneClear\ClearSettings\ClearSettingsRouteRegistrar;
+use NeneClear\ClearSettings\GetClearSettingsHandler;
+use NeneClear\ClearSettings\PdoClearSettingsRepository;
+use NeneClear\ClearSettings\TestUpstreamConnectionHandler;
+use NeneClear\ClearSettings\UpdateClearSettingsHandler;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
@@ -179,6 +184,13 @@ final class ApplicationFactory
             );
 
             $upstream = $invoiceClient ?? new FakeInvoiceUpstreamClient();
+            $clearSettings = new PdoClearSettingsRepository($query, $bankAccounts);
+            $routeRegistrars[] = new ClearSettingsRouteRegistrar(
+                new GetClearSettingsHandler($clearSettings, $json),
+                new UpdateClearSettingsHandler($clearSettings, $bankAccounts, $json),
+                new TestUpstreamConnectionHandler($upstream, $json),
+            );
+
             $reconRepo = new PdoReconciliationRepository($query);
             $creditRepo = new PdoClientCreditRepository($query);
             $routeRegistrars[] = new ReconciliationRouteRegistrar(
@@ -220,6 +232,7 @@ final class ApplicationFactory
                     '/admin/bank-transactions' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/reconciliations' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
+                    '/admin/clear-settings' => CapabilityRule::same(Capability::ManageClearSettings),
                 ]),
             ];
         }

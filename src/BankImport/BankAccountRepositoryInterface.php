@@ -8,5 +8,12 @@ interface BankAccountRepositoryInterface
 {
     public function findById(int $id): ?BankAccount;
 
+    /**
+     * @return list<BankAccount>
+     */
+    public function findByOrganization(int $organizationId): array;
+
     public function save(BankAccount $account): int;
+
+    public function deleteByOrganization(int $organizationId): void;
 }
