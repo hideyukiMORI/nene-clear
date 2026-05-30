@@ -92,10 +92,10 @@ final class InMemoryBankTransactionRepository implements BankTransactionReposito
         ));
     }
 
-    public function updateStatusById(int $id, BankTransactionStatus $status): void
+    public function updateStatusById(int $organizationId, int $id, BankTransactionStatus $status): void
     {
         $tx = $this->byId[$id] ?? null;
-        if ($tx === null) {
+        if ($tx === null || $tx->organizationId !== $organizationId) {
             return;
         }
 

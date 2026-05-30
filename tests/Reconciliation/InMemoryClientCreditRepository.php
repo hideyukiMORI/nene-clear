@@ -41,7 +41,7 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
         return ($credit !== null && $credit->organizationId === $organizationId) ? $credit : null;
     }
 
-    public function applyAmount(int $id, int $amountCents): ClientCredit
+    public function applyAmount(int $organizationId, int $id, int $amountCents): ClientCredit
     {
         $credit = $this->byId[$id] ?? throw new \RuntimeException("Client credit $id not found.");
         $newRemaining = $credit->remainingCents - $amountCents;
@@ -63,10 +63,10 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
         return $this->byId[$id];
     }
 
-    public function findByReconciliation(int $reconciliationId): ?ClientCredit
+    public function findByReconciliation(int $organizationId, int $reconciliationId): ?ClientCredit
     {
         foreach ($this->byId as $credit) {
-            if ($credit->reconciliationId === $reconciliationId) {
+            if ($credit->reconciliationId === $reconciliationId && $credit->organizationId === $organizationId) {
                 return $credit;
             }
         }

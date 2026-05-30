@@ -83,7 +83,7 @@ final class PdoReconciliationRepositoryTest extends TestCase
             externalReference: 'clear:recon:1:10',
         ));
 
-        $allocs = $this->reconRepo->findAllocationsByReconciliation($reconId);
+        $allocs = $this->reconRepo->findAllocationsByReconciliation(7, $reconId);
         self::assertCount(1, $allocs);
         self::assertSame(10, $allocs[0]->invoiceId);
         self::assertSame(100000, $allocs[0]->amountCents);
@@ -130,13 +130,13 @@ final class PdoReconciliationRepositoryTest extends TestCase
 
         $this->creditRepo->save($credit);
 
-        $found = $this->creditRepo->findByReconciliation(1);
+        $found = $this->creditRepo->findByReconciliation(7, 1);
         self::assertNotNull($found);
         self::assertSame(ClientCreditStatus::Open, $found->status);
 
         $this->creditRepo->voidByReconciliation(1);
 
-        $found = $this->creditRepo->findByReconciliation(1);
+        $found = $this->creditRepo->findByReconciliation(7, 1);
         self::assertSame(ClientCreditStatus::Voided, $found?->status);
     }
 }

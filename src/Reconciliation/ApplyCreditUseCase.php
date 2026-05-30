@@ -45,7 +45,7 @@ final readonly class ApplyCreditUseCase implements ApplyCreditUseCaseInterface
             idempotencyKey: $idempotencyKey,
         );
 
-        $updated = $this->clientCredits->applyAmount($input->creditId, $input->amountCents);
+        $updated = $this->clientCredits->applyAmount($input->organizationId, $input->creditId, $input->amountCents);
 
         $this->auditEvents->record(new AuditEvent(
             organizationId: $input->organizationId,

@@ -44,7 +44,7 @@ final readonly class ReverseReconciliationHandler
 
         $reconciliation = $this->reconciliations->findById($organizationId, $reconciliationId)
             ?? throw new ReconciliationNotFoundException($reconciliationId);
-        $allocs = $this->reconciliations->findAllocationsByReconciliation($reconciliationId);
+        $allocs = $this->reconciliations->findAllocationsByReconciliation($organizationId, $reconciliationId);
 
         return $this->response->create(ReconciliationResponse::toArray($reconciliation, $allocs));
     }

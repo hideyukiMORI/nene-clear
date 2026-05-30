@@ -83,7 +83,7 @@ final class PdoUserRepositoryTest extends TestCase
         self::assertTrue($repo->existsByEmail('member@acme.example'));
         self::assertNotNull($repo->findByEmail('member@acme.example'));
 
-        $repo->delete($id);
+        $repo->delete(7, $id);
 
         self::assertFalse($repo->existsByEmail('member@acme.example'));
         self::assertNull($repo->findById($id));

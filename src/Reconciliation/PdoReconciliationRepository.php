@@ -93,11 +93,11 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
         return $this->query->lastInsertId();
     }
 
-    public function findAllocationsByReconciliation(int $reconciliationId): array
+    public function findAllocationsByReconciliation(int $organizationId, int $reconciliationId): array
     {
         $rows = $this->query->fetchAll(
-            'SELECT ' . self::ALLOC_COLUMNS . ' FROM reconciliation_allocations WHERE payment_reconciliation_id = ? ORDER BY id ASC',
-            [$reconciliationId],
+            'SELECT ' . self::ALLOC_COLUMNS . ' FROM reconciliation_allocations WHERE payment_reconciliation_id = ? AND organization_id = ? ORDER BY id ASC',
+            [$reconciliationId, $organizationId],
         );
 
         return array_map($this->hydrateAllocation(...), $rows);
