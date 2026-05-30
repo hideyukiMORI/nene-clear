@@ -143,7 +143,9 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `validation-failed` | Request body/field validation error |
 | `unauthorized` | Missing or invalid bearer token (framework `BearerTokenMiddleware`) |
 | `invalid-credentials` | Login failed — wrong email or password |
+| `too-many-login-attempts` | Login throttled — too many failed attempts (HTTP 429) |
 | `insufficient-capability` | Authenticated but lacks required capability |
+| `role-not-assignable` | Caller may not assign the requested role (e.g. org-admin assigning superadmin) |
 | `organization-not-resolved` | Tenant could not be resolved for the request |
 | `organization-not-found` | Organization id/slug not found |
 | `organization-already-exists` | Create rejected — slug already taken |

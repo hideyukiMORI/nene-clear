@@ -16,6 +16,7 @@ final readonly class LoginHandler
     public function __construct(
         private LoginUseCaseInterface $login,
         private JsonResponseFactory $response,
+        private ?LoginThrottleInterface $throttle = null,
     ) {
     }
 
@@ -39,7 +40,21 @@ final readonly class LoginHandler
             throw new ValidationException($errors);
         }
 
-        $output = $this->login->execute(new LoginInput(email: $email, password: $password));
+        // Brute-force / credential-stuffing guard keyed on email + client IP.
+        $identifier = strtolower($email) . '|' . $this->clientIp($request);
+
+        if ($this->throttle !== null && $this->throttle->secondsUntilUnlocked($identifier) > 0) {
+            throw new TooManyLoginAttemptsException($this->throttle->secondsUntilUnlocked($identifier));
+        }
+
+        try {
+            $output = $this->login->execute(new LoginInput(email: $email, password: $password));
+        } catch (InvalidCredentialsException $e) {
+            $this->throttle?->recordFailure($identifier);
+            throw $e;
+        }
+
+        $this->throttle?->clear($identifier);
 
         return $this->response->create([
             'token' => $output->token,
@@ -50,5 +65,12 @@ final readonly class LoginHandler
                 'organization_id' => $output->organizationId,
             ],
         ]);
+    }
+
+    private function clientIp(ServerRequestInterface $request): string
+    {
+        $params = $request->getServerParams();
+
+        return (string) ($params['REMOTE_ADDR'] ?? 'unknown');
     }
 }

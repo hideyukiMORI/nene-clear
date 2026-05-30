@@ -43,6 +43,20 @@ final class SchemaFixture
         );
     }
 
+    public static function createLoginAttempts(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE login_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                identifier_hash TEXT NOT NULL UNIQUE,
+                attempt_count INTEGER NOT NULL DEFAULT 0,
+                window_started_at TEXT NOT NULL,
+                locked_until TEXT,
+                created_at TEXT
+            )'
+        );
+    }
+
     public static function createBankAccounts(DatabaseQueryExecutorInterface $query): void
     {
         $query->execute(

@@ -31,6 +31,7 @@ final class UserCrudHttpTest extends TestCase
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-usercrud-', true) . '.sqlite';
         $query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
         SchemaFixture::createUsers($query);
+        SchemaFixture::createLoginAttempts($query);
 
         $users = new PdoUserRepository($query);
         $users->save($this->user('admin@acme.example', Role::Admin, 7));

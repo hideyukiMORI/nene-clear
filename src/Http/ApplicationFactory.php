@@ -22,6 +22,8 @@ use NeneClear\Auth\InvalidCredentialsExceptionHandler;
 use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginHandler;
 use NeneClear\Auth\LoginUseCase;
+use NeneClear\Auth\PdoLoginThrottle;
+use NeneClear\Auth\TooManyLoginAttemptsExceptionHandler;
 use NeneClear\BankImport\BankAccountNotFoundExceptionHandler;
 use NeneClear\BankImport\BankCsvParser;
 use NeneClear\BankImport\BankImportBatchAlreadyReversedExceptionHandler;
@@ -107,6 +109,7 @@ use NeneClear\User\ListUsersUseCase;
 use NeneClear\User\PdoUserRepository;
 use NeneClear\User\UpdateUserHandler;
 use NeneClear\User\UpdateUserUseCase;
+use NeneClear\User\RoleNotAssignableExceptionHandler;
 use NeneClear\User\UserAlreadyExistsExceptionHandler;
 use NeneClear\User\UserNotFoundExceptionHandler;
 use NeneClear\User\UserRouteRegistrar;
@@ -169,7 +172,7 @@ final class ApplicationFactory
             $organizations = new PdoOrganizationRepository($query);
 
             $routeRegistrars[] = new AuthRouteRegistrar(
-                new LoginHandler(new LoginUseCase($users, $jwt), $json),
+                new LoginHandler(new LoginUseCase($users, $jwt), $json, new PdoLoginThrottle($query, new UtcClock())),
                 new GetCurrentUserHandler($users, $json, $problemDetails),
             );
             $routeRegistrars[] = new OrganizationRouteRegistrar(
@@ -236,10 +239,12 @@ final class ApplicationFactory
             );
 
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new TooManyLoginAttemptsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationAlreadyExistsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UserNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new UserAlreadyExistsExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new RoleNotAssignableExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new DuplicateBankImportExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new BankAccountNotFoundExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new InvalidBankCsvExceptionHandler($problemDetails);

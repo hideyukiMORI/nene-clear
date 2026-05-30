@@ -6,10 +6,12 @@ local MySQL-backed instance seeded with a large multi-tenant dataset
 45 client credits, 60 dunning notices). Localhost only; no external targets.
 
 **Harness:** `tests/security/seed.php` (dataset) + `tests/security/probe.sh`
-(attack probes). Re-runnable against any instance via `DB_*` env vars.
+(round 1) + `tests/security/probe2.sh` (round 2, deeper vectors). Re-runnable
+against any instance via `DB_*` env vars.
 
-**Result:** 20 checks pass, **0 exploitable vulnerabilities**. Three robustness
-issues found and fixed; one operational hardening recommendation remains.
+**Result:** two rounds, 34 checks pass, **0 remaining exploitable
+vulnerabilities**. Four issues found and fixed (incl. one **critical**
+privilege escalation found in round 2); all re-verified.
 
 ---
 
@@ -24,7 +26,22 @@ issues found and fixed; one operational hardening recommendation remains.
 | **Financial integrity** | negative allocation, integer overflow amount, empty allocations | All 422 (no negative/overflow posting) |
 | **Input / method / disclosure** | 1 MB body, malformed JSON, unsupported methods, not-found error body, path traversal in id | Rejected; **no stack traces / paths leaked** |
 | **Transport / CORS** | preflight from hostile Origin | No permissive CORS headers (same-origin) |
-| **Brute force** | 12 rapid wrong-password logins | All 401 — **no throttle (see F-2)** |
+| **Brute force** | 12 rapid wrong-password logins | Throttled after 5 (429) — see F-2 |
+
+### Round 2 — deeper / creative vectors
+
+| Class | Probes | Outcome |
+| --- | --- | --- |
+| **Mass assignment** | inject `organization_id`, `role:superadmin`, `id` in create-user body | `organization_id`/`id` ignored (token-derived); `role:superadmin` **was** accepted → F-4 (fixed) |
+| **Privilege escalation** | org-admin promote member→superadmin (create + update) | Blocked after fix (403) |
+| **IDOR numeric/type** | id = 0, -1, huge, float, `1e3`, `abc`, injection, `null` | All 404/400/422 |
+| **Idempotency / double-spend** | same `Idempotency-Key` twice | No duplicate (replay returns the original) |
+| **JSON/type confusion** | arrays/objects for scalars, 500-level nesting | All 401/422, no crash |
+| **Pagination DoS** | limit = 9,999,999 / 0 / negative / non-numeric | All 422 (capped) |
+| **Stored/second-order injection** | SQL+XSS in `reversal_reason` | Stored as data; table intact |
+| **User enumeration** | unknown-user vs wrong-password response | Identical status+body |
+| **JWT/header edge** | lowercase `bearer`, no scheme, mutated token | All 401 |
+| **Content-Type confusion** | form-encoded login | 400 |
 
 ---
 
@@ -38,13 +55,24 @@ finalized. (Unit/E2E suites passed only because they mocked the wrong path.)
 **Fix:** `frontend/src/api/endpoints.ts` now posts to `/admin/reconciliations`;
 unit + E2E mocks updated. Surfaced only because the probe hit the real backend.
 
-### F-2 — No login rate limiting / lockout · severity: medium · recommendation
-12 consecutive failed logins all returned 401 with no throttling, lockout, or
-backoff. Credential stuffing / brute force is unthrottled at the application
-layer. **Recommendation:** add per-IP + per-account throttling (e.g. exponential
-backoff or temporary lockout) at the reverse proxy or in `LoginUseCase`. Tracked
-for a follow-up; not a data-exposure bug but a real-world hardening gap for a
-financial system.
+### F-2 — No login rate limiting / lockout (fixed) · severity: medium
+12 consecutive failed logins all returned 401 with no throttling. **Fix:** added
+a DB-backed `PdoLoginThrottle` (table `login_attempts`) keyed on email + client
+IP. After 5 failures within a 15-minute window the identifier is locked for
+15 minutes (HTTP 429 `too-many-login-attempts`, even with the correct password);
+a successful login clears the counter. Verified: round-2 probe Q now sees
+`401×5 → 429`.
+
+### F-4 — Privilege escalation: org-admin could mint a superadmin (fixed) · severity: critical
+Round 2 found that an organization-scoped **admin** could create (or update) a
+user with `role: superadmin` via the request body — yielding an account with
+platform-wide `manage_organizations` capability (full escalation from one tenant
+to cross-tenant control). (`organization_id` was *not* mass-assignable — it is
+taken from the caller's token — but `role` was unconstrained.)
+**Fix:** invariant in `CreateUserUseCase` / `UpdateUserUseCase` — the
+`superadmin` role may only exist with a `null` organization, so an org-scoped
+caller assigning it is rejected with 403 `role-not-assignable`. Verified:
+org-admin superadmin-create → 403; normal roles still 201.
 
 ### F-3 — MySQL migration portability (fixed) · severity: high (deployment)
 `CreateClearSettingsTable` declared `organization_id` as a PRIMARY KEY without
@@ -81,5 +109,6 @@ DB_ADAPTER=mysql DB_HOST=127.0.0.1 DB_PORT=3310 DB_NAME=nene_clear \
   DB_USER=nene_clear DB_PASSWORD=nene_clear composer migrations:migrate -- --no-interaction
 DB_HOST=127.0.0.1 DB_PORT=3310 php tests/security/seed.php
 php -S localhost:8082 sec-router.php &     # MySQL-backed instance
-bash tests/security/probe.sh
+bash tests/security/probe.sh               # round 1
+bash tests/security/probe2.sh              # round 2 (deeper vectors)
 ```

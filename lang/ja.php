@@ -25,6 +25,12 @@ return [
     'problem.invalid-credentials.title'  => '認証失敗',
     'problem.invalid-credentials.detail' => 'メールアドレスまたはパスワードが正しくありません。',
 
+    'problem.too-many-login-attempts.title'  => 'ログイン試行回数の超過',
+    'problem.too-many-login-attempts.detail' => 'ログイン試行が多すぎます。しばらくしてから再度お試しください。',
+
+    'problem.role-not-assignable.title'  => 'ロール割り当て不可',
+    'problem.role-not-assignable.detail' => 'このロールを割り当てる権限がありません。',
+
     'problem.insufficient-capability.title'  => '権限不足',
     'problem.insufficient-capability.detail' => 'このアクションに必要な権限がありません。',
 

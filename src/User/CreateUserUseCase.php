@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace NeneClear\User;
 
+use NeneClear\Auth\Role;
+
 final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
 {
     public function __construct(
@@ -13,6 +15,13 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
 
     public function execute(CreateUserInput $input): User
     {
+        // Privilege-escalation guard: the cross-tenant superadmin role may only
+        // exist with a null organization (created by a superadmin caller). An
+        // org-scoped admin (non-null organizationId) cannot mint a superadmin.
+        if ($input->role === Role::Superadmin && $input->organizationId !== null) {
+            throw new RoleNotAssignableException($input->role->value);
+        }
+
         if ($this->users->existsByEmail($input->email)) {
             throw new UserAlreadyExistsException($input->email);
         }

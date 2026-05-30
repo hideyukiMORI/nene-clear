@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace NeneClear\User;
 
+use NeneClear\Auth\Role;
+
 final readonly class UpdateUserUseCase implements UpdateUserUseCaseInterface
 {
     public function __construct(
@@ -17,6 +19,12 @@ final readonly class UpdateUserUseCase implements UpdateUserUseCaseInterface
 
         if ($existing === null || $existing->organizationId !== $input->callerOrganizationId) {
             throw new UserNotFoundException($input->id);
+        }
+
+        // Privilege-escalation guard: an org-scoped user (non-null org) can never
+        // be promoted to the cross-tenant superadmin role.
+        if ($input->role === Role::Superadmin && $existing->organizationId !== null) {
+            throw new RoleNotAssignableException($input->role->value);
         }
 
         $updated = new User(

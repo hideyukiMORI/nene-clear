@@ -38,6 +38,7 @@ final class ReconciliationHttpTest extends TestCase
         $query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
 
         SchemaFixture::createUsers($query);
+        SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createBankAccounts($query);
         SchemaFixture::createBankImportBatches($query);
         SchemaFixture::createBankTransactions($query);

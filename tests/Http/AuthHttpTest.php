@@ -32,6 +32,7 @@ final class AuthHttpTest extends TestCase
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-auth-', true) . '.sqlite';
         $this->query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
         SchemaFixture::createUsers($this->query);
+        SchemaFixture::createLoginAttempts($this->query);
 
         (new PdoUserRepository($this->query))->save(new User(
             email: 'admin@acme.example',
@@ -92,6 +93,38 @@ final class AuthHttpTest extends TestCase
 
         self::assertSame(401, $response->getStatusCode());
         self::assertSame('application/problem+json; charset=utf-8', $response->getHeaderLine('Content-Type'));
+    }
+
+    public function test_login_locks_out_after_repeated_failures(): void
+    {
+        // 5 failures from the same identifier (email + IP) engage the lock.
+        for ($i = 0; $i < 5; $i++) {
+            $r = $this->postJson('/admin/auth/login', ['email' => 'admin@acme.example', 'password' => 'nope']);
+            self::assertSame(401, $r->getStatusCode(), "attempt $i");
+        }
+
+        // 6th request is throttled with 429, even with the CORRECT password.
+        $locked = $this->postJson('/admin/auth/login', ['email' => 'admin@acme.example', 'password' => self::PASSWORD]);
+        self::assertSame(429, $locked->getStatusCode());
+        $body = $this->decode($locked);
+        self::assertStringContainsString('too-many-login-attempts', (string) $body['type']);
+        self::assertArrayHasKey('retry_after_seconds', $body);
+    }
+
+    public function test_successful_login_resets_the_throttle(): void
+    {
+        // 4 failures (below the threshold) then a success clears the counter.
+        for ($i = 0; $i < 4; $i++) {
+            $this->postJson('/admin/auth/login', ['email' => 'admin@acme.example', 'password' => 'nope']);
+        }
+        $ok = $this->postJson('/admin/auth/login', ['email' => 'admin@acme.example', 'password' => self::PASSWORD]);
+        self::assertSame(200, $ok->getStatusCode());
+
+        // After the reset, 4 more failures still do not lock.
+        for ($i = 0; $i < 4; $i++) {
+            $r = $this->postJson('/admin/auth/login', ['email' => 'admin@acme.example', 'password' => 'nope']);
+            self::assertSame(401, $r->getStatusCode());
+        }
     }
 
     public function test_me_returns_user_with_valid_token(): void
