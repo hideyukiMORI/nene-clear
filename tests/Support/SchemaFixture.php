@@ -118,4 +118,56 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createPaymentReconciliations(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE payment_reconciliations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                bank_transaction_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT \'confirmed\',
+                reason_code TEXT,
+                confirmed_by INTEGER NOT NULL,
+                confirmed_at TEXT NOT NULL,
+                reversed_at TEXT,
+                reversal_reason TEXT,
+                created_at TEXT
+            )'
+        );
+    }
+
+    public static function createReconciliationAllocations(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE reconciliation_allocations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                payment_reconciliation_id INTEGER NOT NULL,
+                invoice_id INTEGER NOT NULL,
+                amount_cents INTEGER NOT NULL,
+                payment_id INTEGER,
+                external_reference TEXT,
+                created_at TEXT
+            )'
+        );
+    }
+
+    public static function createClientCredits(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE client_credits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                client_id INTEGER NOT NULL,
+                amount_cents INTEGER NOT NULL,
+                remaining_cents INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT \'open\',
+                source_bank_transaction_id INTEGER NOT NULL,
+                reconciliation_id INTEGER NOT NULL,
+                created_by INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            )'
+        );
+    }
 }

@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace NeneClear\Reconciliation;
+
+interface ClientCreditRepositoryInterface
+{
+    public function save(ClientCredit $credit): int;
+
+    public function findByReconciliation(int $reconciliationId): ?ClientCredit;
+
+    public function voidByReconciliation(int $reconciliationId): void;
+
+    /**
+     * @return list<ClientCredit>
+     */
+    public function findByOrganization(int $organizationId, int $limit, int $offset): array;
+
+    public function countByOrganization(int $organizationId): int;
+}
