@@ -25,6 +25,42 @@ export async function bypassLogin(page: Page): Promise<void> {
 }
 
 /**
+ * Log in through the real form. Unlike bypassLogin this does NOT re-inject the
+ * token on every navigation, so logout / session-expiry flows behave for real.
+ * The login endpoint must be mocked by the caller's apiRoute setup, or this
+ * registers a default success.
+ */
+export async function loginViaForm(
+  page: Page,
+  opts: { role?: string; orgId?: number | null; email?: string } = {},
+): Promise<void> {
+  const email = opts.email ?? 'admin@nene-clear.dev'
+  await apiRoute(page, '**/admin/auth/login', (route) =>
+    json(route, 200, {
+      token: 'e2e-jwt',
+      user: { user_id: 1, email, role: opts.role ?? 'admin', organization_id: opts.orgId ?? 7 },
+    }),
+  )
+  await page.goto('/login')
+  await page.locator('input[name="email"]').fill(email)
+  await page.locator('input[name="password"]').fill('admin1234')
+  await page.getByRole('button').click()
+  await page.waitForURL(/\/admin$/)
+}
+
+/** Click a sidebar nav link by its visible label and wait for the route. */
+export async function navTo(page: Page, label: string, urlRe: RegExp): Promise<void> {
+  await page.getByRole('link', { name: label }).click()
+  await page.waitForURL(urlRe)
+}
+
+/** Click the logout button and confirm we land on /login. */
+export async function logout(page: Page, label = 'ログアウト'): Promise<void> {
+  await page.getByRole('button', { name: label }).click()
+  await page.waitForURL(/\/login/)
+}
+
+/**
  * Register an API route that only handles fetch/xhr requests. Document
  * navigations (resourceType 'document') are continued so the SPA loads.
  */
