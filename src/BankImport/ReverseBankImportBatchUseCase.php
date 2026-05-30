@@ -55,8 +55,15 @@ final readonly class ReverseBankImportBatchUseCase implements ReverseBankImportB
             occurredAt: $now,
             payload: [
                 'bank_import_batch_id' => $input->batchId,
-                'reversal_reason' => $input->reversalReason,
-                'rows_voided' => $unmatchedCount,
+                'before' => [
+                    'status' => 'imported',
+                    'row_count' => count($lines),
+                ],
+                'after' => [
+                    'status' => 'reversed',
+                    'reversal_reason' => $input->reversalReason,
+                    'rows_voided' => $unmatchedCount,
+                ],
             ],
         ));
 

@@ -59,7 +59,12 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 idempotencyKey: $idempotencyKey,
             );
 
-            $paymentsCreated[] = ['allocation' => $allocation, 'payment' => $payment, 'externalRef' => $externalRef];
+            $paymentsCreated[] = [
+                'allocation' => $allocation,
+                'payment' => $payment,
+                'externalRef' => $externalRef,
+                'invoiceOutstandingBefore' => $invoice->outstandingCents,
+            ];
         }
 
         $reconciliationId = $this->reconciliations->save(new Reconciliation(
@@ -114,10 +119,31 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
             actorUserId: $input->actorUserId,
             occurredAt: $now,
             payload: [
-                'payment_reconciliation_id' => $reconciliationId,
-                'bank_transaction_id' => $input->bankTransactionId,
-                'total_allocated_cents' => $totalAllocated,
-                'remainder_cents' => $remainder,
+                'before' => [
+                    'bank_transaction_status' => $tx->status->value,
+                    'bank_transaction_amount_cents' => $tx->amountCents,
+                    'allocations' => array_map(
+                        static fn (array $e): array => [
+                            'invoice_id' => $e['allocation']->invoiceId,
+                            'invoice_outstanding_cents' => $e['invoiceOutstandingBefore'],
+                        ],
+                        $paymentsCreated,
+                    ),
+                ],
+                'after' => [
+                    'payment_reconciliation_id' => $reconciliationId,
+                    'bank_transaction_status' => $newStatus->value,
+                    'total_allocated_cents' => $totalAllocated,
+                    'remainder_cents' => $remainder,
+                    'allocations' => array_map(
+                        static fn (array $e): array => [
+                            'invoice_id' => $e['allocation']->invoiceId,
+                            'amount_cents' => $e['allocation']->amountCents,
+                            'payment_id' => $e['payment']->paymentId,
+                        ],
+                        $paymentsCreated,
+                    ),
+                ],
             ],
         ));
 
