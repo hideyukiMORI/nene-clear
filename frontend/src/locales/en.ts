@@ -72,8 +72,7 @@ export const en: Partial<Record<MessageKey, string>> = {
   'clientCredit.applyModal.invoiceId': 'Invoice ID',
   'clientCredit.applyModal.amount': 'Amount (¥)',
   'clientCredit.status.open': 'Open',
-  'clientCredit.status.partially_applied': 'Partial',
-  'clientCredit.status.applied': 'Applied',
+  'clientCredit.status.voided': 'Voided',
   'clientCredit.sourceTransaction': 'Source txn',
   'nav.clientCredits': 'Client Credits',
 

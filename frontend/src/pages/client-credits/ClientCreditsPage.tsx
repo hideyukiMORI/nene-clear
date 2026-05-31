@@ -44,10 +44,9 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
   )
 }
 
-const STATUS_MAP: Record<ClientCredit['status'], { v: 'ok' | 'warn' | 'neut'; label: string }> = {
-  open:              { v: 'ok',   label: '有効' },
-  partially_applied: { v: 'warn', label: '一部適用' },
-  applied:           { v: 'neut', label: '適用済' },
+const STATUS_MAP: Record<ClientCredit['status'], { v: 'ok' | 'neut'; label: string }> = {
+  open:   { v: 'ok',   label: '有効' },
+  voided: { v: 'neut', label: '無効' },
 }
 
 export default function ClientCreditsPage() {
@@ -72,7 +71,7 @@ export default function ClientCreditsPage() {
             {creditsQ.data?.items.map(c => {
               const s = STATUS_MAP[c.status]
               return (
-                <tr key={c.client_credit_id} className={c.status === 'applied' ? 'dim' : ''}>
+                <tr key={c.client_credit_id} className={c.status === 'voided' ? 'dim' : ''}>
                   <td className="muted">{c.client_credit_id}</td>
                   <td className="strong">#{c.client_id}</td>
                   <td className="num">{yen(c.amount_cents)}</td>
@@ -81,7 +80,7 @@ export default function ClientCreditsPage() {
                   <td className="mono muted">#{c.source_bank_transaction_id}</td>
                   <td className="muted">{formatDate(c.created_at)}</td>
                   <td className="row-act">
-                    {c.status !== 'applied' && (
+                    {c.status === 'open' && (
                       <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
                         <Icon name="link" size="sm" />適用
                       </Button>

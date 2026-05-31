@@ -18,7 +18,7 @@ final readonly class DunningNoticeResponse
             'invoice_number' => $notice->invoiceNumber,
             'client_id' => $notice->clientId,
             'recipient_email' => $notice->recipientEmail,
-            'outstanding_cents' => $notice->outstandingCents,
+            'outstanding_at_send_cents' => $notice->outstandingCents,
             'due_at' => $notice->dueAt,
             'channel' => $notice->channel,
             'template_version' => $notice->templateVersion,

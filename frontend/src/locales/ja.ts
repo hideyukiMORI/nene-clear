@@ -78,8 +78,7 @@ export const ja = {
   'clientCredit.applyModal.invoiceId': '請求書ID',
   'clientCredit.applyModal.amount': '適用額（円）',
   'clientCredit.status.open': '有効',
-  'clientCredit.status.partially_applied': '一部適用',
-  'clientCredit.status.applied': '適用済',
+  'clientCredit.status.voided': '無効',
   'clientCredit.sourceTransaction': '元取引ID',
   'nav.clientCredits': '前受金',
 
