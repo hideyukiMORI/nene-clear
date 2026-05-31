@@ -7,4 +7,6 @@ namespace NeneClear\Dunning;
 interface DunningMailerInterface
 {
     public function send(DunningMailPayload $payload): void;
+
+    public function channel(): string;
 }

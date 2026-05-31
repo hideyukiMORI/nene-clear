@@ -48,6 +48,13 @@ use NeneClear\ClearSettings\PdoClearSettingsRepository;
 use NeneClear\ClearSettings\TestUpstreamConnectionHandler;
 use NeneClear\ClearSettings\UpdateClearSettingsHandler;
 use NeneClear\Dunning\DunningNoticeNotFoundExceptionHandler;
+use NeneClear\Dunning\DunningPausedExceptionHandler;
+use NeneClear\Dunning\ListDunningPausesHandler;
+use NeneClear\Dunning\PauseDunningHandler;
+use NeneClear\Dunning\PauseDunningUseCase;
+use NeneClear\Dunning\PdoDunningPauseRepository;
+use NeneClear\Dunning\ResumeDunningHandler;
+use NeneClear\Dunning\ResumeDunningUseCase;
 use NeneClear\Dunning\DunningRouteRegistrar;
 use NeneClear\Dunning\DunningTooFrequentExceptionHandler;
 use NeneClear\Dunning\GetDunningNoticeByIdHandler;
@@ -264,16 +271,21 @@ final class ApplicationFactory
             $domainExceptionHandlers[] = new InvoiceAlreadyPaidExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new DunningTooFrequentExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new DunningNoticeNotFoundExceptionHandler($problemDetails);
+            $domainExceptionHandlers[] = new DunningPausedExceptionHandler($problemDetails);
 
             $mailer = $smtpHost !== null && $smtpHost !== ''
                 ? new SmtpDunningMailer($smtpHost, $smtpPort, $smtpFromAddress, $smtpFromName, $smtpUsername, $smtpPassword)
                 : new LogOnlyDunningMailer();
 
             $dunningNotices = new PdoDunningNoticeRepository($query);
+            $dunningPauses = new PdoDunningPauseRepository($query);
             $routeRegistrars[] = new DunningRouteRegistrar(
-                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, $mailer, $audit, $clock, new MessageCatalog(dirname(__DIR__, 2) . '/lang')), $dunningNotices, $json),
+                new SendDunningHandler(new SendDunningUseCase($dunningNotices, $clearSettings, $upstream, $mailer, $audit, $clock, new MessageCatalog(dirname(__DIR__, 2) . '/lang'), $dunningPauses), $dunningNotices, $json),
                 new ListDunningNoticesHandler($dunningNotices, $json),
                 new GetDunningNoticeByIdHandler($dunningNotices, $json),
+                new PauseDunningHandler(new PauseDunningUseCase($dunningPauses, $audit, $clock), $json),
+                new ResumeDunningHandler(new ResumeDunningUseCase($dunningPauses, $audit, $clock), $json),
+                new ListDunningPausesHandler($dunningPauses, $json),
             );
 
             $authMiddleware = [
@@ -287,6 +299,7 @@ final class ApplicationFactory
                     '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/clear-settings' => CapabilityRule::same(Capability::ManageClearSettings),
                     '/admin/dunning-notices' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::SendDunning),
+                    '/admin/dunning-pauses' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::SendDunning),
                 ]),
             ];
         }

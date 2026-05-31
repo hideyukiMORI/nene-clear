@@ -6,6 +6,11 @@ namespace NeneClear\Dunning;
 
 final readonly class LogOnlyDunningMailer implements DunningMailerInterface
 {
+    public function channel(): string
+    {
+        return 'log';
+    }
+
     public function send(DunningMailPayload $payload): void
     {
         error_log(sprintf(

@@ -17,7 +17,6 @@ use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
 {
     private const int DEFAULT_MIN_INTERVAL_DAYS = 7;
-    private const string CHANNEL = 'log';
 
     public function __construct(
         private DunningNoticeRepositoryInterface $notices,
@@ -27,6 +26,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         private AuditEventRepositoryInterface $auditEvents,
         private ClockInterface $clock,
         private MessageCatalog $catalog,
+        private ?DunningPauseRepositoryInterface $pauses = null,
     ) {
     }
 
@@ -36,6 +36,11 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
 
         if (!in_array($invoice->status, ['issued', 'partially_paid'], true) || $invoice->outstandingCents <= 0) {
             throw new InvoiceAlreadyPaidException($input->invoiceId, $invoice->status);
+        }
+
+        $pause = $this->pauses?->findActiveByInvoice($input->organizationId, $input->invoiceId);
+        if ($pause !== null) {
+            throw new DunningPausedException($input->invoiceId, $pause->pausedReason);
         }
 
         $settings = $this->clearSettings->findByOrganization($input->organizationId);
@@ -76,7 +81,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             recipientEmail: $client->recipientEmail,
             outstandingCents: $invoice->outstandingCents,
             dueAt: $invoice->dueAt,
-            channel: self::CHANNEL,
+            channel: $this->mailer->channel(),
             sentBy: $input->actorUserId,
             sentAt: $nowStr,
         );
@@ -109,7 +114,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
                     'invoice_number' => $invoice->invoiceNumber,
                     'recipient_email' => $client->recipientEmail,
                     'outstanding_at_send_cents' => $invoice->outstandingCents,
-                    'channel' => self::CHANNEL,
+                    'channel' => $this->mailer->channel(),
                 ],
             ],
         ));

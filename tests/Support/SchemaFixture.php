@@ -220,4 +220,20 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createDunningPauses(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE dunning_pauses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                invoice_id INTEGER NOT NULL,
+                paused_by INTEGER NOT NULL,
+                paused_at TEXT NOT NULL,
+                paused_reason TEXT NOT NULL,
+                unpaused_by INTEGER,
+                unpaused_at TEXT
+            )'
+        );
+    }
 }

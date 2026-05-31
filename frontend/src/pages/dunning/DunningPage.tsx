@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from '@/hooks/useTranslation'
-import { listDunningNotices, sendDunningNotice } from '@/api/endpoints'
+import {
+  listDunningNotices, sendDunningNotice,
+  listDunningPauses, pauseDunningNotice, resumeDunningNotice,
+} from '@/api/endpoints'
 
 function formatYen(cents: number) {
   return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP')
@@ -11,6 +14,59 @@ function formatDate(iso: string) {
   return iso.slice(0, 16).replace('T', ' ')
 }
 
+// ------- Pause Modal -------
+interface PauseModalProps {
+  invoiceId: number
+  onClose: () => void
+}
+
+function PauseModal({ invoiceId, onClose }: PauseModalProps) {
+  const { t } = useTranslation()
+  const qc = useQueryClient()
+  const [reason, setReason] = useState('')
+
+  const mutation = useMutation({
+    mutationFn: () => pauseDunningNotice(invoiceId, reason),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['dunning-pauses'] })
+      onClose()
+    },
+  })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+        <h3 className="mb-4 text-base font-semibold text-gray-900">{t('dunning.confirmPause')}</h3>
+        <p className="mb-3 text-sm text-gray-500">請求書ID: {invoiceId}</p>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('dunning.pauseReason')}</label>
+          <input
+            type="text"
+            value={reason}
+            onChange={e => setReason(e.target.value)}
+            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none"
+          />
+        </div>
+        {mutation.isError && (
+          <p className="mb-3 text-sm text-red-600">{mutation.error.message}</p>
+        )}
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} className="rounded border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending || !reason.trim()}
+            className="rounded bg-orange-600 px-4 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50"
+          >
+            {mutation.isPending ? t('common.loading') : t('dunning.pause')}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function DunningPage() {
   const { t } = useTranslation()
   const qc = useQueryClient()
@@ -18,10 +74,16 @@ export default function DunningPage() {
   const [invoiceIdInput, setInvoiceIdInput] = useState('')
   const [sendSuccess, setSendSuccess] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+  const [pauseTarget, setPauseTarget] = useState<number | null>(null)
 
   const noticesQuery = useQuery({
     queryKey: ['dunning-notices'],
     queryFn: ({ signal }) => listDunningNotices({ limit: 50 }, signal),
+  })
+
+  const pausesQuery = useQuery({
+    queryKey: ['dunning-pauses', { active_only: true }],
+    queryFn: ({ signal }) => listDunningPauses({ active_only: true, limit: 100 }, signal),
   })
 
   const sendMutation = useMutation({
@@ -38,6 +100,13 @@ export default function DunningPage() {
     },
   })
 
+  const resumeMutation = useMutation({
+    mutationFn: (invoiceId: number) => resumeDunningNotice(invoiceId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['dunning-pauses'] })
+    },
+  })
+
   function handleSend(e: React.FormEvent) {
     e.preventDefault()
     setSendSuccess(false)
@@ -49,6 +118,8 @@ export default function DunningPage() {
     }
     sendMutation.mutate(id)
   }
+
+  const activePauseIds = new Set((pausesQuery.data?.items ?? []).map(p => p.invoice_id))
 
   return (
     <div>
@@ -78,6 +149,14 @@ export default function DunningPage() {
           >
             {sendMutation.isPending ? t('common.loading') : t('dunning.send')}
           </button>
+          <button
+            type="button"
+            disabled={!invoiceIdInput}
+            onClick={() => invoiceIdInput && setPauseTarget(Number(invoiceIdInput))}
+            className="rounded border border-orange-300 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-50 disabled:opacity-40"
+          >
+            {t('dunning.pause')}
+          </button>
         </form>
 
         {sendError && (
@@ -89,6 +168,28 @@ export default function DunningPage() {
           </p>
         )}
       </div>
+
+      {/* Active pauses */}
+      {activePauseIds.size > 0 && (
+        <div className="mb-6 rounded-lg bg-orange-50 border border-orange-200 p-4">
+          <h2 className="mb-2 text-sm font-semibold text-orange-800">{t('dunning.paused')}（{activePauseIds.size}件）</h2>
+          <div className="flex flex-wrap gap-2">
+            {(pausesQuery.data?.items ?? []).map(p => (
+              <div key={p.dunning_pause_id} className="flex items-center gap-2 rounded bg-white border border-orange-200 px-3 py-1 text-xs">
+                <span className="font-medium text-gray-800">請求書 #{p.invoice_id}</span>
+                <span className="text-gray-400">{p.paused_reason}</span>
+                <button
+                  onClick={() => resumeMutation.mutate(p.invoice_id)}
+                  disabled={resumeMutation.isPending}
+                  className="text-blue-600 hover:underline"
+                >
+                  {t('dunning.resume')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* History table */}
       <div className="rounded-lg bg-white shadow-sm overflow-hidden">
@@ -138,6 +239,10 @@ export default function DunningPage() {
           </table>
         )}
       </div>
+
+      {pauseTarget !== null && (
+        <PauseModal invoiceId={pauseTarget} onClose={() => setPauseTarget(null)} />
+      )}
     </div>
   )
 }
