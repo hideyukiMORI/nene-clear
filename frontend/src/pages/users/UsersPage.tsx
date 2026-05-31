@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listUsers, createUser, deleteUser } from '@/api/endpoints'
 import type { User } from '@/types'
-import { Icon, Badge, Button, Card, DataTable, Modal, Notice } from '@/components/ui'
+import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
 
 type Role = 'admin' | 'member' | 'viewer'
 
@@ -70,12 +70,11 @@ export default function UsersPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div><h1>ユーザー管理</h1><p>チームメンバーのロールとアクセス権限を管理します。</p></div>
-        <div className="wrapw">
-          <Button variant="primary" onClick={() => setShowInvite(true)}><Icon name="plus" />ユーザーを招待</Button>
-        </div>
-      </div>
+      <PageHead
+        title="ユーザー管理"
+        sub="チームメンバーのロールとアクセス権限を管理します。"
+        actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon name="plus" />ユーザーを招待</Button>}
+      />
 
       <Card>
         <DataTable>
@@ -83,7 +82,7 @@ export default function UsersPage() {
             <tr><th>メールアドレス</th><th>ロール</th><th>ステータス</th><th>最終ログイン</th><th /></tr>
           </thead>
           <tbody>
-            {usersQ.isLoading && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+            <TableStateRow colSpan={5} loading={usersQ.isLoading} empty={usersQ.data?.items.length === 0} />
             {usersQ.data?.items.map(u => {
               const r = ROLE_MAP[u.role]
               return (
@@ -93,14 +92,13 @@ export default function UsersPage() {
                   <td>{u.status === 'active' ? <Badge variant="ok" dot>有効</Badge> : <Badge variant="warn" dot>招待中</Badge>}</td>
                   <td className="muted">—</td>
                   <td className="row-act">
-                    <Button variant="ghost" size="sm" style={{ color: 'var(--bad)', borderColor: 'var(--bad-line)' }} onClick={() => setDeleteTarget(u)}>
+                    <Button variant="ghost-danger" size="sm" onClick={() => setDeleteTarget(u)}>
                       <Icon name="trash" size="sm" />削除
                     </Button>
                   </td>
                 </tr>
               )
             })}
-            {usersQ.data?.items.length === 0 && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>データなし</td></tr>}
           </tbody>
         </DataTable>
       </Card>

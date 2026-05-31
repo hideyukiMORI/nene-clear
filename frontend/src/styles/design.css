@@ -214,6 +214,10 @@ svg.ic-lg{ width:22px; height:22px; }
 .btn-primary:active{ background:var(--primary-press); }
 .btn-ghost{ background:var(--surface); color:var(--ink-2); border-color:var(--line-strong); }
 .btn-ghost:hover{ background:var(--surface-2); border-color:var(--muted); }
+.btn-ghost-danger{ background:var(--surface); color:var(--bad); border-color:var(--bad-line); }
+.btn-ghost-danger:hover{ background:var(--bad-bg); border-color:var(--bad); }
+.btn-ghost-warn{ background:var(--surface); color:var(--warn); border-color:var(--warn-line); }
+.btn-ghost-warn:hover{ background:var(--warn-bg); border-color:var(--warn); }
 .btn-danger{ background:var(--bad); color:#fff; }
 .btn-danger:hover{ filter:brightness(.92); }
 .btn-warn{ background:var(--warn); color:#fff; }

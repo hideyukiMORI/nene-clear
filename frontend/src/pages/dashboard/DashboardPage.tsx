@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { listUnmatchedTransactions, listDunningNotices } from '@/api/endpoints'
-import { Icon, Kpi, KpiGrid, Card, CardHead, DataTable, Button } from '@/components/ui'
+import { Icon, Kpi, KpiGrid, Card, CardHead, DataTable, TableStateRow, Button, PageHead } from '@/components/ui'
 import { useNavigate } from 'react-router-dom'
-
-function yen(cents: number) { return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP') }
-function dateShort(iso: string) { return iso.slice(5, 10).replace('-', '-') }
+import { yen, formatDate } from '@/utils/format'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
@@ -23,12 +21,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>ダッシュボード</h1>
-          <p>入金消込・債権状況の概況</p>
-        </div>
-      </div>
+      <PageHead title="ダッシュボード" sub="入金消込・債権状況の概況" />
 
       <KpiGrid style={{ marginBottom: 20 }}>
         <Kpi
@@ -77,9 +70,7 @@ export default function DashboardPage() {
               <tr><th>入金日</th><th>金額</th><th>振込人名</th><th /></tr>
             </thead>
             <tbody>
-              {unmatchedQ.isLoading && (
-                <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>読み込み中…</td></tr>
-              )}
+              <TableStateRow colSpan={4} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyText="未消込の取引はありません" />
               {unmatchedQ.data?.items.map(tx => (
                 <tr key={tx.bank_transaction_id}>
                   <td className="muted">{tx.value_date}</td>
@@ -92,9 +83,6 @@ export default function DashboardPage() {
                   </td>
                 </tr>
               ))}
-              {unmatchedQ.data?.items.length === 0 && (
-                <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>未消込の取引はありません</td></tr>
-              )}
             </tbody>
           </DataTable>
         </Card>
@@ -113,19 +101,14 @@ export default function DashboardPage() {
               <tr><th>請求書</th><th>未収残高</th><th>送信日</th></tr>
             </thead>
             <tbody>
-              {dunningQ.isLoading && (
-                <tr><td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>読み込み中…</td></tr>
-              )}
+              <TableStateRow colSpan={3} loading={dunningQ.isLoading} empty={dunningQ.data?.items.length === 0} />
               {dunningQ.data?.items.map(n => (
                 <tr key={n.dunning_notice_id}>
                   <td className="strong mono">{n.invoice_number}</td>
                   <td className="num">{yen(n.outstanding_at_send_cents)}</td>
-                  <td className="muted">{dateShort(n.sent_at)}</td>
+                  <td className="muted">{formatDate(n.sent_at)}</td>
                 </tr>
               ))}
-              {dunningQ.data?.items.length === 0 && (
-                <tr><td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>データなし</td></tr>
-              )}
             </tbody>
           </DataTable>
         </Card>

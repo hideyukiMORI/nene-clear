@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listBankTransactions, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
-import { Icon, Badge, Button, Card, DataTable, Pager, FilterBar, FilterField } from '@/components/ui'
+import { Icon, Badge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
+import { yen } from '@/utils/format'
 
 const PAGE = 20
-function yen(cents: number) { return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP') }
 
 const STATUS_BADGE: Record<BankTransaction['status'], { v: 'warn' | 'info' | 'ok' | 'neut'; label: string }> = {
   unmatched:         { v: 'warn', label: '未消込' },
@@ -47,14 +47,15 @@ export default function BankTransactionsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div><h1>銀行取引一覧</h1><p>取り込んだ入出金取引を絞り込み・確認します。</p></div>
-        <div className="wrapw">
+      <PageHead
+        title="銀行取引一覧"
+        sub="取り込んだ入出金取引を絞り込み・確認します。"
+        actions={
           <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/bank-transactions', 'bank-transactions.csv')}>
             <Icon name="export" />CSV出力
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <FilterBar>
         <FilterField label="ステータス">
@@ -93,7 +94,7 @@ export default function BankTransactionsPage() {
             <tr><th>入金日</th><th>金額</th><th>振込人名</th><th>ステータス</th></tr>
           </thead>
           <tbody>
-            {txQ.isLoading && <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+            <TableStateRow colSpan={4} loading={txQ.isLoading} empty={txQ.data?.items.length === 0} />
             {txQ.data?.items.map(tx => {
               const s = STATUS_BADGE[tx.status]
               return (
@@ -105,7 +106,6 @@ export default function BankTransactionsPage() {
                 </tr>
               )
             })}
-            {txQ.data?.items.length === 0 && <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: 20 }}>データなし</td></tr>}
           </tbody>
         </DataTable>
         {total > PAGE && (

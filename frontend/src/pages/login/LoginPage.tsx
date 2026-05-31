@@ -6,7 +6,7 @@ import { Icon, Button, Notice } from '@/components/ui'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('admin@example.com')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -73,6 +73,7 @@ export default function LoginPage() {
                 <input
                   className="inp"
                   type="email" name="email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   autoComplete="username"

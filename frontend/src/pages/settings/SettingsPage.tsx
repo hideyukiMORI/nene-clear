@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/api/endpoints'
 import type { BankAccount, ClearSettings } from '@/types'
-import { Icon, Button, Card, CardFoot, Notice } from '@/components/ui'
+import { Icon, Button, Card, CardFoot, Notice, PageHead } from '@/components/ui'
 
 function emptyAccount(): BankAccount {
   return { bank_name: '', bank_branch: '', account_type: 'ordinary', account_number: '', csv_encoding: 'utf8', csv_date_format: 'Y/m/d', csv_date_column: 0, csv_amount_column: 1, csv_counterparty_column: 3, csv_header_rows: 1 }
@@ -122,9 +122,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div><h1>設定</h1><p>API連携・督促ポリシー・銀行口座を構成します。</p></div>
-      </div>
+      <PageHead title="設定" sub="API連携・督促ポリシー・銀行口座を構成します。" />
       {settingsQ.isLoading && <p className="muted">読み込み中…</p>}
       {settingsQ.isError && <Notice variant="bad">{settingsQ.error.message}</Notice>}
       {settingsQ.data && <SettingsForm settings={settingsQ.data} />}

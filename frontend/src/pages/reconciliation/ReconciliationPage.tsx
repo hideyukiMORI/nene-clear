@@ -6,10 +6,8 @@ import {
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
-import { Icon, Badge, Button, Card, DataTable, Modal, Notice, Tabs } from '@/components/ui'
-
-function yen(cents: number) { return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP') }
-function dateStr(iso: string) { return iso.slice(0, 10) }
+import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead } from '@/components/ui'
+import { yen, formatDate } from '@/utils/format'
 
 // ─── Confirm match modal ───
 function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => void }) {
@@ -148,14 +146,15 @@ export default function ReconciliationPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div><h1>消込</h1><p>銀行入金と請求を突合し、消込を確定します。</p></div>
-        <div className="wrapw">
+      <PageHead
+        title="消込"
+        sub="銀行入金と請求を突合し、消込を確定します。"
+        actions={
           <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/reconciliations', 'reconciliations.csv')}>
             <Icon name="export" />CSV出力
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <Tabs
         tabs={[
@@ -173,7 +172,7 @@ export default function ReconciliationPage() {
               <tr><th>入金日</th><th>金額</th><th>振込人名</th><th>突合候補</th><th /></tr>
             </thead>
             <tbody>
-              {unmatchedQ.isLoading && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+              <TableStateRow colSpan={5} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyText="未消込の取引はありません" />
               {unmatchedQ.data?.items.map(tx => (
                 <tr key={tx.bank_transaction_id}>
                   <td className="muted">{tx.value_date}</td>
@@ -187,7 +186,6 @@ export default function ReconciliationPage() {
                   </td>
                 </tr>
               ))}
-              {unmatchedQ.data?.items.length === 0 && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>未消込の取引はありません</td></tr>}
             </tbody>
           </DataTable>
         </Card>
@@ -200,23 +198,22 @@ export default function ReconciliationPage() {
               <tr><th>ID</th><th>銀行取引ID</th><th>ステータス</th><th>確定日</th><th /></tr>
             </thead>
             <tbody>
-              {reconciliationsQ.isLoading && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+              <TableStateRow colSpan={5} loading={reconciliationsQ.isLoading} empty={reconciliationsQ.data?.items.length === 0} />
               {reconciliationsQ.data?.items.map(r => (
                 <tr key={r.payment_reconciliation_id} className={r.status === 'reversed' ? 'dim' : ''}>
                   <td className="muted">{r.payment_reconciliation_id}</td>
                   <td className="mono">#{r.bank_transaction_id}</td>
                   <td>{r.status === 'confirmed' ? <Badge variant="ok" dot>確定済</Badge> : <Badge variant="neut" dot>取消済</Badge>}</td>
-                  <td className="muted">{dateStr(r.confirmed_at)}</td>
+                  <td className="muted">{formatDate(r.confirmed_at)}</td>
                   <td className="row-act">
                     {r.status === 'confirmed' && (
-                      <Button variant="ghost" size="sm" style={{ color: 'var(--bad)', borderColor: 'var(--bad-line)' }} onClick={() => setReverseTarget(r)}>
+                      <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(r)}>
                         <Icon name="refresh" size="sm" />消込を取消
                       </Button>
                     )}
                   </td>
                 </tr>
               ))}
-              {reconciliationsQ.data?.items.length === 0 && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>データなし</td></tr>}
             </tbody>
           </DataTable>
         </Card>

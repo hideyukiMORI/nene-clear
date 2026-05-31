@@ -2,9 +2,8 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/api/endpoints'
 import type { BankImportBatch } from '@/types'
-import { Icon, Badge, Button, Card, CardHead, CardBody, DataTable, Notice, Modal } from '@/components/ui'
-
-function dateStr(iso: string) { return iso.slice(0, 10) }
+import { Icon, Badge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead } from '@/components/ui'
+import { formatDate } from '@/utils/format'
 
 interface ReverseModalProps { batch: BankImportBatch; onClose: () => void }
 function ReverseModal({ batch, onClose }: ReverseModalProps) {
@@ -74,9 +73,7 @@ export default function BankImportPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div><h1>銀行CSV取込</h1><p>銀行の入出金明細CSVを取り込み、消込対象の取引を登録します。</p></div>
-      </div>
+      <PageHead title="銀行CSV取込" sub="銀行の入出金明細CSVを取り込み、消込対象の取引を登録します。" />
 
       <Card style={{ maxWidth: 760 }}>
         <CardHead><h2><Icon name="cloud-up" />CSVをアップロード</h2></CardHead>
@@ -121,7 +118,7 @@ export default function BankImportPage() {
             <tr><th>ID</th><th>ファイル名</th><th>件数</th><th>ステータス</th><th>取込日</th><th /></tr>
           </thead>
           <tbody>
-            {batchQ.isLoading && <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+            <TableStateRow colSpan={6} loading={batchQ.isLoading} empty={batchQ.data?.items.length === 0} />
             {batchQ.data?.items.map(b => (
               <tr key={b.bank_import_batch_id} className={b.status === 'reversed' ? 'dim' : ''}>
                 <td className="muted">{b.bank_import_batch_id}</td>
@@ -131,18 +128,16 @@ export default function BankImportPage() {
                   ? <Badge variant="ok" dot>取込済</Badge>
                   : <Badge variant="neut" dot>取消済</Badge>}
                 </td>
-                <td className="muted">{dateStr(b.imported_at)}</td>
+                <td className="muted">{formatDate(b.imported_at)}</td>
                 <td className="row-act">
                   {b.status === 'imported' && (
-                    <Button variant="ghost" size="sm" style={{ color: 'var(--bad)', borderColor: 'var(--bad-line)' }}
-                      onClick={() => setReverseTarget(b)}>
+                    <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(b)}>
                       <Icon name="trash" size="sm" />取消
                     </Button>
                   )}
                 </td>
               </tr>
             ))}
-            {batchQ.data?.items.length === 0 && <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 20 }}>データなし</td></tr>}
           </tbody>
         </DataTable>
       </Card>

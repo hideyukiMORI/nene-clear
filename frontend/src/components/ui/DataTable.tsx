@@ -16,6 +16,35 @@ export function DataTable({ children, className }: DataTableProps) {
   )
 }
 
+interface TableStateRowProps {
+  colSpan: number
+  loading?: boolean
+  error?: string
+  empty?: boolean
+  emptyText?: string
+}
+
+/**
+ * Renders a single full-width <tr> for loading / error / empty table states,
+ * or null when the table has rows to show. Place inside <tbody> before the
+ * data rows. Replaces the repeated colSpan/centered-cell boilerplate.
+ */
+export function TableStateRow({ colSpan, loading, error, empty, emptyText = 'データなし' }: TableStateRowProps) {
+  let content: ReactNode = null
+  let className = 'muted'
+  if (loading) content = '読み込み中…'
+  else if (error) { content = error; className = '' }
+  else if (empty) content = emptyText
+  if (content === null) return null
+  return (
+    <tr>
+      <td colSpan={colSpan} className={className} style={{ textAlign: 'center', padding: '20px 14px', color: error ? 'var(--bad)' : undefined }}>
+        {content}
+      </td>
+    </tr>
+  )
+}
+
 interface PagerProps {
   current: number
   total: number

@@ -5,13 +5,8 @@ import {
   listDunningPauses, pauseDunningNotice, resumeDunningNotice,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
-import { Icon, Badge, Button, Card, CardHead, DataTable, Modal, Notice } from '@/components/ui'
-
-function yen(cents: number) { return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP') }
-function elapsed(due: string) {
-  const days = Math.floor((Date.now() - new Date(due).getTime()) / 86400000)
-  return days > 0 ? `${days}日` : '—'
-}
+import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { yen, formatDateTime, daysOverdue } from '@/utils/format'
 
 // ─── Send confirm modal ───
 function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: () => void }) {
@@ -27,7 +22,7 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
       <div className="kv">
         <div className="kv-row"><span className="k">請求書</span><span className="v mono">{invoice.invoice_number}</span></div>
         <div className="kv-row"><span className="k">未収残高</span><span className="v">{yen(invoice.outstanding_cents)}</span></div>
-        <div className="kv-row"><span className="k">期限</span><span className="v" style={{ color: 'var(--bad)' }}>{invoice.due_at}（{elapsed(invoice.due_at)}経過）</span></div>
+        <div className="kv-row"><span className="k">期限</span><span className="v" style={{ color: 'var(--bad)' }}>{invoice.due_at}（{daysOverdue(invoice.due_at)}経過）</span></div>
       </div>
       <Notice variant="info">登録済みのテンプレートで督促メールが送信され、履歴に記録されます。</Notice>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
@@ -74,9 +69,7 @@ export default function DunningPage() {
 
   return (
     <>
-      <div className="page-head">
-        <div><h1>督促</h1><p>延滞・未収の請求に対して督促メールを送信し、履歴を管理します。</p></div>
-      </div>
+      <PageHead title="督促" sub="延滞・未収の請求に対して督促メールを送信し、履歴を管理します。" />
 
       {/* Pause banner */}
       {activePauses.size > 0 && (
@@ -111,10 +104,10 @@ export default function DunningPage() {
             <tr><th>請求書番号</th><th>ステータス</th><th>未収残高</th><th>期限</th><th>経過</th><th /></tr>
           </thead>
           <tbody>
-            {invoicesQ.isLoading && <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+            <TableStateRow colSpan={6} loading={invoicesQ.isLoading} empty={invoicesQ.data?.items.length === 0} emptyText="督促対象の請求書はありません" />
             {invoicesQ.data?.items.map(inv => {
               const paused = activePauses.has(inv.invoice_id)
-              const elap = elapsed(inv.due_at)
+              const elap = daysOverdue(inv.due_at)
               const daysNum = parseInt(elap)
               return (
                 <tr key={inv.invoice_id} className={paused ? 'dim' : ''}>
@@ -131,7 +124,7 @@ export default function DunningPage() {
                       : <Button variant="primary" size="sm" onClick={() => setSendTarget(inv)}><Icon name="send" size="sm" />督促を送信</Button>
                     }
                     {!paused && (
-                      <Button variant="ghost" size="sm" style={{ color: 'var(--warn)', borderColor: 'var(--warn-line)' }} onClick={() => setPauseTarget(inv.invoice_id)}>
+                      <Button variant="ghost-warn" size="sm" onClick={() => setPauseTarget(inv.invoice_id)}>
                         <Icon name="pause" size="sm" />停止
                       </Button>
                     )}
@@ -139,7 +132,6 @@ export default function DunningPage() {
                 </tr>
               )
             })}
-            {invoicesQ.data?.items.length === 0 && <tr><td colSpan={6} className="muted" style={{ textAlign: 'center', padding: 20 }}>督促対象の請求書はありません</td></tr>}
           </tbody>
         </DataTable>
       </Card>
@@ -152,17 +144,16 @@ export default function DunningPage() {
             <tr><th>請求書番号</th><th>送信先</th><th>未収残高</th><th>送信日時</th><th>送信者</th></tr>
           </thead>
           <tbody>
-            {noticesQ.isLoading && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+            <TableStateRow colSpan={5} loading={noticesQ.isLoading} empty={noticesQ.data?.items.length === 0} />
             {noticesQ.data?.items.map(n => (
               <tr key={n.dunning_notice_id}>
                 <td className="strong mono">{n.invoice_number}</td>
                 <td className="muted">{n.recipient_email}</td>
                 <td className="num">{yen(n.outstanding_at_send_cents)}</td>
-                <td className="muted">{n.sent_at.slice(0, 16).replace('T', ' ')}</td>
+                <td className="muted">{formatDateTime(n.sent_at)}</td>
                 <td className="muted">#{n.sent_by}</td>
               </tr>
             ))}
-            {noticesQ.data?.items.length === 0 && <tr><td colSpan={5} className="muted" style={{ textAlign: 'center', padding: 20 }}>データなし</td></tr>}
           </tbody>
         </DataTable>
       </Card>
