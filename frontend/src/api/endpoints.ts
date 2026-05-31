@@ -61,6 +61,8 @@ export interface BankTransactionFilter {
   status?: string
   value_date_from?: string
   value_date_to?: string
+  amount_min_cents?: number
+  amount_max_cents?: number
   counterparty?: string
   limit?: number
   offset?: number
@@ -71,6 +73,8 @@ export function listBankTransactions(filter: BankTransactionFilter, signal?: Abo
   if (filter.status) q.set('status', filter.status)
   if (filter.value_date_from) q.set('value_date_from', filter.value_date_from)
   if (filter.value_date_to) q.set('value_date_to', filter.value_date_to)
+  if (filter.amount_min_cents != null) q.set('amount_min_cents', String(filter.amount_min_cents))
+  if (filter.amount_max_cents != null) q.set('amount_max_cents', String(filter.amount_max_cents))
   if (filter.counterparty) q.set('counterparty', filter.counterparty)
   q.set('limit', String(filter.limit ?? 50))
   q.set('offset', String(filter.offset ?? 0))
@@ -128,6 +132,13 @@ export function applyClientCredit(creditId: number, invoiceId: number, amountCen
     invoice_id: invoiceId,
     amount_cents: amountCents,
   })
+}
+
+// --- Upstream invoices ---
+export function listUpstreamInvoices(params: { status?: string }, signal?: AbortSignal) {
+  const q = new URLSearchParams()
+  if (params.status) q.set('status', params.status)
+  return api.get<{ items: UpstreamInvoice[]; total: number }>(`${BASE}/invoices?${q}`, signal)
 }
 
 // --- Dunning ---

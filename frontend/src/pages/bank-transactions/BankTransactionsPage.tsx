@@ -37,12 +37,16 @@ export default function BankTransactionsPage() {
   const [status, setStatus] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [amountMin, setAmountMin] = useState('')
+  const [amountMax, setAmountMax] = useState('')
   const [counterparty, setCounterparty] = useState('')
   // Applied filter state (only changes on "Search" submit)
   const [appliedFilter, setAppliedFilter] = useState({
     status: '',
     dateFrom: '',
     dateTo: '',
+    amountMin: '',
+    amountMax: '',
     counterparty: '',
     offset: 0,
   })
@@ -55,6 +59,8 @@ export default function BankTransactionsPage() {
           status: appliedFilter.status || undefined,
           value_date_from: appliedFilter.dateFrom || undefined,
           value_date_to: appliedFilter.dateTo || undefined,
+          amount_min_cents: appliedFilter.amountMin ? Math.round(Number(appliedFilter.amountMin) * 100) : undefined,
+          amount_max_cents: appliedFilter.amountMax ? Math.round(Number(appliedFilter.amountMax) * 100) : undefined,
           counterparty: appliedFilter.counterparty || undefined,
           limit: PAGE_SIZE,
           offset: appliedFilter.offset,
@@ -64,7 +70,7 @@ export default function BankTransactionsPage() {
   })
 
   function applyFilter() {
-    setAppliedFilter({ status, dateFrom, dateTo, counterparty, offset: 0 })
+    setAppliedFilter({ status, dateFrom, dateTo, amountMin, amountMax, counterparty, offset: 0 })
   }
 
   function goPage(newOffset: number) {
@@ -113,6 +119,32 @@ export default function BankTransactionsPage() {
             value={dateTo}
             onChange={e => setDateTo(e.target.value)}
             className="rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{t('bankTransaction.amountFrom')}</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={amountMin}
+            onChange={e => setAmountMin(e.target.value)}
+            placeholder="0"
+            className="rounded border border-gray-300 px-2 py-1.5 text-sm w-28 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{t('bankTransaction.amountTo')}</label>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={amountMax}
+            onChange={e => setAmountMax(e.target.value)}
+            placeholder="—"
+            className="rounded border border-gray-300 px-2 py-1.5 text-sm w-28 focus:border-blue-500 focus:outline-none"
           />
         </div>
 

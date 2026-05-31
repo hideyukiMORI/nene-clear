@@ -6,6 +6,7 @@ import DashboardPage from '@/pages/dashboard/DashboardPage'
 import BankImportPage from '@/pages/bank-import/BankImportPage'
 import BankTransactionsPage from '@/pages/bank-transactions/BankTransactionsPage'
 import ReconciliationPage from '@/pages/reconciliation/ReconciliationPage'
+import ClientCreditsPage from '@/pages/client-credits/ClientCreditsPage'
 import DunningPage from '@/pages/dunning/DunningPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import UsersPage from '@/pages/users/UsersPage'
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: 'bank-import', element: <BankImportPage /> },
       { path: 'bank-transactions', element: <BankTransactionsPage /> },
       { path: 'reconciliation', element: <ReconciliationPage /> },
+      { path: 'client-credits', element: <ClientCreditsPage /> },
       { path: 'dunning', element: <DunningPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'users', element: <UsersPage /> },

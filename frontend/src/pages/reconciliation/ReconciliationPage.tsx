@@ -6,8 +6,9 @@ import {
   listReconciliations,
   confirmMatch,
   reverseReconciliation,
+  proposeMatch,
 } from '@/api/endpoints'
-import type { BankTransaction, Reconciliation } from '@/types'
+import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
 
 function formatYen(cents: number) {
@@ -33,6 +34,13 @@ function ConfirmMatchModal({ transaction, onClose }: MatchModalProps) {
   ])
   const [reasonCode, setReasonCode] = useState('')
 
+  // Load match suggestions on modal open
+  const suggestionsQuery = useQuery({
+    queryKey: ['propose-match', transaction.bank_transaction_id],
+    queryFn: () => proposeMatch(transaction.bank_transaction_id),
+    retry: false,
+  })
+
   const mutation = useMutation({
     mutationFn: () =>
       confirmMatch(
@@ -46,6 +54,10 @@ function ConfirmMatchModal({ transaction, onClose }: MatchModalProps) {
       onClose()
     },
   })
+
+  function applySuggestion(invoice: UpstreamInvoice) {
+    setAllocations([{ invoice_id: invoice.invoice_id, amount_cents: invoice.outstanding_cents }])
+  }
 
   function updateAllocation(idx: number, field: keyof AllocationInput, value: string) {
     setAllocations(prev =>
@@ -65,11 +77,36 @@ function ConfirmMatchModal({ transaction, onClose }: MatchModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-lg rounded-lg bg-white p-6 shadow-xl">
+      <div className="w-full max-w-xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <h3 className="mb-1 text-base font-semibold text-gray-900">{t('reconciliation.confirm')}</h3>
         <p className="mb-4 text-sm text-gray-500">
           {transaction.counterparty_text} — {formatYen(transaction.amount_cents)} ({transaction.value_date})
         </p>
+
+        {/* Suggestions panel */}
+        <div className="mb-4 rounded bg-blue-50 p-3">
+          <p className="text-xs font-semibold text-blue-700 mb-2">{t('reconciliation.suggestions')}</p>
+          {suggestionsQuery.isLoading && (
+            <p className="text-xs text-gray-400">{t('common.loading')}</p>
+          )}
+          {suggestionsQuery.data && suggestionsQuery.data.invoices.length === 0 && (
+            <p className="text-xs text-gray-400">{t('reconciliation.noSuggestions')}</p>
+          )}
+          {suggestionsQuery.data && suggestionsQuery.data.invoices.map(inv => (
+            <div key={inv.invoice_id} className="flex items-center justify-between py-1 border-b border-blue-100 last:border-0 text-xs">
+              <span className="font-medium text-gray-800">{inv.invoice_number}</span>
+              <span className="text-gray-600">{formatYen(inv.outstanding_cents)}</span>
+              <span className="text-gray-400">{inv.due_at}</span>
+              <button
+                type="button"
+                onClick={() => applySuggestion(inv)}
+                className="ml-2 rounded bg-blue-600 px-2 py-0.5 text-white hover:bg-blue-700"
+              >
+                {t('reconciliation.applySuggestion')}
+              </button>
+            </div>
+          ))}
+        </div>
 
         {/* Allocations */}
         <div className="mb-4 space-y-2">

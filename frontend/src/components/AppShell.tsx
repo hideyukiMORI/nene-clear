@@ -8,6 +8,7 @@ const navLabels: Array<{ to: string; labelKey: MessageKey; end?: boolean }> = [
   { to: '/admin/bank-import', labelKey: 'nav.bankImport' },
   { to: '/admin/bank-transactions', labelKey: 'bankTransaction.title' },
   { to: '/admin/reconciliation', labelKey: 'nav.reconciliation' },
+  { to: '/admin/client-credits', labelKey: 'nav.clientCredits' },
   { to: '/admin/dunning', labelKey: 'nav.dunning' },
   { to: '/admin/settings', labelKey: 'nav.settings' },
   { to: '/admin/users', labelKey: 'nav.users' },

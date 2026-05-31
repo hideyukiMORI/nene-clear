@@ -10,6 +10,7 @@ use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\RuntimeApplicationFactory;
 use Nene2\Http\UtcClock;
+use Nene2\Routing\Router;
 use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Auth\AuthRouteRegistrar;
 use NeneClear\Auth\Capability;
@@ -63,6 +64,7 @@ use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamHttpClient;
+use NeneClear\InvoiceUpstream\ListUpstreamInvoicesHandler;
 use NeneClear\InvoiceUpstream\UpstreamClientNotFoundExceptionHandler;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundExceptionHandler;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
@@ -114,6 +116,8 @@ use NeneClear\User\UserAlreadyExistsExceptionHandler;
 use NeneClear\User\UserNotFoundExceptionHandler;
 use NeneClear\User\UserRouteRegistrar;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
@@ -238,6 +242,11 @@ final class ApplicationFactory
                 new ApplyCreditHandler(new ApplyCreditUseCase($creditRepo, $upstream, $audit), $json),
             );
 
+            $routeRegistrars[] = static function (Router $router) use ($upstream, $json): void {
+                $handler = new ListUpstreamInvoicesHandler($upstream, $json);
+                $router->get('/admin/invoices', static fn (ServerRequestInterface $r): ResponseInterface => $handler->handle($r));
+            };
+
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new TooManyLoginAttemptsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationNotFoundExceptionHandler($problemDetails);
@@ -287,6 +296,7 @@ final class ApplicationFactory
                     '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/clear-settings' => CapabilityRule::same(Capability::ManageClearSettings),
                     '/admin/dunning-notices' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::SendDunning),
+                    '/admin/invoices' => CapabilityRule::same(Capability::ViewReconciliation),
                 ]),
             ];
         }
