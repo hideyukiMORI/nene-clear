@@ -40,6 +40,10 @@ tags:
     description: Match proposal, confirmation, reversal (human-confirmed).
   - name: ClientCredit
     description: Overpayment credit balances and their application.
+  - name: Dunning
+    description: Overdue reminders — send, history, pause/resume per invoice.
+  - name: Export
+    description: CSV export for accounting software handoff (税理士 review gate applies).
 
 paths:
   /health:
@@ -959,6 +963,288 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /admin/invoices:
+    get:
+      tags: [UpstreamInvoice]
+      summary: List upstream invoices
+      description: >
+        Proxy to NeNe Invoice — returns open/overdue invoices for the operator's
+        organization. Used by the reconciliation and dunning UIs. Requires
+        `view_reconciliation`.
+      operationId: listInvoices
+      parameters:
+        - name: status
+          in: query
+          description: "Comma-separated statuses, e.g. `issued,partially_paid,overdue`"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of upstream invoices.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UpstreamInvoice'
+                  total:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+
+  /admin/dunning-notices:
+    get:
+      tags: [Dunning]
+      summary: List dunning notices
+      description: Returns all dunning send records for the organization. Requires `view_reconciliation`.
+      operationId: listDunningNotices
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Paginated dunning notice list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DunningNoticeListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Dunning]
+      summary: Send a dunning notice
+      description: >
+        Sends a professional overdue reminder to the client of the specified
+        invoice. Checks eligibility (status in issued/partially_paid/overdue,
+        outstanding > 0, pause status, minimum interval). Requires `send_dunning`.
+      operationId: sendDunningNotice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoice_id]
+              properties:
+                invoice_id:
+                  type: integer
+                  format: int64
+      responses:
+        '201':
+          description: Notice sent; record created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DunningNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '503':
+          $ref: '#/components/responses/UpstreamUnavailable'
+
+  /admin/dunning-notices/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [Dunning]
+      summary: Get a dunning notice by ID
+      operationId: getDunningNoticeById
+      responses:
+        '200':
+          description: The dunning notice.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DunningNotice'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/dunning-pauses:
+    get:
+      tags: [Dunning]
+      summary: List dunning pauses
+      description: Returns dunning pause records. Pass `active_only=true` for currently paused invoices only. Requires `view_reconciliation`.
+      operationId: listDunningPauses
+      parameters:
+        - name: active_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Paginated dunning pause list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DunningPauseListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Dunning]
+      summary: Pause dunning for an invoice
+      description: >
+        Pauses dunning for the specified invoice. Subsequent send attempts return
+        422 `dunning-paused` until resumed. Logged in audit trail.
+        Requires `send_dunning`.
+      operationId: pauseDunning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [invoice_id, reason]
+              properties:
+                invoice_id:
+                  type: integer
+                  format: int64
+                reason:
+                  type: string
+                  maxLength: 512
+      responses:
+        '201':
+          description: Pause created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DunningPause'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /admin/dunning-pauses/{invoiceId}/resume:
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    post:
+      tags: [Dunning]
+      summary: Resume dunning for an invoice
+      description: Clears the active pause for the given invoice. Logged in audit trail. Requires `send_dunning`.
+      operationId: resumeDunning
+      responses:
+        '204':
+          description: Dunning resumed (no body).
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+
+  /admin/export/reconciliations:
+    get:
+      tags: [Export]
+      summary: Export reconciled payments as CSV
+      description: >
+        UTF-8 BOM CSV; one row per reconciliation allocation. Includes bank
+        transaction join. Suitable for accounting software import.
+        Compliance §9 tax-advisor review gate applies.
+        Requires `view_reconciliation`.
+      operationId: exportReconciliations
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: CSV file download.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/export/client-credits:
+    get:
+      tags: [Export]
+      summary: Export client credits as CSV
+      description: UTF-8 BOM CSV; one row per client credit record. Requires `view_reconciliation`.
+      operationId: exportClientCredits
+      responses:
+        '200':
+          description: CSV file download.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /admin/export/bank-transactions:
+    get:
+      tags: [Export]
+      summary: Export bank transactions as CSV
+      description: >
+        UTF-8 BOM CSV; one row per bank transaction. Acts as the 電帳法
+        evidence companion export. Supports date_from / date_to filters.
+        Requires `view_reconciliation`.
+      operationId: exportBankTransactions
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: CSV file download.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -1697,3 +1983,103 @@ components:
           type: string
           minLength: 1
       additionalProperties: false
+
+    DunningNotice:
+      type: object
+      required: [dunning_notice_id, organization_id, invoice_id, invoice_number, client_id,
+                 recipient_email, outstanding_cents, due_at, channel, template_version, sent_by, sent_at]
+      properties:
+        dunning_notice_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        invoice_id:
+          type: integer
+          format: int64
+        invoice_number:
+          type: string
+        client_id:
+          type: integer
+          format: int64
+        recipient_email:
+          type: string
+          format: email
+        outstanding_at_send_cents:
+          type: integer
+          format: int64
+        due_at:
+          type: string
+          format: date
+        channel:
+          type: string
+          example: email
+        template_version:
+          type: string
+          example: '1.0'
+        sent_by:
+          type: integer
+          format: int64
+        sent_at:
+          type: string
+          format: date-time
+
+    DunningNoticeListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DunningNotice'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    DunningPause:
+      type: object
+      required: [dunning_pause_id, invoice_id, paused_by, paused_at, paused_reason]
+      properties:
+        dunning_pause_id:
+          type: integer
+          format: int64
+        invoice_id:
+          type: integer
+          format: int64
+        paused_by:
+          type: integer
+          format: int64
+        paused_at:
+          type: string
+          format: date-time
+        paused_reason:
+          type: string
+        unpaused_by:
+          type: integer
+          format: int64
+          nullable: true
+        unpaused_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_active:
+          type: boolean
+
+    DunningPauseListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DunningPause'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
