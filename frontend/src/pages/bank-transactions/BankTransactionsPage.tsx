@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from '@/hooks/useTranslation'
-import { listBankTransactions } from '@/api/endpoints'
+import { listBankTransactions, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
 
 const PAGE_SIZE = 20
@@ -64,7 +64,7 @@ export default function BankTransactionsPage() {
   })
 
   function applyFilter() {
-    setAppliedFilter({ status, dateFrom, dateTo, counterparty, offset: 0 })
+    setAppliedFilter({ status, dateFrom, dateTo, amountMin, amountMax, counterparty, offset: 0 })
   }
 
   function goPage(newOffset: number) {
@@ -77,7 +77,15 @@ export default function BankTransactionsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('bankTransaction.title')}</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">{t('bankTransaction.title')}</h1>
+        <button
+          onClick={() => void downloadCsv('/admin/export/bank-transactions', 'bank-transactions.csv')}
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+        >
+          {t('export.bankTransactions')}
+        </button>
+      </div>
 
       {/* Filter bar */}
       <div className="mb-6 rounded-lg bg-white p-4 shadow-sm flex flex-wrap gap-3 items-end">

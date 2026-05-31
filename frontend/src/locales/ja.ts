@@ -109,6 +109,11 @@ export const ja = {
   'users.delete': '削除',
   'users.confirmDelete': 'このユーザーを削除しますか？',
 
+  // Export
+  'export.reconciliations': '消込データをCSV出力',
+  'export.clientCredits': '前受金データをCSV出力',
+  'export.bankTransactions': '銀行取引データをCSV出力',
+
   // Common
   'common.save': '保存',
   'common.cancel': 'キャンセル',

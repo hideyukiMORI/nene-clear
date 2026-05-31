@@ -6,6 +6,7 @@ import {
   listReconciliations,
   confirmMatch,
   reverseReconciliation,
+  downloadCsv,
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
@@ -233,7 +234,15 @@ export default function ReconciliationPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('reconciliation.title')}</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">{t('reconciliation.title')}</h1>
+        <button
+          onClick={() => void downloadCsv('/admin/export/reconciliations', 'reconciliations.csv')}
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+        >
+          {t('export.reconciliations')}
+        </button>
+      </div>
 
       {/* Tabs */}
       <div className="mb-6 flex gap-1 border-b border-gray-200">

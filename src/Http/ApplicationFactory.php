@@ -58,6 +58,9 @@ use NeneClear\Dunning\PdoDunningNoticeRepository;
 use NeneClear\Dunning\SendDunningHandler;
 use NeneClear\Dunning\SendDunningUseCase;
 use NeneClear\Dunning\SmtpDunningMailer;
+use NeneClear\Export\ExportBankTransactionsCsvHandler;
+use NeneClear\Export\ExportClientCreditsCsvHandler;
+use NeneClear\Export\ExportReconciliationsCsvHandler;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
@@ -114,6 +117,8 @@ use NeneClear\User\UserAlreadyExistsExceptionHandler;
 use NeneClear\User\UserNotFoundExceptionHandler;
 use NeneClear\User\UserRouteRegistrar;
 use Nyholm\Psr7\Factory\Psr17Factory;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
@@ -238,6 +243,15 @@ final class ApplicationFactory
                 new ApplyCreditHandler(new ApplyCreditUseCase($creditRepo, $upstream, $audit), $json),
             );
 
+            $routeRegistrars[] = static function (\Nene2\Routing\Router $router) use ($reconRepo, $creditRepo, $transactions, $psr17): void {
+                $reconExport = new ExportReconciliationsCsvHandler($reconRepo, $transactions, $psr17, $psr17);
+                $creditExport = new ExportClientCreditsCsvHandler($creditRepo, $psr17, $psr17);
+                $txExport = new ExportBankTransactionsCsvHandler($transactions, $psr17, $psr17);
+                $router->get('/admin/export/reconciliations', static fn (ServerRequestInterface $r): ResponseInterface => $reconExport->handle($r));
+                $router->get('/admin/export/client-credits', static fn (ServerRequestInterface $r): ResponseInterface => $creditExport->handle($r));
+                $router->get('/admin/export/bank-transactions', static fn (ServerRequestInterface $r): ResponseInterface => $txExport->handle($r));
+            };
+
             $domainExceptionHandlers[] = new InvalidCredentialsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new TooManyLoginAttemptsExceptionHandler($problemDetails);
             $domainExceptionHandlers[] = new OrganizationNotFoundExceptionHandler($problemDetails);
@@ -287,6 +301,7 @@ final class ApplicationFactory
                     '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                     '/admin/clear-settings' => CapabilityRule::same(Capability::ManageClearSettings),
                     '/admin/dunning-notices' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::SendDunning),
+                    '/admin/export' => CapabilityRule::same(Capability::ViewReconciliation),
                 ]),
             ];
         }

@@ -100,6 +100,10 @@ export const en: Partial<Record<MessageKey, string>> = {
   'users.delete': 'Delete',
   'users.confirmDelete': 'Delete this user?',
 
+  'export.reconciliations': 'Export reconciliations CSV',
+  'export.clientCredits': 'Export client credits CSV',
+  'export.bankTransactions': 'Export bank transactions CSV',
+
   'common.save': 'Save',
   'common.cancel': 'Cancel',
   'common.delete': 'Delete',
