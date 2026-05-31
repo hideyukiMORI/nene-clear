@@ -17,6 +17,7 @@ use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
 {
     private const int DEFAULT_MIN_INTERVAL_DAYS = 7;
+    private const string TEMPLATE_VERSION = '1.0';
 
     public function __construct(
         private DunningNoticeRepositoryInterface $notices,
@@ -76,6 +77,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             outstandingCents: $invoice->outstandingCents,
             dueAt: $invoice->dueAt,
             channel: $this->mailer->channel(),
+            templateVersion: self::TEMPLATE_VERSION,
             sentBy: $input->actorUserId,
             sentAt: $nowStr,
         );
@@ -109,6 +111,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
                     'recipient_email' => $client->recipientEmail,
                     'outstanding_at_send_cents' => $invoice->outstandingCents,
                     'channel' => $this->mailer->channel(),
+                    'template_version' => self::TEMPLATE_VERSION,
                 ],
             ],
         ));
