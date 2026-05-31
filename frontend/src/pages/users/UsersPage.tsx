@@ -3,17 +3,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listUsers, createUser, deleteUser } from '@/api/endpoints'
 import type { User } from '@/types'
 import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { useTranslation } from '@/hooks/useTranslation'
+import type { MessageKey } from '@/locales'
 
 type Role = 'admin' | 'member' | 'viewer'
 
-const ROLE_MAP: Record<User['role'], { v: 'info' | 'neut'; label: string }> = {
-  superadmin: { v: 'info', label: 'Superadmin' },
-  admin:  { v: 'info', label: '管理者' },
-  member: { v: 'neut', label: 'オペレーター' },
-  viewer: { v: 'neut', label: '閲覧者' },
+const ROLE_MAP: Record<User['role'], { v: 'info' | 'neut'; labelKey: MessageKey }> = {
+  superadmin: { v: 'info', labelKey: 'users.role.superadmin' },
+  admin:  { v: 'info', labelKey: 'users.role.admin' },
+  member: { v: 'neut', labelKey: 'users.role.member' },
+  viewer: { v: 'neut', labelKey: 'users.role.viewer' },
 }
 
 function InviteModal({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<Role>('member')
@@ -24,23 +27,23 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     onError: (e: Error) => setError(e.message),
   })
   return (
-    <Modal open onClose={onClose} title="ユーザーを招待" sub="招待メールが送信されます。" size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>キャンセル</Button><Button variant="primary" disabled={!email.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? '送信中…' : '招待を送信'}</Button></>}
+    <Modal open onClose={onClose} title={t('users.invite')} sub={t('users.inviteModal.subtitle')} size="narrow"
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!email.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? t('common.sending') : t('users.inviteSubmit')}</Button></>}
     >
       <div className="field">
-        <label>メールアドレス</label>
+        <label>{t('users.email')}</label>
         <div className="inp-icon"><Icon name="mail" /><input className="inp" type="email" placeholder="user@example.com" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} /></div>
       </div>
       <div className="field">
-        <label>ロール</label>
+        <label>{t('users.role')}</label>
         <select className="inp" value={role} onChange={e => setRole(e.target.value as Role)}>
-          <option value="admin">管理者</option>
-          <option value="member">オペレーター</option>
-          <option value="viewer">閲覧者</option>
+          <option value="admin">{t('users.role.admin')}</option>
+          <option value="member">{t('users.role.member')}</option>
+          <option value="viewer">{t('users.role.viewer')}</option>
         </select>
       </div>
       <Notice variant="info">
-        <><b>オペレーター</b>: 消込・督促の実行が可能。設定とユーザー管理は不可。</>
+        <><b>{t('users.role.member')}</b>{t('users.roleInfoDesc')}</>
       </Notice>
       {error && <Notice variant="bad">{error}</Notice>}
     </Modal>
@@ -48,14 +51,15 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 }
 
 function DeleteModal({ user, onClose }: { user: User; onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const mut = useMutation({
     mutationFn: () => deleteUser(user.user_id),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['users'] }); onClose() },
   })
   return (
-    <Modal open onClose={onClose} title="このユーザーを削除しますか？" sub={user.email} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>キャンセル</Button><Button variant="danger" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="trash" />{mut.isPending ? '削除中…' : '削除'}</Button></>}
+    <Modal open onClose={onClose} title={t('users.confirmDelete')} sub={user.email} size="narrow"
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="trash" />{mut.isPending ? t('common.processing') : t('users.delete')}</Button></>}
     >
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
     </Modal>
@@ -63,6 +67,7 @@ function DeleteModal({ user, onClose }: { user: User; onClose: () => void }) {
 }
 
 export default function UsersPage() {
+  const { t } = useTranslation()
   const [showInvite, setShowInvite] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
 
@@ -71,15 +76,15 @@ export default function UsersPage() {
   return (
     <>
       <PageHead
-        title="ユーザー管理"
-        sub="チームメンバーのロールとアクセス権限を管理します。"
-        actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon name="plus" />ユーザーを招待</Button>}
+        title={t('users.title')}
+        sub={t('users.subtitle')}
+        actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon name="plus" />{t('users.invite')}</Button>}
       />
 
       <Card>
         <DataTable>
           <thead>
-            <tr><th>メールアドレス</th><th>ロール</th><th>ステータス</th><th>最終ログイン</th><th /></tr>
+            <tr><th>{t('table.email')}</th><th>{t('table.role')}</th><th>{t('table.status')}</th><th>{t('table.lastLogin')}</th><th /></tr>
           </thead>
           <tbody>
             <TableStateRow colSpan={5} loading={usersQ.isLoading} empty={usersQ.data?.items.length === 0} />
@@ -88,12 +93,12 @@ export default function UsersPage() {
               return (
                 <tr key={u.user_id}>
                   <td className="strong">{u.email}</td>
-                  <td><Badge variant={r.v}>{r.label}</Badge></td>
-                  <td>{u.status === 'active' ? <Badge variant="ok" dot>有効</Badge> : <Badge variant="warn" dot>招待中</Badge>}</td>
+                  <td><Badge variant={r.v}>{t(r.labelKey)}</Badge></td>
+                  <td>{u.status === 'active' ? <Badge variant="ok" dot>{t('users.status.active')}</Badge> : <Badge variant="warn" dot>{t('users.status.invited')}</Badge>}</td>
                   <td className="muted">—</td>
                   <td className="row-act">
                     <Button variant="ghost-danger" size="sm" onClick={() => setDeleteTarget(u)}>
-                      <Icon name="trash" size="sm" />削除
+                      <Icon name="trash" size="sm" />{t('users.delete')}
                     </Button>
                   </td>
                 </tr>

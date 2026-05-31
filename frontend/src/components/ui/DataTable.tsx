@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 import { Icon } from './Icon'
+import { useTranslation } from '@/hooks/useTranslation'
+import type { MessageKey } from '@/locales'
 
 interface DataTableProps {
   children: ReactNode
@@ -21,20 +23,22 @@ interface TableStateRowProps {
   loading?: boolean
   error?: string
   empty?: boolean
-  emptyText?: string
+  /** Message key for the empty state; defaults to common.noData. */
+  emptyKey?: MessageKey
 }
 
 /**
  * Renders a single full-width <tr> for loading / error / empty table states,
  * or null when the table has rows to show. Place inside <tbody> before the
- * data rows. Replaces the repeated colSpan/centered-cell boilerplate.
+ * data rows. All fixed text is localized via the message catalog.
  */
-export function TableStateRow({ colSpan, loading, error, empty, emptyText = 'データなし' }: TableStateRowProps) {
+export function TableStateRow({ colSpan, loading, error, empty, emptyKey = 'common.noData' }: TableStateRowProps) {
+  const { t } = useTranslation()
   let content: ReactNode = null
   let className = 'muted'
-  if (loading) content = '読み込み中…'
+  if (loading) content = t('common.loading')
   else if (error) { content = error; className = '' }
-  else if (empty) content = emptyText
+  else if (empty) content = t(emptyKey)
   if (content === null) return null
   return (
     <tr>
@@ -56,9 +60,10 @@ interface PagerProps {
 }
 
 export function Pager({ current, total, onPrev, onNext, itemCount, pageSize, offset }: PagerProps) {
+  const { t } = useTranslation()
   return (
     <div className="tbl-foot">
-      <span>{offset + 1}〜{Math.min(offset + pageSize, itemCount)} 件 / {itemCount} 件</span>
+      <span>{t('common.pagination.showing', { from: offset + 1, to: Math.min(offset + pageSize, itemCount), total: itemCount })}</span>
       <div className="pager">
         <button onClick={onPrev} disabled={current === 1}>
           <Icon name="chev-l" size="sm" />

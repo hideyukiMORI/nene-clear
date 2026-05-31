@@ -7,10 +7,12 @@ import {
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
 import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead } from '@/components/ui'
+import { useTranslation } from '@/hooks/useTranslation'
 import { yen, formatDate } from '@/utils/format'
 
 // ─── Confirm match modal ───
 function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [allocs, setAllocs] = useState<AllocationInput[]>([{ invoice_id: 0, amount_cents: 0 }])
   const [reasonCode, setReasonCode] = useState('')
@@ -44,43 +46,43 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
     <Modal
       open
       onClose={onClose}
-      title="消込を確定"
+      title={t('reconciliation.confirm')}
       sub={`${tx.counterparty_text} — ${yen(tx.amount_cents)}（${tx.value_date}）`}
       size="wide"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
-            <Icon name="check" />{confirmMut.isPending ? '処理中…' : '消込を確定'}
+            <Icon name="check" />{confirmMut.isPending ? t('common.processing') : t('reconciliation.confirm')}
           </Button>
         </>
       }
     >
       {/* Suggestions */}
       <div className="sugg">
-        <div className="sugg-h"><Icon name="reconcile" size="sm" />マッチ候補</div>
-        {suggestQ.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>候補を検索中…</p>}
-        {suggestQ.data?.invoices.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>候補が見つかりませんでした</p>}
+        <div className="sugg-h"><Icon name="reconcile" size="sm" />{t('reconciliation.suggestions')}</div>
+        {suggestQ.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.searchingSuggestions')}</p>}
+        {suggestQ.data?.invoices.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.noSuggestions')}</p>}
         {suggestQ.data?.invoices.map(inv => (
           <div key={inv.invoice_id} className="sugg-row">
             <span className="iv mono">{inv.invoice_number}</span>
             <span className="amt">{yen(inv.outstanding_cents)}</span>
-            <span className="due">期限 {inv.due_at}</span>
-            <Button variant="primary" size="sm" onClick={() => applySuggestion(inv)}>選択</Button>
+            <span className="due">{t('reconciliation.dueLabel')} {inv.due_at}</span>
+            <Button variant="primary" size="sm" onClick={() => applySuggestion(inv)}>{t('reconciliation.useSuggestion')}</Button>
           </div>
         ))}
       </div>
 
       {/* Allocations */}
       <div>
-        <div className="lbl" style={{ marginBottom: 8 }}>配賦</div>
+        <div className="lbl" style={{ marginBottom: 8 }}>{t('reconciliation.allocation')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {allocs.map((a, i) => (
             <div key={i} className="alloc-row">
-              <div className="field"><label style={{ fontSize: 11 }}>請求書ID</label>
+              <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.invoiceId')}</label>
                 <input className="inp tnum" type="number" value={a.invoice_id || ''} onChange={e => updateAlloc(i, 'invoice_id', e.target.value)} />
               </div>
-              <div className="field"><label style={{ fontSize: 11 }}>配賦額（¥）</label>
+              <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.allocationAmount')}</label>
                 <input className="inp tnum" type="number" value={a.amount_cents > 0 ? a.amount_cents / 100 : ''} onChange={e => updateAlloc(i, 'amount_cents', e.target.value)} />
               </div>
               {allocs.length > 1 && (
@@ -91,19 +93,19 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
             </div>
           ))}
           <Button variant="link" onClick={() => setAllocs(p => [...p, { invoice_id: 0, amount_cents: 0 }])}>
-            <Icon name="plus" size="sm" />配賦を追加
+            <Icon name="plus" size="sm" />{t('reconciliation.addAllocation')}
           </Button>
         </div>
       </div>
 
       <div className="summary-line">
-        <span>配賦合計 / 入金額</span>
+        <span>{t('reconciliation.allocationTotal')}</span>
         <b className="tnum">{yen(total)} / {yen(tx.amount_cents)}</b>
       </div>
 
       <div className="field">
-        <label>理由コード（任意）</label>
-        <input className="inp" placeholder="例: 相殺・手数料差引など" value={reasonCode} onChange={e => setReasonCode(e.target.value)} />
+        <label>{t('reconciliation.reasonCode')}</label>
+        <input className="inp" placeholder={t('reconciliation.reasonCodePlaceholder')} value={reasonCode} onChange={e => setReasonCode(e.target.value)} />
       </div>
       {confirmMut.isError && <Notice variant="bad">{confirmMut.error.message}</Notice>}
     </Modal>
@@ -112,6 +114,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
 
 // ─── Reverse modal ───
 function ReverseModal({ recon, onClose }: { recon: Reconciliation; onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [reason, setReason] = useState('')
   const mut = useMutation({
@@ -119,16 +122,17 @@ function ReverseModal({ recon, onClose }: { recon: Reconciliation; onClose: () =
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['reconciliations'] }); void qc.invalidateQueries({ queryKey: ['bank-transactions'] }); onClose() },
   })
   return (
-    <Modal open onClose={onClose} title="消込を取消しますか？" size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>キャンセル</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="refresh" size="sm" />{mut.isPending ? '処理中…' : '取消'}</Button></>}
+    <Modal open onClose={onClose} title={t('reconciliation.confirmReverse')} size="narrow"
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="refresh" size="sm" />{mut.isPending ? t('common.processing') : t('bankImport.reverse')}</Button></>}
     >
-      <div className="field"><label>取消理由</label><input className="inp" value={reason} onChange={e => setReason(e.target.value)} /></div>
+      <div className="field"><label>{t('reconciliation.reversalReason')}</label><input className="inp" value={reason} onChange={e => setReason(e.target.value)} /></div>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
     </Modal>
   )
 }
 
 export default function ReconciliationPage() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState('unmatched')
   const [matchTarget, setMatchTarget] = useState<BankTransaction | null>(null)
   const [reverseTarget, setReverseTarget] = useState<Reconciliation | null>(null)
@@ -147,19 +151,19 @@ export default function ReconciliationPage() {
   return (
     <>
       <PageHead
-        title="消込"
-        sub="銀行入金と請求を突合し、消込を確定します。"
+        title={t('reconciliation.title')}
+        sub={t('reconciliation.subtitle')}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/reconciliations', 'reconciliations.csv')}>
-            <Icon name="export" />CSV出力
+            <Icon name="export" />{t('export.csv')}
           </Button>
         }
       />
 
       <Tabs
         tabs={[
-          { key: 'unmatched', label: <><Icon name="reconcile" size="sm" />未消込</> },
-          { key: 'history', label: <><Icon name="clock" size="sm" />消込一覧</> },
+          { key: 'unmatched', label: <><Icon name="reconcile" size="sm" />{t('reconciliation.tab.unmatched')}</> },
+          { key: 'history', label: <><Icon name="clock" size="sm" />{t('reconciliation.tab.history')}</> },
         ]}
         active={tab}
         onChange={setTab}
@@ -169,19 +173,19 @@ export default function ReconciliationPage() {
         <Card>
           <DataTable>
             <thead>
-              <tr><th>入金日</th><th>金額</th><th>振込人名</th><th>突合候補</th><th /></tr>
+              <tr><th>{t('table.valueDate')}</th><th>{t('table.amount')}</th><th>{t('table.counterparty')}</th><th>{t('table.matchCandidates')}</th><th /></tr>
             </thead>
             <tbody>
-              <TableStateRow colSpan={5} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyText="未消込の取引はありません" />
+              <TableStateRow colSpan={5} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyKey="reconciliation.noUnmatched" />
               {unmatchedQ.data?.items.map(tx => (
                 <tr key={tx.bank_transaction_id}>
                   <td className="muted">{tx.value_date}</td>
                   <td className="num">{yen(tx.amount_cents)}</td>
                   <td className="strong">{tx.counterparty_text}</td>
-                  <td><Badge variant="info">候補あり</Badge></td>
+                  <td><Badge variant="info">{t('reconciliation.hasCandidates')}</Badge></td>
                   <td className="row-act">
                     <Button variant="primary" size="sm" onClick={() => setMatchTarget(tx)}>
-                      <Icon name="check" size="sm" />消込を確定
+                      <Icon name="check" size="sm" />{t('reconciliation.confirm')}
                     </Button>
                   </td>
                 </tr>
@@ -195,7 +199,7 @@ export default function ReconciliationPage() {
         <Card>
           <DataTable>
             <thead>
-              <tr><th>ID</th><th>銀行取引ID</th><th>ステータス</th><th>確定日</th><th /></tr>
+              <tr><th>{t('table.id')}</th><th>{t('table.bankTxnId')}</th><th>{t('table.status')}</th><th>{t('table.confirmedAt')}</th><th /></tr>
             </thead>
             <tbody>
               <TableStateRow colSpan={5} loading={reconciliationsQ.isLoading} empty={reconciliationsQ.data?.items.length === 0} />
@@ -203,12 +207,12 @@ export default function ReconciliationPage() {
                 <tr key={r.payment_reconciliation_id} className={r.status === 'reversed' ? 'dim' : ''}>
                   <td className="muted">{r.payment_reconciliation_id}</td>
                   <td className="mono">#{r.bank_transaction_id}</td>
-                  <td>{r.status === 'confirmed' ? <Badge variant="ok" dot>確定済</Badge> : <Badge variant="neut" dot>取消済</Badge>}</td>
+                  <td>{r.status === 'confirmed' ? <Badge variant="ok" dot>{t('reconciliation.status.confirmed')}</Badge> : <Badge variant="neut" dot>{t('reconciliation.status.reversed')}</Badge>}</td>
                   <td className="muted">{formatDate(r.confirmed_at)}</td>
                   <td className="row-act">
                     {r.status === 'confirmed' && (
                       <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(r)}>
-                        <Icon name="refresh" size="sm" />消込を取消
+                        <Icon name="refresh" size="sm" />{t('reconciliation.reverse')}
                       </Button>
                     )}
                   </td>

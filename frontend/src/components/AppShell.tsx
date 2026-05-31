@@ -52,11 +52,11 @@ export default function AppShell() {
           </div>
         </div>
         <nav className="side-nav">
-          <div className="side-sect">業務</div>
+          <div className="side-sect">{t('nav.section.business')}</div>
           {NAV.map(item => (
             <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} badge={item.badge} end={item.end} />
           ))}
-          <div className="side-sect">管理</div>
+          <div className="side-sect">{t('nav.section.admin')}</div>
           {ADMIN_NAV.map(item => (
             <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
           ))}
@@ -65,7 +65,7 @@ export default function AppShell() {
           <div className="side-user">
             <div className="avatar">AD</div>
             <div className="who">
-              <b>{t('nav.dashboard') === 'ダッシュボード' ? '管理者' : 'Admin'}</b>
+              <b>{t('user.role.admin')}</b>
               <span>admin@example.com</span>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function AppShell() {
           <nav className="crumb">
             <span>NeNe Clear</span>
             <svg className="ic" style={{ width: 14, height: 14 }}><use href="#i-chev-r" /></svg>
-            <b>Menu</b>
+            <b>{t('crumb.menu')}</b>
           </nav>
           <div className="topbar-r">
             <div className="lang">

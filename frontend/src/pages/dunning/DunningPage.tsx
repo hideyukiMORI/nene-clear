@@ -6,25 +6,27 @@ import {
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
 import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { useTranslation } from '@/hooks/useTranslation'
 import { yen, formatDateTime, daysOverdue } from '@/utils/format'
 
 // ─── Send confirm modal ───
 function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const mut = useMutation({
     mutationFn: () => sendDunningNotice(invoice.invoice_id),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['dunning-notices'] }); void qc.invalidateQueries({ queryKey: ['upstream-invoices'] }); onClose() },
   })
   return (
-    <Modal open onClose={onClose} title="督促メールを送信しますか？" size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>キャンセル</Button><Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? '送信中…' : '督促を送信'}</Button></>}
+    <Modal open onClose={onClose} title={t('dunning.confirmSend')} size="narrow"
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? t('common.sending') : t('dunning.send')}</Button></>}
     >
       <div className="kv">
-        <div className="kv-row"><span className="k">請求書</span><span className="v mono">{invoice.invoice_number}</span></div>
-        <div className="kv-row"><span className="k">未収残高</span><span className="v">{yen(invoice.outstanding_cents)}</span></div>
-        <div className="kv-row"><span className="k">期限</span><span className="v" style={{ color: 'var(--bad)' }}>{invoice.due_at}（{daysOverdue(invoice.due_at)}経過）</span></div>
+        <div className="kv-row"><span className="k">{t('table.invoice')}</span><span className="v mono">{invoice.invoice_number}</span></div>
+        <div className="kv-row"><span className="k">{t('table.outstanding')}</span><span className="v">{yen(invoice.outstanding_cents)}</span></div>
+        <div className="kv-row"><span className="k">{t('table.dueDate')}</span><span className="v" style={{ color: 'var(--bad)' }}>{t('dunning.dueElapsed', { date: invoice.due_at, days: daysOverdue(invoice.due_at) })}</span></div>
       </div>
-      <Notice variant="info">登録済みのテンプレートで督促メールが送信され、履歴に記録されます。</Notice>
+      <Notice variant="info">{t('dunning.sendInfo')}</Notice>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
     </Modal>
   )
@@ -32,6 +34,7 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
 
 // ─── Pause modal ───
 function PauseModal({ invoiceId, onClose }: { invoiceId: number; onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [reason, setReason] = useState('')
   const mut = useMutation({
@@ -39,16 +42,17 @@ function PauseModal({ invoiceId, onClose }: { invoiceId: number; onClose: () => 
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['dunning-pauses'] }); void qc.invalidateQueries({ queryKey: ['upstream-invoices'] }); onClose() },
   })
   return (
-    <Modal open onClose={onClose} title="督促を一時停止しますか？" sub={`請求書 #${invoiceId} への督促を止めます。`} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>キャンセル</Button><Button variant="warn" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="pause" />{mut.isPending ? '処理中…' : '督促を停止'}</Button></>}
+    <Modal open onClose={onClose} title={t('dunning.confirmPause')} sub={t('dunning.pauseTarget', { id: invoiceId })} size="narrow"
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="warn" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="pause" />{mut.isPending ? t('common.processing') : t('dunning.pauseAction')}</Button></>}
     >
-      <div className="field"><label>停止理由</label><input className="inp" placeholder="例: 顧客と入金日を調整中" value={reason} onChange={e => setReason(e.target.value)} /></div>
-      <Notice variant="warn">停止中は督促が送信されません。理由は履歴に残ります。</Notice>
+      <div className="field"><label>{t('dunning.pauseReason')}</label><input className="inp" placeholder={t('dunning.pauseReasonPlaceholder')} value={reason} onChange={e => setReason(e.target.value)} /></div>
+      <Notice variant="warn">{t('dunning.pauseWarn')}</Notice>
     </Modal>
   )
 }
 
 export default function DunningPage() {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [sendTarget, setSendTarget] = useState<UpstreamInvoice | null>(null)
   const [pauseTarget, setPauseTarget] = useState<number | null>(null)
@@ -69,22 +73,22 @@ export default function DunningPage() {
 
   return (
     <>
-      <PageHead title="督促" sub="延滞・未収の請求に対して督促メールを送信し、履歴を管理します。" />
+      <PageHead title={t('dunning.title')} sub={t('dunning.subtitle')} />
 
       {/* Pause banner */}
       {activePauses.size > 0 && (
         <div className="card" style={{ borderColor: 'var(--warn-line)', background: 'var(--warn-bg)', marginBottom: 20 }}>
           <div style={{ padding: '14px 18px' }}>
             <div className="row" style={{ color: 'var(--warn)', fontWeight: 700, fontSize: 13, marginBottom: 10 }}>
-              <Icon name="pause" /> 督促停止中（{activePauses.size}件）
+              <Icon name="pause" /> {t('dunning.pausedBanner', { count: activePauses.size })}
             </div>
             <div className="wrapw">
               {(pausesQ.data?.items ?? []).map(p => (
                 <span key={p.dunning_pause_id} className="tag-pill">
-                  <b className="mono">請求書 #{p.invoice_id}</b>
+                  <b className="mono">{t('table.invoice')} #{p.invoice_id}</b>
                   <span className="faint">{p.paused_reason}</span>
                   <Button variant="link" onClick={() => resumeMut.mutate(p.invoice_id)}>
-                    <Icon name="refresh" size="sm" />督促再開
+                    <Icon name="refresh" size="sm" />{t('dunning.resume')}
                   </Button>
                 </span>
               ))}
@@ -96,15 +100,15 @@ export default function DunningPage() {
       {/* Eligible invoices */}
       <Card>
         <CardHead>
-          <h2><Icon name="alert" />督促対象の請求書</h2>
-          <p>延滞・一部入金の請求から督促を送信します。</p>
+          <h2><Icon name="alert" />{t('dunning.eligibleInvoices')}</h2>
+          <p>{t('dunning.eligibleSubtitle')}</p>
         </CardHead>
         <DataTable>
           <thead>
-            <tr><th>請求書番号</th><th>ステータス</th><th>未収残高</th><th>期限</th><th>経過</th><th /></tr>
+            <tr><th>{t('table.invoiceNumber')}</th><th>{t('table.status')}</th><th>{t('table.outstanding')}</th><th>{t('table.dueDate')}</th><th>{t('table.elapsed')}</th><th /></tr>
           </thead>
           <tbody>
-            <TableStateRow colSpan={6} loading={invoicesQ.isLoading} empty={invoicesQ.data?.items.length === 0} emptyText="督促対象の請求書はありません" />
+            <TableStateRow colSpan={6} loading={invoicesQ.isLoading} empty={invoicesQ.data?.items.length === 0} emptyKey="dunning.noEligible" />
             {invoicesQ.data?.items.map(inv => {
               const paused = activePauses.has(inv.invoice_id)
               const elap = daysOverdue(inv.due_at)
@@ -113,19 +117,19 @@ export default function DunningPage() {
                 <tr key={inv.invoice_id} className={paused ? 'dim' : ''}>
                   <td className="strong mono">{inv.invoice_number}</td>
                   <td>
-                    {inv.status === 'overdue' ? <Badge variant="bad" dot>延滞</Badge> : <Badge variant="warn" dot>一部入金</Badge>}
+                    {inv.status === 'overdue' ? <Badge variant="bad" dot>{t('dunning.status.overdue')}</Badge> : <Badge variant="warn" dot>{t('dunning.status.partial')}</Badge>}
                   </td>
                   <td className="num">{yen(inv.outstanding_cents)}</td>
                   <td className="muted">{inv.due_at}</td>
                   <td style={{ color: daysNum > 0 ? (daysNum > 14 ? 'var(--bad)' : 'var(--warn)') : 'var(--muted)', fontWeight: 600 }}>{elap}</td>
                   <td className="row-act">
                     {paused
-                      ? <Badge variant="warn"><Icon name="pause" size="sm" />停止中</Badge>
-                      : <Button variant="primary" size="sm" onClick={() => setSendTarget(inv)}><Icon name="send" size="sm" />督促を送信</Button>
+                      ? <Badge variant="warn"><Icon name="pause" size="sm" />{t('dunning.paused')}</Badge>
+                      : <Button variant="primary" size="sm" onClick={() => setSendTarget(inv)}><Icon name="send" size="sm" />{t('dunning.send')}</Button>
                     }
                     {!paused && (
                       <Button variant="ghost-warn" size="sm" onClick={() => setPauseTarget(inv.invoice_id)}>
-                        <Icon name="pause" size="sm" />停止
+                        <Icon name="pause" size="sm" />{t('dunning.pause')}
                       </Button>
                     )}
                   </td>
@@ -138,10 +142,10 @@ export default function DunningPage() {
 
       {/* History */}
       <Card>
-        <CardHead><h2><Icon name="clock" />督促履歴</h2></CardHead>
+        <CardHead><h2><Icon name="clock" />{t('dunning.history')}</h2></CardHead>
         <DataTable>
           <thead>
-            <tr><th>請求書番号</th><th>送信先</th><th>未収残高</th><th>送信日時</th><th>送信者</th></tr>
+            <tr><th>{t('table.invoiceNumber')}</th><th>{t('table.recipient')}</th><th>{t('table.outstanding')}</th><th>{t('table.sentAt')}</th><th>{t('table.sender')}</th></tr>
           </thead>
           <tbody>
             <TableStateRow colSpan={5} loading={noticesQ.isLoading} empty={noticesQ.data?.items.length === 0} />

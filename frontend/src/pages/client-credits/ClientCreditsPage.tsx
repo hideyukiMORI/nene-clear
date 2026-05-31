@@ -3,9 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
 import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { useTranslation } from '@/hooks/useTranslation'
+import type { MessageKey } from '@/locales'
 import { yen, formatDate } from '@/utils/format'
 
 function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => void }) {
+  const { t } = useTranslation()
   const qc = useQueryClient()
   const [invoiceId, setInvoiceId] = useState('')
   const [amount, setAmount] = useState(String(credit.remaining_cents / 100))
@@ -17,26 +20,26 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
     <Modal
       open
       onClose={onClose}
-      title="前受金を適用"
-      sub={`残高 ${yen(credit.remaining_cents)}（元取引 #${credit.source_bank_transaction_id}）`}
+      title={t('clientCredit.applyModal.title')}
+      sub={t('clientCredit.applyModal.balance', { amount: yen(credit.remaining_cents), txn: credit.source_bank_transaction_id })}
       size="narrow"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!invoiceId || mut.isPending} onClick={() => mut.mutate()}>
-            <Icon name="link" />{mut.isPending ? '処理中…' : '適用'}
+            <Icon name="link" />{mut.isPending ? t('common.processing') : t('clientCredit.apply')}
           </Button>
         </>
       }
     >
-      <div className="field"><label>請求書ID</label>
-        <input className="inp tnum" type="number" placeholder="例: 123" value={invoiceId} onChange={e => setInvoiceId(e.target.value)} />
+      <div className="field"><label>{t('clientCredit.applyModal.invoiceId')}</label>
+        <input className="inp tnum" type="number" placeholder={t('clientCredit.applyModal.invoiceIdPlaceholder')} value={invoiceId} onChange={e => setInvoiceId(e.target.value)} />
       </div>
-      <div className="field"><label>適用額（円）</label>
+      <div className="field"><label>{t('clientCredit.applyModal.amount')}</label>
         <input className="inp tnum" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
       </div>
       <div className="summary-line">
-        <span>適用後の残高</span>
+        <span>{t('clientCredit.applyModal.afterBalance')}</span>
         <b className="tnum">{yen(Math.max(0, credit.remaining_cents - Math.round(Number(amount) * 100)))}</b>
       </div>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
@@ -44,12 +47,13 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
   )
 }
 
-const STATUS_MAP: Record<ClientCredit['status'], { v: 'ok' | 'neut'; label: string }> = {
-  open:   { v: 'ok',   label: '有効' },
-  voided: { v: 'neut', label: '無効' },
+const STATUS_MAP: Record<ClientCredit['status'], { v: 'ok' | 'neut'; labelKey: MessageKey }> = {
+  open:   { v: 'ok',   labelKey: 'clientCredit.status.open' },
+  voided: { v: 'neut', labelKey: 'clientCredit.status.voided' },
 }
 
 export default function ClientCreditsPage() {
+  const { t } = useTranslation()
   const [applyTarget, setApplyTarget] = useState<ClientCredit | null>(null)
 
   const creditsQ = useQuery({
@@ -59,12 +63,12 @@ export default function ClientCreditsPage() {
 
   return (
     <>
-      <PageHead title="前受金" sub="請求に紐づかない入金を前受金として管理し、後から請求へ適用します。" />
+      <PageHead title={t('clientCredit.title')} sub={t('clientCredit.subtitle')} />
 
       <Card>
         <DataTable>
           <thead>
-            <tr><th>ID</th><th>クライアント</th><th>金額</th><th>残高</th><th>ステータス</th><th>元取引</th><th>登録日</th><th /></tr>
+            <tr><th>{t('table.id')}</th><th>{t('table.client')}</th><th>{t('table.amount')}</th><th>{t('table.remaining')}</th><th>{t('table.status')}</th><th>{t('table.sourceTransaction')}</th><th>{t('table.createdAt')}</th><th /></tr>
           </thead>
           <tbody>
             <TableStateRow colSpan={8} loading={creditsQ.isLoading} empty={creditsQ.data?.items.length === 0} />
@@ -76,13 +80,13 @@ export default function ClientCreditsPage() {
                   <td className="strong">#{c.client_id}</td>
                   <td className="num">{yen(c.amount_cents)}</td>
                   <td className="num">{yen(c.remaining_cents)}</td>
-                  <td><Badge variant={s.v} dot>{s.label}</Badge></td>
+                  <td><Badge variant={s.v} dot>{t(s.labelKey)}</Badge></td>
                   <td className="mono muted">#{c.source_bank_transaction_id}</td>
                   <td className="muted">{formatDate(c.created_at)}</td>
                   <td className="row-act">
                     {c.status === 'open' && (
                       <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
-                        <Icon name="link" size="sm" />適用
+                        <Icon name="link" size="sm" />{t('clientCredit.apply')}
                       </Button>
                     )}
                   </td>

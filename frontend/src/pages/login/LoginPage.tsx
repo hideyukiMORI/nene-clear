@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { login } from '@/api/endpoints'
 import { storeToken } from '@/api/client'
 import { Icon, Button, Notice, LogoMark } from '@/components/ui'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,7 +22,7 @@ export default function LoginPage() {
       storeToken(token)
       navigate('/admin', { replace: true })
     } catch {
-      setError('メールアドレスまたはパスワードが正しくありません。')
+      setError(t('login.error'))
     } finally {
       setLoading(false)
     }
@@ -36,21 +38,21 @@ export default function LoginPage() {
           <b>NeNe Clear</b>
         </div>
         <div className="pitch">
-          <h2>入金消込から督促まで、<br />確実に、ひと続きで。</h2>
-          <p>銀行入金データと請求を正確に突合し、未収の取りこぼしを防ぐ。経理の現場のための堅実な消込・債権管理基盤です。</p>
+          <h2>{t('login.pitch.titleA')}<br />{t('login.pitch.titleB')}</h2>
+          <p>{t('login.pitch.body')}</p>
         </div>
         <div className="feats">
           <div className="feat">
             <span className="fi"><Icon name="reconcile" size="sm" /></span>
-            銀行CSVの自動突合と消込候補のサジェスト
+            {t('login.feature.reconcile')}
           </div>
           <div className="feat">
             <span className="fi"><Icon name="bell" size="sm" /></span>
-            延滞請求の督促送信と履歴の一元管理
+            {t('login.feature.dunning')}
           </div>
           <div className="feat">
             <span className="fi"><Icon name="shield" size="sm" /></span>
-            ロール権限と監査ログによる堅牢な統制
+            {t('login.feature.control')}
           </div>
         </div>
       </div>
@@ -59,12 +61,12 @@ export default function LoginPage() {
       <div className="login-main">
         <div className="login-card">
           <div className="lh">
-            <h1>サインイン</h1>
-            <p>アカウント情報を入力してください。</p>
+            <h1>{t('login.title')}</h1>
+            <p>{t('login.subtitle')}</p>
           </div>
           <form className="stack" onSubmit={handleSubmit}>
             <div className="field">
-              <label>メールアドレス</label>
+              <label>{t('login.email')}</label>
               <div className="inp-icon">
                 <Icon name="mail" />
                 <input
@@ -79,7 +81,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="field">
-              <label>パスワード</label>
+              <label>{t('login.password')}</label>
               <div className="inp-icon">
                 <Icon name="lock" />
                 <input
@@ -94,12 +96,12 @@ export default function LoginPage() {
             </div>
             <Button variant="primary" type="submit" disabled={loading} style={{ justifyContent: 'center', padding: '11px' }}>
               <Icon name="login" />
-              {loading ? '確認中…' : 'サインイン'}
+              {loading ? t('common.checking') : t('login.submit')}
             </Button>
             {error && <Notice variant="bad">{error}</Notice>}
           </form>
           <p className="faint" style={{ textAlign: 'center', marginTop: 26, fontSize: '11.5px' }}>
-            © 2026 NeNe Clear — Accounts Receivable Suite
+            {t('login.copyright')}
           </p>
         </div>
       </div>
