@@ -79,22 +79,31 @@ export interface DunningNotice {
   outstanding_at_send_cents: number
   due_at: string
   channel: string
+  template_version: string
   sent_by: number
   sent_at: string
 }
 
 export interface ClearSettings {
   organization_id: number
+  upstream_base_url: string
+  upstream_token_ref: string
   dunning_min_interval_days: number
   bank_accounts: BankAccount[]
 }
 
 export interface BankAccount {
-  bank_account_id: number
+  bank_account_id?: number
   bank_name: string
   bank_branch: string
-  account_type: string
+  account_type: 'ordinary' | 'current'
   account_number: string
+  csv_encoding?: string
+  csv_date_format?: string
+  csv_date_column?: number
+  csv_amount_column?: number
+  csv_counterparty_column?: number
+  csv_header_rows?: number
 }
 
 export interface ProblemDetails {
