@@ -222,4 +222,63 @@ final class DunningHttpTest extends TestCase
 
         self::assertSame(404, $response->getStatusCode());
     }
+
+    // --- Dunning pause / resume ---
+
+    public function test_pause_creates_record_and_blocks_send(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('admin@acme.example');
+
+        $pauseResponse = $this->post($token, '/admin/dunning-pauses', [
+            'invoice_id' => 1,
+            'reason' => 'awaiting credit note',
+        ]);
+        self::assertSame(201, $pauseResponse->getStatusCode());
+        $pause = $this->decode($pauseResponse);
+        self::assertSame(1, $pause['invoice_id']);
+        self::assertSame('awaiting credit note', $pause['paused_reason']);
+
+        $sendResponse = $this->post($token, '/admin/dunning-notices', ['invoice_id' => 1]);
+        self::assertSame(422, $sendResponse->getStatusCode());
+        $body = $this->decode($sendResponse);
+        self::assertStringContainsString('dunning-paused', $body['type']);
+    }
+
+    public function test_resume_allows_send(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('admin@acme.example');
+
+        $this->post($token, '/admin/dunning-pauses', ['invoice_id' => 1, 'reason' => 'hold']);
+
+        $resumeResponse = $this->post($token, '/admin/dunning-pauses/1/resume', []);
+        self::assertSame(204, $resumeResponse->getStatusCode());
+
+        $sendResponse = $this->post($token, '/admin/dunning-notices', ['invoice_id' => 1]);
+        self::assertSame(201, $sendResponse->getStatusCode());
+    }
+
+    public function test_list_pauses_active_only(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+
+        $this->post($token, '/admin/dunning-pauses', ['invoice_id' => 1, 'reason' => 'hold 1']);
+        $this->post($token, '/admin/dunning-pauses', ['invoice_id' => 2, 'reason' => 'hold 2']);
+        $this->post($token, '/admin/dunning-pauses/1/resume', []);
+
+        $response = $this->get($token, '/admin/dunning-pauses?active_only=true');
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decode($response);
+        self::assertSame(1, $body['total']);
+        self::assertSame(2, $body['items'][0]['invoice_id']);
+    }
+
+    public function test_viewer_cannot_pause(): void
+    {
+        $token = $this->tokenFor('viewer@acme.example');
+        $response = $this->post($token, '/admin/dunning-pauses', ['invoice_id' => 1, 'reason' => 'x']);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
 }
