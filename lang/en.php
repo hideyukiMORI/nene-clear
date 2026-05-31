@@ -95,6 +95,9 @@ return [
     'problem.dunning-too-frequent.title'  => 'Dunning Too Frequent',
     'problem.dunning-too-frequent.detail' => 'The minimum interval between dunning notices has not elapsed.',
 
+    'problem.dunning-paused.title'  => 'Dunning Paused',
+    'problem.dunning-paused.detail' => 'Dunning is paused for this invoice. Resume dunning before sending.',
+
     'problem.credit-exceeds-remaining.title'  => 'Credit Exceeds Remaining Balance',
     'problem.credit-exceeds-remaining.detail' => 'The requested amount exceeds the remaining credit balance.',
 

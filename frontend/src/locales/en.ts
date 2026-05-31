@@ -89,6 +89,11 @@ export const en: Partial<Record<MessageKey, string>> = {
   'dunning.sentBy': 'Sent by',
   'dunning.history': 'Dunning history',
   'dunning.confirmSend': 'Send a dunning notice for this invoice?',
+  'dunning.pause': 'Pause dunning',
+  'dunning.resume': 'Resume dunning',
+  'dunning.pauseReason': 'Pause reason',
+  'dunning.paused': 'Paused',
+  'dunning.confirmPause': 'Pause dunning for this invoice?',
 
   'settings.title': 'Settings',
   'settings.upstreamUrl': 'Invoice API URL',

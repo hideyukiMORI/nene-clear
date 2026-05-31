@@ -166,6 +166,31 @@ export function sendDunningNotice(invoiceId: number) {
   return api.post<DunningNotice>(`${BASE}/dunning-notices`, { invoice_id: invoiceId })
 }
 
+export interface DunningPause {
+  dunning_pause_id: number | null
+  invoice_id: number
+  paused_by: number
+  paused_at: string
+  paused_reason: string
+  unpaused_by: number | null
+  unpaused_at: string | null
+  is_active: boolean
+}
+
+export function listDunningPauses(params: { active_only?: boolean; limit?: number }, signal?: AbortSignal) {
+  const q = new URLSearchParams({ limit: String(params.limit ?? 100) })
+  if (params.active_only) q.set('active_only', 'true')
+  return api.get<ListEnvelope<DunningPause>>(`${BASE}/dunning-pauses?${q}`, signal)
+}
+
+export function pauseDunningNotice(invoiceId: number, reason: string) {
+  return api.post<DunningPause>(`${BASE}/dunning-pauses`, { invoice_id: invoiceId, reason })
+}
+
+export function resumeDunningNotice(invoiceId: number) {
+  return api.post<void>(`${BASE}/dunning-pauses/${invoiceId}/resume`)
+}
+
 // --- Settings ---
 export function getClearSettings(signal?: AbortSignal) {
   return api.get<ClearSettings>(`${BASE}/clear-settings`, signal)

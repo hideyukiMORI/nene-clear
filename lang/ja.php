@@ -92,6 +92,9 @@ return [
     'problem.dunning-too-frequent.title'  => '督促間隔未達',
     'problem.dunning-too-frequent.detail' => '前回の督促から最短間隔が経過していません。',
 
+    'problem.dunning-paused.title'  => '督促一時停止中',
+    'problem.dunning-paused.detail' => 'この請求書の督促は一時停止されています。督促を再開してから送信してください。',
+
     'problem.credit-exceeds-remaining.title'  => '前受金残高超過',
     'problem.credit-exceeds-remaining.detail' => '適用額が前受金の残高を超えています。',
 

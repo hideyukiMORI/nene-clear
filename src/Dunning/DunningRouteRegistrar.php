@@ -14,6 +14,9 @@ final readonly class DunningRouteRegistrar
         private SendDunningHandler $sendHandler,
         private ListDunningNoticesHandler $listHandler,
         private GetDunningNoticeByIdHandler $getByIdHandler,
+        private PauseDunningHandler $pauseHandler,
+        private ResumeDunningHandler $resumeHandler,
+        private ListDunningPausesHandler $listPausesHandler,
     ) {
     }
 
@@ -22,9 +25,15 @@ final readonly class DunningRouteRegistrar
         $sendHandler = $this->sendHandler;
         $listHandler = $this->listHandler;
         $getByIdHandler = $this->getByIdHandler;
+        $pauseHandler = $this->pauseHandler;
+        $resumeHandler = $this->resumeHandler;
+        $listPausesHandler = $this->listPausesHandler;
 
         $router->post('/admin/dunning-notices', static fn (ServerRequestInterface $r): ResponseInterface => $sendHandler->handle($r));
         $router->get('/admin/dunning-notices', static fn (ServerRequestInterface $r): ResponseInterface => $listHandler->handle($r));
         $router->get('/admin/dunning-notices/{id}', static fn (ServerRequestInterface $r): ResponseInterface => $getByIdHandler->handle($r));
+        $router->post('/admin/dunning-pauses', static fn (ServerRequestInterface $r): ResponseInterface => $pauseHandler->handle($r));
+        $router->post('/admin/dunning-pauses/{invoiceId}/resume', static fn (ServerRequestInterface $r): ResponseInterface => $resumeHandler->handle($r));
+        $router->get('/admin/dunning-pauses', static fn (ServerRequestInterface $r): ResponseInterface => $listPausesHandler->handle($r));
     }
 }

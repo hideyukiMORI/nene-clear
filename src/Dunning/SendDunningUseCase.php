@@ -27,6 +27,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         private AuditEventRepositoryInterface $auditEvents,
         private ClockInterface $clock,
         private MessageCatalog $catalog,
+        private ?DunningPauseRepositoryInterface $pauses = null,
     ) {
     }
 
@@ -36,6 +37,11 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
 
         if (!in_array($invoice->status, ['issued', 'partially_paid', 'overdue'], true) || $invoice->outstandingCents <= 0) {
             throw new InvoiceAlreadyPaidException($input->invoiceId, $invoice->status);
+        }
+
+        $pause = $this->pauses?->findActiveByInvoice($input->organizationId, $input->invoiceId);
+        if ($pause !== null) {
+            throw new DunningPausedException($input->invoiceId, $pause->pausedReason);
         }
 
         $settings = $this->clearSettings->findByOrganization($input->organizationId);

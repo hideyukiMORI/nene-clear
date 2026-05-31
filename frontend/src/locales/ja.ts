@@ -96,6 +96,11 @@ export const ja = {
   'dunning.sentBy': '送信者',
   'dunning.history': '督促履歴',
   'dunning.confirmSend': 'この請求書に督促メールを送信しますか？',
+  'dunning.pause': '督促停止',
+  'dunning.resume': '督促再開',
+  'dunning.pauseReason': '停止理由',
+  'dunning.paused': '停止中',
+  'dunning.confirmPause': 'この請求書の督促を一時停止しますか？',
 
   // Settings
   'settings.title': '設定',

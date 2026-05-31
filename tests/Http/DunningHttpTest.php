@@ -40,6 +40,7 @@ final class DunningHttpTest extends TestCase
         SchemaFixture::createClearSettings($query);
         SchemaFixture::createAuditEvents($query);
         SchemaFixture::createDunningNotices($query);
+        SchemaFixture::createDunningPauses($query);
 
         $users = new PdoUserRepository($query);
         $users->save($this->user('admin@acme.example', Role::Admin));
