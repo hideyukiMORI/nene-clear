@@ -73,6 +73,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 'payment' => $payment,
                 'externalRef' => $externalRef,
                 'invoiceOutstandingBefore' => $invoice->outstandingCents,
+                'clientId' => $invoice->clientId,
             ];
         }
 
@@ -112,7 +113,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
         if ($remainder > 0) {
             $this->clientCredits->save(new ClientCredit(
                 organizationId: $input->organizationId,
-                clientId: $paymentsCreated[0]['payment']->invoiceId,
+                clientId: $paymentsCreated[0]['clientId'],
                 amountCents: $remainder,
                 remainingCents: $remainder,
                 status: ClientCreditStatus::Open,

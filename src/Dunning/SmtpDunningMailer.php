@@ -32,6 +32,11 @@ final class SmtpDunningMailer implements DunningMailerInterface
         $this->mailer = new Mailer($transport);
     }
 
+    public function channel(): string
+    {
+        return 'email';
+    }
+
     public function send(DunningMailPayload $payload): void
     {
         $email = (new Email())
