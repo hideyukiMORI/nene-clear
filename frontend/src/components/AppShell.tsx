@@ -1,18 +1,36 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/hooks/useTranslation'
 import { clearToken } from '@/api/client'
+import { Icon } from '@/components/ui'
 import type { MessageKey } from '@/locales'
 
-const navLabels: Array<{ to: string; labelKey: MessageKey; end?: boolean }> = [
-  { to: '/admin', labelKey: 'nav.dashboard', end: true },
-  { to: '/admin/bank-import', labelKey: 'nav.bankImport' },
-  { to: '/admin/bank-transactions', labelKey: 'bankTransaction.title' },
-  { to: '/admin/reconciliation', labelKey: 'nav.reconciliation' },
-  { to: '/admin/client-credits', labelKey: 'nav.clientCredits' },
-  { to: '/admin/dunning', labelKey: 'nav.dunning' },
-  { to: '/admin/settings', labelKey: 'nav.settings' },
-  { to: '/admin/users', labelKey: 'nav.users' },
+const NAV: Array<{ to: string; labelKey: MessageKey; icon: string; end?: boolean; badge?: number }> = [
+  { to: '/admin', labelKey: 'nav.dashboard', icon: 'grid', end: true },
+  { to: '/admin/bank-import', labelKey: 'nav.bankImport', icon: 'import' },
+  { to: '/admin/bank-transactions', labelKey: 'bankTransaction.title', icon: 'table' },
+  { to: '/admin/reconciliation', labelKey: 'nav.reconciliation', icon: 'reconcile', badge: 12 },
+  { to: '/admin/client-credits', labelKey: 'nav.clientCredits', icon: 'credit' },
+  { to: '/admin/dunning', labelKey: 'nav.dunning', icon: 'bell' },
 ]
+
+const ADMIN_NAV: Array<{ to: string; labelKey: MessageKey; icon: string }> = [
+  { to: '/admin/settings', labelKey: 'nav.settings', icon: 'gear' },
+  { to: '/admin/users', labelKey: 'nav.users', icon: 'users' },
+]
+
+function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; label: string; badge?: number; end?: boolean }) {
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      className={({ isActive }) => ['nav-item', isActive ? 'active' : ''].filter(Boolean).join(' ')}
+    >
+      <Icon name={icon} />
+      {label}
+      {badge !== undefined && <span className="nav-badge">{badge}</span>}
+    </NavLink>
+  )
+}
 
 export default function AppShell() {
   const { t, locale, switchLocale } = useTranslation()
@@ -24,69 +42,62 @@ export default function AppShell() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Sidebar */}
-      <aside className="flex w-56 shrink-0 flex-col bg-gray-900 text-white">
-        {/* App title */}
-        <div className="flex h-14 items-center px-4 text-lg font-bold tracking-wide border-b border-gray-700">
-          {t('app.title')}
+    <div className="app">
+      <aside className="side">
+        <div className="side-brand">
+          <svg style={{ width: 26, height: 26, flex: 'none' }} viewBox="0 0 40 40" fill="none">
+            <rect x="2" y="2" width="36" height="36" rx="3" fill="#fff" fillOpacity="0.07" stroke="#fff" strokeOpacity="0.55" />
+            <path d="M11 27V13l9 10V13M24 20.5h6M27 13l3 7.5-3 7" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div>
+            <b>NeNe Clear</b>
+            <small>AR Suite</small>
+          </div>
         </div>
-
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2">
-          {navLabels.map(({ to, labelKey, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                [
-                  'flex items-center rounded px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-700 hover:text-white',
-                ].join(' ')
-              }
-            >
-              {t(labelKey)}
-            </NavLink>
+        <nav className="side-nav">
+          <div className="side-sect">業務</div>
+          {NAV.map(item => (
+            <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} badge={item.badge} end={item.end} />
+          ))}
+          <div className="side-sect">管理</div>
+          {ADMIN_NAV.map(item => (
+            <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
           ))}
         </nav>
+        <div className="side-foot">
+          <div className="side-user">
+            <div className="avatar">AD</div>
+            <div className="who">
+              <b>{t('nav.dashboard') === 'ダッシュボード' ? '管理者' : 'Admin'}</b>
+              <span>admin@example.com</span>
+            </div>
+          </div>
+        </div>
       </aside>
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-end gap-3 border-b border-gray-200 bg-white px-6">
-          {/* Locale switcher */}
-          <div className="flex items-center gap-1 text-sm">
-            <button
-              onClick={() => switchLocale('ja')}
-              className={`px-2 py-1 rounded ${locale === 'ja' ? 'bg-gray-200 font-semibold' : 'hover:bg-gray-100'}`}
-            >
-              JA
-            </button>
-            <button
-              onClick={() => switchLocale('en')}
-              className={`px-2 py-1 rounded ${locale === 'en' ? 'bg-gray-200 font-semibold' : 'hover:bg-gray-100'}`}
-            >
-              EN
+      <div className="main">
+        <header className="topbar">
+          <nav className="crumb">
+            <span>NeNe Clear</span>
+            <svg className="ic" style={{ width: 14, height: 14 }}><use href="#i-chev-r" /></svg>
+            <b>Menu</b>
+          </nav>
+          <div className="topbar-r">
+            <div className="lang">
+              <button className={locale === 'ja' ? 'on' : ''} onClick={() => switchLocale('ja')}>JA</button>
+              <button className={locale === 'en' ? 'on' : ''} onClick={() => switchLocale('en')}>EN</button>
+            </div>
+            <span className="sep" />
+            <button className="iconbtn" title={t('nav.logout')} onClick={handleLogout}>
+              <Icon name="logout" />
             </button>
           </div>
-
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="rounded px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-          >
-            {t('nav.logout')}
-          </button>
         </header>
-
-        {/* Content */}
-        <main className="flex-1 overflow-y-auto p-6">
-          <Outlet />
-        </main>
+        <div className="scroll">
+          <div className="page">
+            <Outlet />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -1,195 +1,104 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from '@/hooks/useTranslation'
 import { listClientCredits, applyClientCredit } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
+import { Icon, Badge, Button, Card, DataTable, Modal, Notice } from '@/components/ui'
 
-function formatYen(cents: number) {
-  return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP')
-}
+function yen(cents: number) { return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP') }
 
-// ------- Apply Credit Modal -------
-interface ApplyModalProps {
-  credit: ClientCredit
-  onClose: () => void
-}
-
-function ApplyCreditModal({ credit, onClose }: ApplyModalProps) {
-  const { t } = useTranslation()
+function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => void }) {
   const qc = useQueryClient()
-  const [invoiceIdInput, setInvoiceIdInput] = useState('')
-  const [amountInput, setAmountInput] = useState(String(credit.remaining_cents / 100))
-
-  const mutation = useMutation({
-    mutationFn: () =>
-      applyClientCredit(
-        credit.client_credit_id,
-        Number(invoiceIdInput),
-        Math.round(Number(amountInput) * 100),
-      ),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['client-credits'] })
-      onClose()
-    },
+  const [invoiceId, setInvoiceId] = useState('')
+  const [amount, setAmount] = useState(String(credit.remaining_cents / 100))
+  const mut = useMutation({
+    mutationFn: () => applyClientCredit(credit.client_credit_id, Number(invoiceId), Math.round(Number(amount) * 100)),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['client-credits'] }); onClose() },
   })
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 className="mb-1 text-base font-semibold text-gray-900">{t('clientCredit.applyModal.title')}</h3>
-        <p className="mb-4 text-xs text-gray-400">
-          残高: {formatYen(credit.remaining_cents)} (元取引 #{credit.source_bank_transaction_id})
-        </p>
-
-        <div className="mb-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('clientCredit.applyModal.invoiceId')}</label>
-          <input
-            type="number"
-            min="1"
-            value={invoiceIdInput}
-            onChange={e => setInvoiceIdInput(e.target.value)}
-            placeholder="例: 123"
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none"
-          />
-        </div>
-
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('clientCredit.applyModal.amount')}</label>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            value={amountInput}
-            onChange={e => setAmountInput(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none"
-          />
-        </div>
-
-        {mutation.isError && (
-          <p className="mb-3 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{mutation.error.message}</p>
-        )}
-
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !invoiceIdInput || !amountInput}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? t('common.loading') : t('clientCredit.apply')}
-          </button>
-        </div>
+    <Modal
+      open
+      onClose={onClose}
+      title="前受金を適用"
+      sub={`残高 ${yen(credit.remaining_cents)}（元取引 #${credit.source_bank_transaction_id}）`}
+      size="narrow"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button variant="primary" disabled={!invoiceId || mut.isPending} onClick={() => mut.mutate()}>
+            <Icon name="link" />{mut.isPending ? '処理中…' : '適用'}
+          </Button>
+        </>
+      }
+    >
+      <div className="field"><label>請求書ID</label>
+        <input className="inp tnum" type="number" placeholder="例: 123" value={invoiceId} onChange={e => setInvoiceId(e.target.value)} />
       </div>
-    </div>
+      <div className="field"><label>適用額（円）</label>
+        <input className="inp tnum" type="number" value={amount} onChange={e => setAmount(e.target.value)} />
+      </div>
+      <div className="summary-line">
+        <span>適用後の残高</span>
+        <b className="tnum">{yen(Math.max(0, credit.remaining_cents - Math.round(Number(amount) * 100)))}</b>
+      </div>
+      {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
+    </Modal>
   )
 }
 
-// ------- Status Badge -------
-function StatusBadge({ status }: { status: ClientCredit['status'] }) {
-  const { t } = useTranslation()
-  const styles: Record<ClientCredit['status'], string> = {
-    open: 'bg-green-100 text-green-800',
-    partially_applied: 'bg-yellow-100 text-yellow-800',
-    applied: 'bg-gray-200 text-gray-600',
-  }
-  const keys: Record<ClientCredit['status'], Parameters<typeof t>[0]> = {
-    open: 'clientCredit.status.open',
-    partially_applied: 'clientCredit.status.partially_applied',
-    applied: 'clientCredit.status.applied',
-  }
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[status]}`}>
-      {t(keys[status])}
-    </span>
-  )
+const STATUS_MAP: Record<ClientCredit['status'], { v: 'ok' | 'warn' | 'neut'; label: string }> = {
+  open:              { v: 'ok',   label: '有効' },
+  partially_applied: { v: 'warn', label: '一部適用' },
+  applied:           { v: 'neut', label: '適用済' },
 }
 
-// ------- Main Page -------
 export default function ClientCreditsPage() {
-  const { t } = useTranslation()
   const [applyTarget, setApplyTarget] = useState<ClientCredit | null>(null)
 
-  const creditsQuery = useQuery({
+  const creditsQ = useQuery({
     queryKey: ['client-credits'],
     queryFn: ({ signal }) => listClientCredits({ limit: 100 }, signal),
   })
 
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('clientCredit.title')}</h1>
+    <>
+      <div className="page-head">
+        <div><h1>前受金</h1><p>請求に紐づかない入金を前受金として管理し、後から請求へ適用します。</p></div>
+      </div>
 
-      <div className="rounded-lg bg-white shadow-sm overflow-hidden">
-        {creditsQuery.isLoading && (
-          <p className="px-6 py-4 text-sm text-gray-400">{t('common.loading')}</p>
-        )}
-        {creditsQuery.isError && (
-          <p className="px-6 py-4 text-sm text-red-600">{creditsQuery.error.message}</p>
-        )}
-        {creditsQuery.data && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                <th className="px-6 py-3">ID</th>
-                <th className="px-6 py-3">クライアントID</th>
-                <th className="px-6 py-3">金額</th>
-                <th className="px-6 py-3">{t('clientCredit.remaining')}</th>
-                <th className="px-6 py-3">ステータス</th>
-                <th className="px-6 py-3">{t('clientCredit.sourceTransaction')}</th>
-                <th className="px-6 py-3">登録日</th>
-                <th className="px-6 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {creditsQuery.data.items.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-6 py-4 text-center text-gray-400">
-                    {t('common.noData')}
-                  </td>
-                </tr>
-              )}
-              {creditsQuery.data.items.map((credit, i) => (
-                <tr
-                  key={credit.client_credit_id}
-                  className={i % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
-                >
-                  <td className="px-6 py-3 text-gray-500">{credit.client_credit_id}</td>
-                  <td className="px-6 py-3 text-gray-700">{credit.client_id}</td>
-                  <td className="px-6 py-3 font-medium tabular-nums text-gray-900">
-                    {formatYen(credit.amount_cents)}
-                  </td>
-                  <td className="px-6 py-3 font-medium tabular-nums text-gray-900">
-                    {formatYen(credit.remaining_cents)}
-                  </td>
-                  <td className="px-6 py-3">
-                    <StatusBadge status={credit.status} />
-                  </td>
-                  <td className="px-6 py-3 text-gray-600">#{credit.source_bank_transaction_id}</td>
-                  <td className="px-6 py-3 text-gray-500">{credit.created_at.slice(0, 10)}</td>
-                  <td className="px-6 py-3">
-                    {credit.status !== 'applied' && (
-                      <button
-                        onClick={() => setApplyTarget(credit)}
-                        className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
-                      >
-                        {t('clientCredit.apply')}
-                      </button>
+      <Card>
+        <DataTable>
+          <thead>
+            <tr><th>ID</th><th>クライアント</th><th>金額</th><th>残高</th><th>ステータス</th><th>元取引</th><th>登録日</th><th /></tr>
+          </thead>
+          <tbody>
+            {creditsQ.isLoading && <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 20 }}>読み込み中…</td></tr>}
+            {creditsQ.data?.items.map(c => {
+              const s = STATUS_MAP[c.status]
+              return (
+                <tr key={c.client_credit_id} className={c.status === 'applied' ? 'dim' : ''}>
+                  <td className="muted">{c.client_credit_id}</td>
+                  <td className="strong">#{c.client_id}</td>
+                  <td className="num">{yen(c.amount_cents)}</td>
+                  <td className="num">{yen(c.remaining_cents)}</td>
+                  <td><Badge variant={s.v} dot>{s.label}</Badge></td>
+                  <td className="mono muted">#{c.source_bank_transaction_id}</td>
+                  <td className="muted">{c.created_at.slice(0, 10)}</td>
+                  <td className="row-act">
+                    {c.status !== 'applied' && (
+                      <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
+                        <Icon name="link" size="sm" />適用
+                      </Button>
                     )}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              )
+            })}
+            {creditsQ.data?.items.length === 0 && <tr><td colSpan={8} className="muted" style={{ textAlign: 'center', padding: 20 }}>データなし</td></tr>}
+          </tbody>
+        </DataTable>
+      </Card>
 
-      {applyTarget && (
-        <ApplyCreditModal credit={applyTarget} onClose={() => setApplyTarget(null)} />
-      )}
-    </div>
+      {applyTarget && <ApplyModal credit={applyTarget} onClose={() => setApplyTarget(null)} />}
+    </>
   )
 }

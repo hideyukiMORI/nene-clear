@@ -1,75 +1,135 @@
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from '@/hooks/useTranslation'
 import { listUnmatchedTransactions, listDunningNotices } from '@/api/endpoints'
+import { Icon, Kpi, KpiGrid, Card, CardHead, DataTable, Button } from '@/components/ui'
+import { useNavigate } from 'react-router-dom'
 
-function formatYen(cents: number) {
-  return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP')
-}
-
-function formatDate(iso: string) {
-  return iso.slice(0, 10)
-}
+function yen(cents: number) { return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP') }
+function dateShort(iso: string) { return iso.slice(5, 10).replace('-', '-') }
 
 export default function DashboardPage() {
-  const { t } = useTranslation()
+  const navigate = useNavigate()
 
-  const unmatchedQuery = useQuery({
-    queryKey: ['bank-transactions', 'unmatched', { limit: 1 }],
-    queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 1 }, signal),
+  const unmatchedQ = useQuery({
+    queryKey: ['bank-transactions', 'unmatched', { limit: 5 }],
+    queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 5 }, signal),
   })
 
-  const dunningQuery = useQuery({
+  const dunningQ = useQuery({
     queryKey: ['dunning-notices', { limit: 5 }],
     queryFn: ({ signal }) => listDunningNotices({ limit: 5 }, signal),
   })
 
+  const unmatchedTotal = unmatchedQ.data?.total ?? 0
+
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {/* Unmatched transactions card */}
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold text-gray-700">{t('dashboard.unmatched')}</h2>
-          {unmatchedQuery.isLoading && (
-            <p className="text-sm text-gray-400">{t('common.loading')}</p>
-          )}
-          {unmatchedQuery.isError && (
-            <p className="text-sm text-red-600">{unmatchedQuery.error.message}</p>
-          )}
-          {unmatchedQuery.data && (
-            <p className="text-4xl font-bold text-gray-900">
-              {unmatchedQuery.data.total}
-              <span className="ml-2 text-sm font-normal text-gray-500">件</span>
-            </p>
-          )}
-        </div>
-
-        {/* Recent dunning notices card */}
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold text-gray-700">{t('dashboard.recentDunning')}</h2>
-          {dunningQuery.isLoading && (
-            <p className="text-sm text-gray-400">{t('common.loading')}</p>
-          )}
-          {dunningQuery.isError && (
-            <p className="text-sm text-red-600">{dunningQuery.error.message}</p>
-          )}
-          {dunningQuery.data && dunningQuery.data.items.length === 0 && (
-            <p className="text-sm text-gray-400">{t('common.noData')}</p>
-          )}
-          {dunningQuery.data && dunningQuery.data.items.length > 0 && (
-            <ul className="space-y-2">
-              {dunningQuery.data.items.map(notice => (
-                <li key={notice.dunning_notice_id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-800">{notice.invoice_number}</span>
-                  <span className="text-gray-500">{formatYen(notice.outstanding_at_send_cents)}</span>
-                  <span className="text-gray-400">{formatDate(notice.sent_at)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+    <>
+      <div className="page-head">
+        <div>
+          <h1>ダッシュボード</h1>
+          <p>入金消込・債権状況の概況</p>
         </div>
       </div>
-    </div>
+
+      <KpiGrid style={{ marginBottom: 20 }}>
+        <Kpi
+          accent="accent"
+          icon={<Icon name="reconcile" />}
+          label="未消込の取引"
+          value={<>{unmatchedQ.isLoading ? '…' : unmatchedTotal}<small>件</small></>}
+          sub={<><Icon name="yen" size="sm" />残高合計取得中</>}
+        />
+        <Kpi
+          accent="bad"
+          icon={<Icon name="alert" style={{ color: 'var(--bad)' }} />}
+          label="延滞請求（督促対象）"
+          value={<>5<small>件</small></>}
+          sub={<><Icon name="clock" size="sm" />最長 31 日経過</>}
+        />
+        <Kpi
+          icon={<Icon name="check" />}
+          label="今月の消込済"
+          value={<span className="tnum">¥4,820,000</span>}
+          sub={<><Icon name="trend" size="sm" />前月比 +8.2%</>}
+        />
+        <Kpi
+          accent="warn"
+          icon={<Icon name="credit" style={{ color: 'var(--warn)' }} />}
+          label="前受金残高"
+          value={<span className="tnum">¥45,000</span>}
+          sub={<><Icon name="info" size="sm" />適用待ち 2 件</>}
+        />
+      </KpiGrid>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
+        {/* 未消込テーブル */}
+        <Card>
+          <CardHead>
+            <h2><Icon name="reconcile" />未消込の取引</h2>
+            <Button variant="link" onClick={() => navigate('/admin/reconciliation')}>
+              すべて表示 <Icon name="chev-r" size="sm" />
+            </Button>
+          </CardHead>
+          <DataTable>
+            <colgroup>
+              <col style={{ width: 96 }} /><col style={{ width: 96 }} /><col /><col style={{ width: 140 }} />
+            </colgroup>
+            <thead>
+              <tr><th>入金日</th><th>金額</th><th>振込人名</th><th /></tr>
+            </thead>
+            <tbody>
+              {unmatchedQ.isLoading && (
+                <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>読み込み中…</td></tr>
+              )}
+              {unmatchedQ.data?.items.map(tx => (
+                <tr key={tx.bank_transaction_id}>
+                  <td className="muted">{tx.value_date}</td>
+                  <td className="num">{yen(tx.amount_cents)}</td>
+                  <td className="strong">{tx.counterparty_text}</td>
+                  <td className="row-act">
+                    <Button variant="primary" size="sm" onClick={() => navigate('/admin/reconciliation')}>
+                      <Icon name="check" size="sm" />消込を確定
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {unmatchedQ.data?.items.length === 0 && (
+                <tr><td colSpan={4} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>未消込の取引はありません</td></tr>
+              )}
+            </tbody>
+          </DataTable>
+        </Card>
+
+        {/* 最近の督促 */}
+        <Card>
+          <CardHead>
+            <h2><Icon name="bell" />最近の督促</h2>
+            <Button variant="link" onClick={() => navigate('/admin/dunning')}>
+              督促へ <Icon name="chev-r" size="sm" />
+            </Button>
+          </CardHead>
+          <DataTable>
+            <colgroup><col /><col style={{ width: 110 }} /><col style={{ width: 72 }} /></colgroup>
+            <thead>
+              <tr><th>請求書</th><th>未収残高</th><th>送信日</th></tr>
+            </thead>
+            <tbody>
+              {dunningQ.isLoading && (
+                <tr><td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>読み込み中…</td></tr>
+              )}
+              {dunningQ.data?.items.map(n => (
+                <tr key={n.dunning_notice_id}>
+                  <td className="strong mono">{n.invoice_number}</td>
+                  <td className="num">{yen(n.outstanding_at_send_cents)}</td>
+                  <td className="muted">{dateShort(n.sent_at)}</td>
+                </tr>
+              ))}
+              {dunningQ.data?.items.length === 0 && (
+                <tr><td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '20px 14px' }}>データなし</td></tr>
+              )}
+            </tbody>
+          </DataTable>
+        </Card>
+      </div>
+    </>
   )
 }

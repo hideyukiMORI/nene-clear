@@ -1,5 +1,2 @@
 @import "tailwindcss";
-
-:root {
-  font-family: 'Noto Sans JP', 'Inter', sans-serif;
-}
+@import "./styles/design.css";
