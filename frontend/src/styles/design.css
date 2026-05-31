@@ -231,6 +231,10 @@ svg.ic-lg{ width:22px; height:22px; }
 .card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
   box-shadow:var(--shadow); min-width:0; }
 .card + .card{ margin-top:20px; }
+/* Two-column dashboard cards: grid items don't collapse margins, so the second
+   card inherits 20px from `.card + .card` while the first has none, dropping the
+   right card. Give both the same top offset so their top edges align. */
+.dash-cards > .card{ margin-top:20px; }
 .card-head{ display:flex; align-items:center; justify-content:space-between; gap:12px;
   padding:14px 18px; border-bottom:1px solid var(--line); }
 .card-head h2{ margin:0; font-size:14px; font-weight:700; color:var(--ink);

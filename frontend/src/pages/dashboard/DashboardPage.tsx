@@ -56,7 +56,7 @@ export default function DashboardPage() {
         />
       </KpiGrid>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
+      <div className="dash-cards" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
         {/* Unmatched transactions */}
         <Card>
           <CardHead>
