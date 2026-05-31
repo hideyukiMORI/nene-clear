@@ -214,6 +214,7 @@ final class SchemaFixture
                 outstanding_cents INTEGER NOT NULL,
                 due_at TEXT NOT NULL,
                 channel TEXT NOT NULL DEFAULT \'log\',
+                template_version TEXT NOT NULL DEFAULT \'1.0\',
                 sent_by INTEGER NOT NULL,
                 sent_at TEXT NOT NULL,
                 created_at TEXT

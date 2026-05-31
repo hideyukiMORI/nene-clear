@@ -9,7 +9,7 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 final readonly class PdoDunningNoticeRepository implements DunningNoticeRepositoryInterface
 {
     private const string COLUMNS = 'id, organization_id, invoice_id, invoice_number, client_id, '
-        . 'recipient_email, outstanding_cents, due_at, channel, sent_by, sent_at';
+        . 'recipient_email, outstanding_cents, due_at, channel, template_version, sent_by, sent_at';
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
@@ -20,8 +20,8 @@ final readonly class PdoDunningNoticeRepository implements DunningNoticeReposito
     {
         $this->query->execute(
             'INSERT INTO dunning_notices (organization_id, invoice_id, invoice_number, client_id, '
-            . 'recipient_email, outstanding_cents, due_at, channel, sent_by, sent_at) '
-            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            . 'recipient_email, outstanding_cents, due_at, channel, template_version, sent_by, sent_at) '
+            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $notice->organizationId,
                 $notice->invoiceId,
@@ -31,6 +31,7 @@ final readonly class PdoDunningNoticeRepository implements DunningNoticeReposito
                 $notice->outstandingCents,
                 $notice->dueAt,
                 $notice->channel,
+                $notice->templateVersion,
                 $notice->sentBy,
                 $notice->sentAt,
             ],
@@ -92,6 +93,7 @@ final readonly class PdoDunningNoticeRepository implements DunningNoticeReposito
             outstandingCents: (int) $row['outstanding_cents'],
             dueAt: (string) $row['due_at'],
             channel: (string) $row['channel'],
+            templateVersion: (string) $row['template_version'],
             sentBy: (int) $row['sent_by'],
             sentAt: (string) $row['sent_at'],
             id: (int) $row['id'],

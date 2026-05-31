@@ -21,6 +21,7 @@ final readonly class DunningNoticeResponse
             'outstanding_cents' => $notice->outstandingCents,
             'due_at' => $notice->dueAt,
             'channel' => $notice->channel,
+            'template_version' => $notice->templateVersion,
             'sent_by' => $notice->sentBy,
             'sent_at' => $notice->sentAt,
         ];

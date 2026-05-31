@@ -19,6 +19,7 @@ final readonly class DunningNotice
         public int $outstandingCents,
         public string $dueAt,
         public string $channel,
+        public string $templateVersion,
         public int $sentBy,
         public string $sentAt,
         public ?int $id = null,
