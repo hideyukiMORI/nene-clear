@@ -87,7 +87,7 @@ final class SendDunningUseCaseTest extends TestCase
         self::assertSame(1, $notice->invoiceId);
         self::assertSame('accounts@acme.example', $notice->recipientEmail);
         self::assertSame(110000, $notice->outstandingCents);
-        self::assertSame('log', $notice->channel);
+        self::assertSame('email', $notice->channel);
 
         self::assertCount(1, $this->mailer->sent);
         self::assertSame('accounts@acme.example', $this->mailer->sent[0]->to);
