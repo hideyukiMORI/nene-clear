@@ -1,4 +1,5 @@
 export { Icon } from './Icon'
+export { LogoMark } from './LogoMark'
 export { Badge } from './Badge'
 export type { BadgeVariant } from './Badge'
 export { Button } from './Button'

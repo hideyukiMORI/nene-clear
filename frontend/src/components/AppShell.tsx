@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/hooks/useTranslation'
 import { clearToken } from '@/api/client'
-import { Icon } from '@/components/ui'
+import { Icon, LogoMark } from '@/components/ui'
 import type { MessageKey } from '@/locales'
 
 const NAV: Array<{ to: string; labelKey: MessageKey; icon: string; end?: boolean; badge?: number }> = [
@@ -45,10 +45,7 @@ export default function AppShell() {
     <div className="app">
       <aside className="side">
         <div className="side-brand">
-          <svg style={{ width: 26, height: 26, flex: 'none' }} viewBox="0 0 40 40" fill="none">
-            <rect x="2" y="2" width="36" height="36" rx="3" fill="#fff" fillOpacity="0.07" stroke="#fff" strokeOpacity="0.55" />
-            <path d="M11 27V13l9 10V13M24 20.5h6M27 13l3 7.5-3 7" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <LogoMark height={24} />
           <div>
             <b>NeNe Clear</b>
             <small>AR Suite</small>

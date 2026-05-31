@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '@/api/endpoints'
 import { storeToken } from '@/api/client'
-import { Icon, Button, Notice } from '@/components/ui'
+import { Icon, Button, Notice, LogoMark } from '@/components/ui'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -32,10 +32,7 @@ export default function LoginPage() {
       <div className="login-aside">
         <div className="login-grid" />
         <div className="brand">
-          <svg style={{ width: 36, height: 36 }} viewBox="0 0 40 40" fill="none">
-            <rect x="2" y="2" width="36" height="36" rx="3" fill="#fff" fillOpacity="0.06" stroke="#fff" strokeOpacity="0.5" />
-            <path d="M11 27V13l9 10V13M24 20.5h6M27 13l3 7.5-3 7" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <LogoMark height={32} />
           <b>NeNe Clear</b>
         </div>
         <div className="pitch">

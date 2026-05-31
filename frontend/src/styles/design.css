@@ -129,7 +129,6 @@ svg.ic-lg{ width:22px; height:22px; }
   border-bottom:1px solid var(--side-line);
   color:var(--side-fg-strong);
 }
-.side-brand .logo-mark{ width:26px; height:26px; flex:none; }
 .side-brand b{ font-size:15px; font-weight:700; letter-spacing:.02em; }
 .side-brand small{ display:block; font-size:10px; font-weight:400; letter-spacing:.14em;
   color:var(--side-fg); text-transform:uppercase; margin-top:1px; }
@@ -426,7 +425,6 @@ select.inp{ appearance:none; padding-right:32px;
     linear-gradient(180deg, rgba(255,255,255,.04), transparent 30%);
   pointer-events:none; }
 .login-aside .brand{ display:flex; align-items:center; gap:12px; position:relative; z-index:1; }
-.login-aside .brand .logo-mark{ width:36px; height:36px; }
 .login-aside .brand b{ font-size:20px; font-weight:700; letter-spacing:.02em; }
 .login-grid{ position:absolute; inset:0; opacity:.4;
   background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
