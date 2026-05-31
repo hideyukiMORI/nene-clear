@@ -9,6 +9,7 @@ Last updated: 2026-05-31
 **Infrastructure — Complete** (docker-compose + Mailpit; SmtpDunningMailer; InvoiceUpstreamHttpClient; login throttle).
 **Security — Assessed** (2-round multi-tenant pentest; 4 findings fixed incl. one critical privilege escalation; `docs/security/assessment-2026-05.md`).
 **nene-invoice upstream — Their side implemented (PR #141); Clear client + contract tests ready. Real connection (set env vars) still pending.**
+**Bug fixes + feature gap closure — 12 issues (PR #99–#103) filed and addressed (open PRs, not yet merged).**
 
 ### Tests / quality gates
 
@@ -55,15 +56,30 @@ CI: GitHub Actions — `backend-ci`, `frontend-ci`, `e2e-ci` run on push/PR to m
    `NENE_INVOICE_BEARER_TOKEN` against a live Invoice instance and run the
    contract suite to confirm the integration end-to-end.
 
+## Open PRs (pending review + merge)
+
+| PR | Description |
+| --- | --- |
+| #99 | fix: 3 bugs — overdue dunning eligibility, ClientCredit clientId, channel recording |
+| #100 | feat: template_version on DunningNotice (migration + entity + UseCase) |
+| #101 | feat: 6 frontend gaps — proposeMatch UI, dunning invoice browser, client credits page, amount filter, settings bank/upstream |
+| #102 | feat: CSV export endpoints (reconciliations / client-credits / bank-transactions) |
+| #103 | feat: dunning pause per invoice (dunning_pauses table + UseCase + UI) |
+
+All PRs pass `composer check` (208 tests, PHPStan level 8) and `npm run check` (27 unit tests).
+Note: PRs are independent branches from main; they will have merge conflicts with each other — merge sequentially.
+
 ## Next steps
 
-1. **Activate real Invoice upstream** — set env vars, run contract tests live.
-2. **Dunning template customization** — operator-editable templates per org
+1. **Merge PRs #99–#103** — sequential merge (order above). Resolve conflicts per NENE2 architecture rules.
+2. **Activate real Invoice upstream** — set env vars, run contract tests live.
+3. **Dunning template customization** — operator-editable templates per org
    (currently a single hardcoded `lang/ja.php` template).
-3. **Phase 3 — Tier A shared hosting** — web installer, release ZIP, two-app
+4. **CSV export — tax advisor sign-off** — review column set per compliance §9 before calling it production-ready.
+5. **Phase 3 — Tier A shared hosting** — web installer, release ZIP, two-app
    (Invoice + Clear) operator setup guide.
-4. **Phase 4 — Ecosystem** — MCP tools (`listUnmatchedTransactions`,
-   `proposeMatch`, `sendDunningNotice`), CSV export for accounting software.
+6. **Phase 4 — Ecosystem** — MCP tools (`listUnmatchedTransactions`,
+   `proposeMatch`, `sendDunningNotice`).
 
 ## Recently completed (this cycle)
 
@@ -74,3 +90,4 @@ CI: GitHub Actions — `backend-ci`, `frontend-ci`, `e2e-ci` run on push/PR to m
 - Security hardening: login rate limiting, role-assignment privilege-escalation
   guard, SMTP credential handling, upstream error masking.
 - CI pipelines + this status refresh.
+- Bug fixes + feature gap closure: 12 issues identified and resolved in PRs #99–#103.

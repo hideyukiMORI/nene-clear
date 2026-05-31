@@ -16,6 +16,20 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 - No direct commits to `main`; Issue required
 - Repository docs: English only (ADR 0008)
 
+## Local development ports
+
+All ports are fixed for this project to avoid collisions with sibling apps.
+
+| Service | Host port | Notes |
+| --- | --- | --- |
+| MySQL | **3383** | `docker-compose.yml` |
+| Mailpit SMTP | **1383** | `docker-compose.yml`; set `SMTP_HOST=127.0.0.1 SMTP_PORT=1383` |
+| Mailpit Web UI | **8383** | `http://localhost:8383` |
+| PHP backend | **8384** | `NENE_CLEAR_PORT=8384` in `.env` |
+| Vite dev server | **5383** | `NENE_CLEAR_FRONTEND_PORT=5383` in `.env` |
+
+Do **not** change these back to defaults (8080, 1025, 8025, 3306).
+
 ## Canonical paths
 
 | Purpose | Path |

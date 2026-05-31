@@ -20,3 +20,4 @@ alwaysApply: true
 - **Naming:** all identifiers MUST match `docs/explanation/terminology.md`. No typos or unregistered terms.
 - **Repository docs: English only** (ADR 0008). Admin UI locales: ja + en (ADR 0005).
 - If Cursor rules conflict with docs, update docs first; keep rules concise.
+- **Local ports (fixed — do not revert to defaults):** MySQL 3383 · Mailpit SMTP 1383 · Mailpit Web 8383 · PHP backend 8384 · Vite 5383. See `CLAUDE.md §Local development ports`.
