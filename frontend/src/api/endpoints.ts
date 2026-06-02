@@ -17,7 +17,7 @@ export async function downloadCsv(path: string, filename: string): Promise<void>
 import type {
   User, BankImportBatch, BankTransaction, Reconciliation,
   ClientCredit, DunningNotice, ClearSettings, UpstreamInvoice,
-  ListEnvelope,
+  AuditEvent, ListEnvelope,
 } from '@/types'
 
 const BASE = '/admin'
@@ -160,6 +160,13 @@ export function listUpstreamInvoices(params: { status?: string }, signal?: Abort
 export function listDunningNotices(params: { limit?: number; offset?: number }, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
   return api.get<ListEnvelope<DunningNotice>>(`${BASE}/dunning-notices?${q}`, signal)
+}
+
+// --- Audit trail (admin) ---
+export function listAuditEvents(params: { eventType?: string; limit?: number; offset?: number }, signal?: AbortSignal) {
+  const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+  if (params.eventType) q.set('event_type', params.eventType)
+  return api.get<ListEnvelope<AuditEvent>>(`${BASE}/audit-events?${q}`, signal)
 }
 
 export function sendDunningNotice(invoiceId: number) {

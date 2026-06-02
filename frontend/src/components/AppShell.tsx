@@ -16,6 +16,7 @@ const NAV: Array<{ to: string; labelKey: MessageKey; icon: string; end?: boolean
 const ADMIN_NAV: Array<{ to: string; labelKey: MessageKey; icon: string }> = [
   { to: '/admin/settings', labelKey: 'nav.settings', icon: 'gear' },
   { to: '/admin/users', labelKey: 'nav.users', icon: 'users' },
+  { to: '/admin/audit-log', labelKey: 'nav.auditLog', icon: 'clock' },
 ]
 
 function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; label: string; badge?: number; end?: boolean }) {

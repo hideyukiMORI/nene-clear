@@ -10,6 +10,7 @@ import ClientCreditsPage from '@/pages/client-credits/ClientCreditsPage'
 import DunningPage from '@/pages/dunning/DunningPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import UsersPage from '@/pages/users/UsersPage'
+import AuditLogPage from '@/pages/audit/AuditLogPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
       { path: 'dunning', element: <DunningPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'users', element: <UsersPage /> },
+      { path: 'audit-log', element: <AuditLogPage /> },
     ],
   },
   {
