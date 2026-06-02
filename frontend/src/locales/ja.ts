@@ -16,6 +16,7 @@ export const ja = {
   'nav.dunning': '督促',
   'nav.settings': '設定',
   'nav.users': 'ユーザー管理',
+  'nav.auditLog': '操作履歴',
   'nav.logout': 'ログアウト',
 
   // ── Login ──
@@ -241,6 +242,39 @@ export const ja = {
   'users.delete': '削除',
   'users.status.active': '有効',
   'users.status.invited': '招待中',
+
+  // ── Audit log (operation history) ──
+  'audit.title': '操作履歴',
+  'audit.subtitle': 'すべての操作について、誰が・いつ・何を・どう変えたか（変更前後）を追跡する監査ログです。',
+  'audit.filter.event': 'イベント種別',
+  'audit.filter.all': 'すべての操作',
+  'audit.table.time': '日時',
+  'audit.table.event': '操作',
+  'audit.table.actor': '実行者',
+  'audit.table.detail': '変更内容',
+  'audit.actor.system': 'システム / 不明',
+  'audit.actor.user': 'ユーザー #{{id}}',
+  'audit.viewDetail': '詳細',
+  'audit.hideDetail': '閉じる',
+  'audit.before': '変更前',
+  'audit.after': '変更後',
+  'audit.noChange': '（変更前後の記録なし）',
+  'audit.empty': '監査ログがありません。',
+  'audit.event.bank_import': '入金CSV取込',
+  'audit.event.bank_import_batch_reversed': '取込バッチ取消',
+  'audit.event.reconciliation_confirmed': '消込確定',
+  'audit.event.reconciliation_reversed': '消込取消',
+  'audit.event.client_credit_applied': '前受金充当',
+  'audit.event.dunning_sent': '督促送信',
+  'audit.event.dunning_paused': '督促停止',
+  'audit.event.dunning_resumed': '督促再開',
+  'audit.event.user_created': 'ユーザー作成',
+  'audit.event.user_updated': 'ユーザー更新',
+  'audit.event.user_deleted': 'ユーザー削除',
+  'audit.event.organization_created': '組織作成',
+  'audit.event.organization_deleted': '組織削除',
+  'audit.event.login_succeeded': 'ログイン成功',
+  'audit.event.login_failed': 'ログイン失敗',
 } as const
 
 export type MessageKey = keyof typeof ja
