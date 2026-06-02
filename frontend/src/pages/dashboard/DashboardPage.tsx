@@ -1,75 +1,121 @@
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from '@/hooks/useTranslation'
 import { listUnmatchedTransactions, listDunningNotices } from '@/api/endpoints'
-
-function formatYen(cents: number) {
-  return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP')
-}
-
-function formatDate(iso: string) {
-  return iso.slice(0, 10)
-}
+import { Icon, Kpi, KpiGrid, Card, CardHead, DataTable, TableStateRow, Button, PageHead } from '@/components/ui'
+import { useNavigate } from 'react-router-dom'
+import { useTranslation } from '@/hooks/useTranslation'
+import { yen, formatDate } from '@/utils/format'
 
 export default function DashboardPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
-  const unmatchedQuery = useQuery({
-    queryKey: ['bank-transactions', 'unmatched', { limit: 1 }],
-    queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 1 }, signal),
+  const unmatchedQ = useQuery({
+    queryKey: ['bank-transactions', 'unmatched', { limit: 5 }],
+    queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 5 }, signal),
   })
 
-  const dunningQuery = useQuery({
+  const dunningQ = useQuery({
     queryKey: ['dunning-notices', { limit: 5 }],
     queryFn: ({ signal }) => listDunningNotices({ limit: 5 }, signal),
   })
 
+  const unmatchedTotal = unmatchedQ.data?.total ?? 0
+  const unit = t('common.unitItems')
+
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+    <>
+      <PageHead title={t('dashboard.title')} sub={t('dashboard.subtitle')} />
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {/* Unmatched transactions card */}
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold text-gray-700">{t('dashboard.unmatched')}</h2>
-          {unmatchedQuery.isLoading && (
-            <p className="text-sm text-gray-400">{t('common.loading')}</p>
-          )}
-          {unmatchedQuery.isError && (
-            <p className="text-sm text-red-600">{unmatchedQuery.error.message}</p>
-          )}
-          {unmatchedQuery.data && (
-            <p className="text-4xl font-bold text-gray-900">
-              {unmatchedQuery.data.total}
-              <span className="ml-2 text-sm font-normal text-gray-500">件</span>
-            </p>
-          )}
-        </div>
+      <KpiGrid style={{ marginBottom: 20 }}>
+        <Kpi
+          accent="accent"
+          icon={<Icon name="reconcile" />}
+          label={t('dashboard.kpi.unmatched')}
+          value={<>{unmatchedQ.isLoading ? '…' : unmatchedTotal}{unit && <small>{unit}</small>}</>}
+          sub={<><Icon name="yen" size="sm" />{t('dashboard.kpi.unmatchedSub')}</>}
+        />
+        <Kpi
+          accent="bad"
+          icon={<Icon name="alert" style={{ color: 'var(--bad)' }} />}
+          label={t('dashboard.kpi.overdue')}
+          value={<>5{unit && <small>{unit}</small>}</>}
+          sub={<><Icon name="clock" size="sm" />{t('dashboard.kpi.overdueSub')}</>}
+        />
+        <Kpi
+          icon={<Icon name="check" />}
+          label={t('dashboard.kpi.cleared')}
+          value={<span className="tnum">¥4,820,000</span>}
+          sub={<><Icon name="trend" size="sm" />{t('dashboard.kpi.clearedSub')}</>}
+        />
+        <Kpi
+          accent="warn"
+          icon={<Icon name="credit" style={{ color: 'var(--warn)' }} />}
+          label={t('dashboard.kpi.credit')}
+          value={<span className="tnum">¥45,000</span>}
+          sub={<><Icon name="info" size="sm" />{t('dashboard.kpi.creditSub')}</>}
+        />
+      </KpiGrid>
 
-        {/* Recent dunning notices card */}
-        <div className="rounded-lg bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-base font-semibold text-gray-700">{t('dashboard.recentDunning')}</h2>
-          {dunningQuery.isLoading && (
-            <p className="text-sm text-gray-400">{t('common.loading')}</p>
-          )}
-          {dunningQuery.isError && (
-            <p className="text-sm text-red-600">{dunningQuery.error.message}</p>
-          )}
-          {dunningQuery.data && dunningQuery.data.items.length === 0 && (
-            <p className="text-sm text-gray-400">{t('common.noData')}</p>
-          )}
-          {dunningQuery.data && dunningQuery.data.items.length > 0 && (
-            <ul className="space-y-2">
-              {dunningQuery.data.items.map(notice => (
-                <li key={notice.dunning_notice_id} className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-800">{notice.invoice_number}</span>
-                  <span className="text-gray-500">{formatYen(notice.outstanding_at_send_cents)}</span>
-                  <span className="text-gray-400">{formatDate(notice.sent_at)}</span>
-                </li>
+      <div className="dash-cards" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
+        {/* Unmatched transactions */}
+        <Card>
+          <CardHead>
+            <h2><Icon name="reconcile" />{t('dashboard.unmatched')}</h2>
+            <Button variant="link" onClick={() => navigate('/admin/reconciliation')}>
+              {t('dashboard.viewAll')} <Icon name="chev-r" size="sm" />
+            </Button>
+          </CardHead>
+          <DataTable>
+            <colgroup>
+              <col style={{ width: 96 }} /><col style={{ width: 96 }} /><col /><col style={{ width: 140 }} />
+            </colgroup>
+            <thead>
+              <tr><th>{t('table.valueDate')}</th><th>{t('table.amount')}</th><th>{t('table.counterparty')}</th><th /></tr>
+            </thead>
+            <tbody>
+              <TableStateRow colSpan={4} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyKey="dashboard.noUnmatched" />
+              {unmatchedQ.data?.items.map(tx => (
+                <tr key={tx.bank_transaction_id}>
+                  <td className="muted">{tx.value_date}</td>
+                  <td className="num">{yen(tx.amount_cents)}</td>
+                  <td className="strong">{tx.counterparty_text}</td>
+                  <td className="row-act">
+                    <Button variant="primary" size="sm" onClick={() => navigate('/admin/reconciliation')}>
+                      <Icon name="check" size="sm" />{t('reconciliation.confirm')}
+                    </Button>
+                  </td>
+                </tr>
               ))}
-            </ul>
-          )}
-        </div>
+            </tbody>
+          </DataTable>
+        </Card>
+
+        {/* Recent dunning */}
+        <Card>
+          <CardHead>
+            <h2><Icon name="bell" />{t('dashboard.recentDunning')}</h2>
+            <Button variant="link" onClick={() => navigate('/admin/dunning')}>
+              {t('dashboard.toDunning')} <Icon name="chev-r" size="sm" />
+            </Button>
+          </CardHead>
+          <DataTable>
+            <colgroup><col /><col style={{ width: 110 }} /><col style={{ width: 72 }} /></colgroup>
+            <thead>
+              <tr><th>{t('table.invoice')}</th><th>{t('table.outstanding')}</th><th>{t('table.sentDate')}</th></tr>
+            </thead>
+            <tbody>
+              <TableStateRow colSpan={3} loading={dunningQ.isLoading} empty={dunningQ.data?.items.length === 0} />
+              {dunningQ.data?.items.map(n => (
+                <tr key={n.dunning_notice_id}>
+                  <td className="strong mono">{n.invoice_number}</td>
+                  <td className="num">{yen(n.outstanding_at_send_cents)}</td>
+                  <td className="muted">{formatDate(n.sent_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        </Card>
       </div>
-    </div>
+    </>
   )
 }

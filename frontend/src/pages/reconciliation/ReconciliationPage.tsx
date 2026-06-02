@@ -1,54 +1,30 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from '@/hooks/useTranslation'
 import {
-  listUnmatchedTransactions,
-  listReconciliations,
-  confirmMatch,
-  reverseReconciliation,
-  proposeMatch,
-  downloadCsv,
+  listUnmatchedTransactions, listReconciliations,
+  confirmMatch, reverseReconciliation, proposeMatch, downloadCsv,
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
+import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead } from '@/components/ui'
+import { useTranslation } from '@/hooks/useTranslation'
+import { yen, formatDate } from '@/utils/format'
 
-function formatYen(cents: number) {
-  return '¥' + Math.floor(cents / 100).toLocaleString('ja-JP')
-}
-
-function formatDate(iso: string) {
-  return iso.slice(0, 10)
-}
-
-// ------- Confirm Match Modal -------
-interface MatchModalProps {
-  transaction: BankTransaction
-  onClose: () => void
-}
-
-function ConfirmMatchModal({ transaction, onClose }: MatchModalProps) {
+// ─── Confirm match modal ───
+function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-
-  const [allocations, setAllocations] = useState<AllocationInput[]>([
-    { invoice_id: 0, amount_cents: 0 },
-  ])
+  const [allocs, setAllocs] = useState<AllocationInput[]>([{ invoice_id: 0, amount_cents: 0 }])
   const [reasonCode, setReasonCode] = useState('')
 
-  // Load match suggestions on modal open
-  const suggestionsQuery = useQuery({
-    queryKey: ['propose-match', transaction.bank_transaction_id],
-    queryFn: () => proposeMatch(transaction.bank_transaction_id),
+  const suggestQ = useQuery({
+    queryKey: ['propose-match', tx.bank_transaction_id],
+    queryFn: () => proposeMatch(tx.bank_transaction_id),
     retry: false,
   })
 
-  const mutation = useMutation({
-    mutationFn: () =>
-      confirmMatch(
-        transaction.bank_transaction_id,
-        allocations.filter(a => a.invoice_id > 0 && a.amount_cents > 0),
-        reasonCode || undefined,
-      ),
+  const confirmMut = useMutation({
+    mutationFn: () => confirmMatch(tx.bank_transaction_id, allocs.filter(a => a.invoice_id > 0 && a.amount_cents > 0), reasonCode || undefined),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['bank-transactions', 'unmatched'] })
       void qc.invalidateQueries({ queryKey: ['reconciliations'] })
@@ -56,369 +32,199 @@ function ConfirmMatchModal({ transaction, onClose }: MatchModalProps) {
     },
   })
 
-  function applySuggestion(invoice: UpstreamInvoice) {
-    setAllocations([{ invoice_id: invoice.invoice_id, amount_cents: invoice.outstanding_cents }])
+  function applySuggestion(inv: UpstreamInvoice) {
+    setAllocs([{ invoice_id: inv.invoice_id, amount_cents: inv.outstanding_cents }])
   }
 
-  function updateAllocation(idx: number, field: keyof AllocationInput, value: string) {
-    setAllocations(prev =>
-      prev.map((a, i) =>
-        i === idx ? { ...a, [field]: field === 'amount_cents' ? Math.round(Number(value) * 100) : Number(value) } : a,
-      ),
-    )
+  function updateAlloc(i: number, field: keyof AllocationInput, raw: string) {
+    setAllocs(prev => prev.map((a, idx) => idx === i ? { ...a, [field]: field === 'amount_cents' ? Math.round(Number(raw) * 100) : Number(raw) } : a))
   }
 
-  function addAllocation() {
-    setAllocations(prev => [...prev, { invoice_id: 0, amount_cents: 0 }])
-  }
-
-  function removeAllocation(idx: number) {
-    setAllocations(prev => prev.filter((_, i) => i !== idx))
-  }
+  const total = allocs.reduce((s, a) => s + a.amount_cents, 0)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-xl rounded-lg bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-        <h3 className="mb-1 text-base font-semibold text-gray-900">{t('reconciliation.confirm')}</h3>
-        <p className="mb-4 text-sm text-gray-500">
-          {transaction.counterparty_text} — {formatYen(transaction.amount_cents)} ({transaction.value_date})
-        </p>
+    <Modal
+      open
+      onClose={onClose}
+      title={t('reconciliation.confirm')}
+      sub={`${tx.counterparty_text} — ${yen(tx.amount_cents)}（${tx.value_date}）`}
+      size="wide"
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="primary" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
+            <Icon name="check" />{confirmMut.isPending ? t('common.processing') : t('reconciliation.confirm')}
+          </Button>
+        </>
+      }
+    >
+      {/* Suggestions */}
+      <div className="sugg">
+        <div className="sugg-h"><Icon name="reconcile" size="sm" />{t('reconciliation.suggestions')}</div>
+        {suggestQ.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.searchingSuggestions')}</p>}
+        {suggestQ.data?.invoices.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.noSuggestions')}</p>}
+        {suggestQ.data?.invoices.map(inv => (
+          <div key={inv.invoice_id} className="sugg-row">
+            <span className="iv mono">{inv.invoice_number}</span>
+            <span className="amt">{yen(inv.outstanding_cents)}</span>
+            <span className="due">{t('reconciliation.dueLabel')} {inv.due_at}</span>
+            <Button variant="primary" size="sm" onClick={() => applySuggestion(inv)}>{t('reconciliation.useSuggestion')}</Button>
+          </div>
+        ))}
+      </div>
 
-        {/* Suggestions panel */}
-        <div className="mb-4 rounded bg-blue-50 p-3">
-          <p className="text-xs font-semibold text-blue-700 mb-2">{t('reconciliation.suggestions')}</p>
-          {suggestionsQuery.isLoading && (
-            <p className="text-xs text-gray-400">{t('common.loading')}</p>
-          )}
-          {suggestionsQuery.data && suggestionsQuery.data.invoices.length === 0 && (
-            <p className="text-xs text-gray-400">{t('reconciliation.noSuggestions')}</p>
-          )}
-          {suggestionsQuery.data && suggestionsQuery.data.invoices.map(inv => (
-            <div key={inv.invoice_id} className="flex items-center justify-between py-1 border-b border-blue-100 last:border-0 text-xs">
-              <span className="font-medium text-gray-800">{inv.invoice_number}</span>
-              <span className="text-gray-600">{formatYen(inv.outstanding_cents)}</span>
-              <span className="text-gray-400">{inv.due_at}</span>
-              <button
-                type="button"
-                onClick={() => applySuggestion(inv)}
-                className="ml-2 rounded bg-blue-600 px-2 py-0.5 text-white hover:bg-blue-700"
-              >
-                {t('reconciliation.applySuggestion')}
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Allocations */}
-        <div className="mb-4 space-y-2">
-          {allocations.map((a, i) => (
-            <div key={i} className="flex gap-2 items-center">
-              <div className="flex-1">
-                <label className="block text-xs text-gray-500 mb-0.5">{t('reconciliation.invoice')} ID</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={a.invoice_id || ''}
-                  onChange={e => updateAllocation(i, 'invoice_id', e.target.value)}
-                  className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
-                />
+      {/* Allocations */}
+      <div>
+        <div className="lbl" style={{ marginBottom: 8 }}>{t('reconciliation.allocation')}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {allocs.map((a, i) => (
+            <div key={i} className="alloc-row">
+              <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.invoiceId')}</label>
+                <input className="inp tnum" type="number" value={a.invoice_id || ''} onChange={e => updateAlloc(i, 'invoice_id', e.target.value)} />
               </div>
-              <div className="flex-1">
-                <label className="block text-xs text-gray-500 mb-0.5">{t('reconciliation.allocation')} (¥)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={a.amount_cents > 0 ? a.amount_cents / 100 : ''}
-                  onChange={e => updateAllocation(i, 'amount_cents', e.target.value)}
-                  className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none"
-                />
+              <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.allocationAmount')}</label>
+                <input className="inp tnum" type="number" value={a.amount_cents > 0 ? a.amount_cents / 100 : ''} onChange={e => updateAlloc(i, 'amount_cents', e.target.value)} />
               </div>
-              {allocations.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeAllocation(i)}
-                  className="mt-4 text-gray-400 hover:text-red-500 text-lg leading-none"
-                >
-                  ×
-                </button>
+              {allocs.length > 1 && (
+                <Button variant="ghost" size="sm" style={{ height: 36 }} onClick={() => setAllocs(p => p.filter((_, j) => j !== i))}>
+                  <Icon name="x" size="sm" />
+                </Button>
               )}
             </div>
           ))}
-        </div>
-
-        <button
-          type="button"
-          onClick={addAllocation}
-          className="mb-4 text-sm text-blue-600 hover:underline"
-        >
-          + {t('reconciliation.addAllocation')}
-        </button>
-
-        {/* Reason code (optional) */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            理由コード（任意）
-          </label>
-          <input
-            type="text"
-            value={reasonCode}
-            onChange={e => setReasonCode(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none"
-          />
-        </div>
-
-        {mutation.isError && (
-          <p className="mb-3 text-sm text-red-600">{mutation.error.message}</p>
-        )}
-
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? t('common.loading') : t('reconciliation.confirm')}
-          </button>
+          <Button variant="link" onClick={() => setAllocs(p => [...p, { invoice_id: 0, amount_cents: 0 }])}>
+            <Icon name="plus" size="sm" />{t('reconciliation.addAllocation')}
+          </Button>
         </div>
       </div>
-    </div>
+
+      <div className="summary-line">
+        <span>{t('reconciliation.allocationTotal')}</span>
+        <b className="tnum">{yen(total)} / {yen(tx.amount_cents)}</b>
+      </div>
+
+      <div className="field">
+        <label>{t('reconciliation.reasonCode')}</label>
+        <input className="inp" placeholder={t('reconciliation.reasonCodePlaceholder')} value={reasonCode} onChange={e => setReasonCode(e.target.value)} />
+      </div>
+      {confirmMut.isError && <Notice variant="bad">{confirmMut.error.message}</Notice>}
+    </Modal>
   )
 }
 
-// ------- Reverse Reconciliation Modal -------
-interface ReverseModalProps {
-  reconciliation: Reconciliation
-  onClose: () => void
-}
-
-function ReverseModal({ reconciliation, onClose }: ReverseModalProps) {
+// ─── Reverse modal ───
+function ReverseModal({ recon, onClose }: { recon: Reconciliation; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
   const [reason, setReason] = useState('')
-
-  const mutation = useMutation({
-    mutationFn: () => reverseReconciliation(reconciliation.payment_reconciliation_id, reason),
-    onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['reconciliations'] })
-      void qc.invalidateQueries({ queryKey: ['bank-transactions'] })
-      onClose()
-    },
+  const mut = useMutation({
+    mutationFn: () => reverseReconciliation(recon.payment_reconciliation_id, reason),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['reconciliations'] }); void qc.invalidateQueries({ queryKey: ['bank-transactions'] }); onClose() },
   })
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-        <h3 className="mb-4 text-base font-semibold text-gray-900">{t('reconciliation.confirmReverse')}</h3>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('reconciliation.reversalReason')}
-          </label>
-          <input
-            type="text"
-            value={reason}
-            onChange={e => setReason(e.target.value)}
-            className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none"
-          />
-        </div>
-        {mutation.isError && (
-          <p className="mb-3 text-sm text-red-600">{mutation.error.message}</p>
-        )}
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {t('common.cancel')}
-          </button>
-          <button
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending || !reason.trim()}
-            className="rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            {mutation.isPending ? t('common.loading') : t('reconciliation.reverse')}
-          </button>
-        </div>
-      </div>
-    </div>
+    <Modal open onClose={onClose} title={t('reconciliation.confirmReverse')} size="narrow"
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="refresh" size="sm" />{mut.isPending ? t('common.processing') : t('bankImport.reverse')}</Button></>}
+    >
+      <div className="field"><label>{t('reconciliation.reversalReason')}</label><input className="inp" value={reason} onChange={e => setReason(e.target.value)} /></div>
+      {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
+    </Modal>
   )
 }
 
-// ------- Main Page -------
 export default function ReconciliationPage() {
   const { t } = useTranslation()
-  const [tab, setTab] = useState<'unmatched' | 'history'>('unmatched')
+  const [tab, setTab] = useState('unmatched')
   const [matchTarget, setMatchTarget] = useState<BankTransaction | null>(null)
   const [reverseTarget, setReverseTarget] = useState<Reconciliation | null>(null)
 
-  const unmatchedQuery = useQuery({
+  const unmatchedQ = useQuery({
     queryKey: ['bank-transactions', 'unmatched', { limit: 50 }],
     queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 50 }, signal),
     enabled: tab === 'unmatched',
   })
-
-  const reconciliationsQuery = useQuery({
+  const reconciliationsQ = useQuery({
     queryKey: ['reconciliations'],
     queryFn: ({ signal }) => listReconciliations({ limit: 50 }, signal),
     enabled: tab === 'history',
   })
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('reconciliation.title')}</h1>
-        <button
-          onClick={() => void downloadCsv('/admin/export/reconciliations', 'reconciliations.csv')}
-          className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
-        >
-          {t('export.reconciliations')}
-        </button>
-      </div>
+    <>
+      <PageHead
+        title={t('reconciliation.title')}
+        sub={t('reconciliation.subtitle')}
+        actions={
+          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/reconciliations', 'reconciliations.csv')}>
+            <Icon name="export" />{t('export.csv')}
+          </Button>
+        }
+      />
 
-      {/* Tabs */}
-      <div className="mb-6 flex gap-1 border-b border-gray-200">
-        {(['unmatched', 'history'] as const).map(tabKey => (
-          <button
-            key={tabKey}
-            onClick={() => setTab(tabKey)}
-            className={[
-              'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
-              tab === tabKey
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700',
-            ].join(' ')}
-          >
-            {tabKey === 'unmatched' ? t('bankTransaction.status.unmatched') : t('reconciliation.list')}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={[
+          { key: 'unmatched', label: <><Icon name="reconcile" size="sm" />{t('reconciliation.tab.unmatched')}</> },
+          { key: 'history', label: <><Icon name="clock" size="sm" />{t('reconciliation.tab.history')}</> },
+        ]}
+        active={tab}
+        onChange={setTab}
+      />
 
-      {/* Unmatched tab */}
       {tab === 'unmatched' && (
-        <div className="rounded-lg bg-white shadow-sm overflow-hidden">
-          {unmatchedQuery.isLoading && (
-            <p className="px-6 py-4 text-sm text-gray-400">{t('common.loading')}</p>
-          )}
-          {unmatchedQuery.isError && (
-            <p className="px-6 py-4 text-sm text-red-600">{unmatchedQuery.error.message}</p>
-          )}
-          {unmatchedQuery.data && (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <th className="px-6 py-3">{t('bankTransaction.valueDate')}</th>
-                  <th className="px-6 py-3">{t('bankTransaction.amount')}</th>
-                  <th className="px-6 py-3">{t('bankTransaction.counterparty')}</th>
-                  <th className="px-6 py-3"></th>
+        <Card>
+          <DataTable>
+            <thead>
+              <tr><th>{t('table.valueDate')}</th><th>{t('table.amount')}</th><th>{t('table.counterparty')}</th><th>{t('table.matchCandidates')}</th><th /></tr>
+            </thead>
+            <tbody>
+              <TableStateRow colSpan={5} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyKey="reconciliation.noUnmatched" />
+              {unmatchedQ.data?.items.map(tx => (
+                <tr key={tx.bank_transaction_id}>
+                  <td className="muted">{tx.value_date}</td>
+                  <td className="num">{yen(tx.amount_cents)}</td>
+                  <td className="strong">{tx.counterparty_text}</td>
+                  <td><Badge variant="info">{t('reconciliation.hasCandidates')}</Badge></td>
+                  <td className="row-act">
+                    <Button variant="primary" size="sm" onClick={() => setMatchTarget(tx)}>
+                      <Icon name="check" size="sm" />{t('reconciliation.confirm')}
+                    </Button>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {unmatchedQuery.data.items.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-4 text-center text-gray-400">
-                      {t('dashboard.noUnmatched')}
-                    </td>
-                  </tr>
-                )}
-                {unmatchedQuery.data.items.map((tx, i) => (
-                  <tr
-                    key={tx.bank_transaction_id}
-                    className={i % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
-                  >
-                    <td className="px-6 py-3 text-gray-700">{tx.value_date}</td>
-                    <td className="px-6 py-3 font-medium text-gray-900 tabular-nums">
-                      {formatYen(tx.amount_cents)}
-                    </td>
-                    <td className="px-6 py-3 text-gray-700">{tx.counterparty_text}</td>
-                    <td className="px-6 py-3">
-                      <button
-                        onClick={() => setMatchTarget(tx)}
-                        className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
-                      >
-                        {t('reconciliation.confirm')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              ))}
+            </tbody>
+          </DataTable>
+        </Card>
       )}
 
-      {/* History tab */}
       {tab === 'history' && (
-        <div className="rounded-lg bg-white shadow-sm overflow-hidden">
-          {reconciliationsQuery.isLoading && (
-            <p className="px-6 py-4 text-sm text-gray-400">{t('common.loading')}</p>
-          )}
-          {reconciliationsQuery.isError && (
-            <p className="px-6 py-4 text-sm text-red-600">{reconciliationsQuery.error.message}</p>
-          )}
-          {reconciliationsQuery.data && (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-xs uppercase text-gray-500">
-                  <th className="px-6 py-3">ID</th>
-                  <th className="px-6 py-3">銀行取引ID</th>
-                  <th className="px-6 py-3">ステータス</th>
-                  <th className="px-6 py-3">確定日</th>
-                  <th className="px-6 py-3"></th>
+        <Card>
+          <DataTable>
+            <thead>
+              <tr><th>{t('table.id')}</th><th>{t('table.bankTxnId')}</th><th>{t('table.status')}</th><th>{t('table.confirmedAt')}</th><th /></tr>
+            </thead>
+            <tbody>
+              <TableStateRow colSpan={5} loading={reconciliationsQ.isLoading} empty={reconciliationsQ.data?.items.length === 0} />
+              {reconciliationsQ.data?.items.map(r => (
+                <tr key={r.payment_reconciliation_id} className={r.status === 'reversed' ? 'dim' : ''}>
+                  <td className="muted">{r.payment_reconciliation_id}</td>
+                  <td className="mono">#{r.bank_transaction_id}</td>
+                  <td>{r.status === 'confirmed' ? <Badge variant="ok" dot>{t('reconciliation.status.confirmed')}</Badge> : <Badge variant="neut" dot>{t('reconciliation.status.reversed')}</Badge>}</td>
+                  <td className="muted">{formatDate(r.confirmed_at)}</td>
+                  <td className="row-act">
+                    {r.status === 'confirmed' && (
+                      <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(r)}>
+                        <Icon name="refresh" size="sm" />{t('reconciliation.reverse')}
+                      </Button>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {reconciliationsQuery.data.items.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-4 text-center text-gray-400">
-                      {t('common.noData')}
-                    </td>
-                  </tr>
-                )}
-                {reconciliationsQuery.data.items.map((rec, i) => (
-                  <tr
-                    key={rec.payment_reconciliation_id}
-                    className={i % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
-                  >
-                    <td className="px-6 py-3 text-gray-500">{rec.payment_reconciliation_id}</td>
-                    <td className="px-6 py-3 text-gray-700">{rec.bank_transaction_id}</td>
-                    <td className="px-6 py-3">
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        rec.status === 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'
-                      }`}>
-                        {rec.status === 'confirmed' ? t('reconciliation.status.confirmed') : t('reconciliation.status.reversed')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-gray-600">{formatDate(rec.confirmed_at)}</td>
-                    <td className="px-6 py-3">
-                      {rec.status === 'confirmed' && (
-                        <button
-                          onClick={() => setReverseTarget(rec)}
-                          className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
-                        >
-                          {t('reconciliation.reverse')}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              ))}
+            </tbody>
+          </DataTable>
+        </Card>
       )}
 
-      {matchTarget && (
-        <ConfirmMatchModal transaction={matchTarget} onClose={() => setMatchTarget(null)} />
-      )}
-      {reverseTarget && (
-        <ReverseModal reconciliation={reverseTarget} onClose={() => setReverseTarget(null)} />
-      )}
-    </div>
+      {matchTarget && <ConfirmModal tx={matchTarget} onClose={() => setMatchTarget(null)} />}
+      {reverseTarget && <ReverseModal recon={reverseTarget} onClose={() => setReverseTarget(null)} />}
+    </>
   )
 }

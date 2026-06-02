@@ -62,7 +62,7 @@ export interface ClientCredit {
   client_id: number
   amount_cents: number
   remaining_cents: number
-  status: 'open' | 'partially_applied' | 'applied'
+  status: 'open' | 'voided'
   source_bank_transaction_id: number
   reconciliation_id: number
   created_by: number

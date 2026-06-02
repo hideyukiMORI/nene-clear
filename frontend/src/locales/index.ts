@@ -3,7 +3,9 @@ import { en } from './en'
 
 export type Locale = 'ja' | 'en'
 
-const catalogs: Record<Locale, Partial<Record<MessageKey, string>>> = { ja, en }
+// Both catalogs are full Record<MessageKey, string> — a missing key in either
+// language is a compile error, so language switching can never fall back.
+const catalogs: Record<Locale, Record<MessageKey, string>> = { ja, en }
 
 let currentLocale: Locale = (localStorage.getItem('locale') as Locale) ?? 'ja'
 
