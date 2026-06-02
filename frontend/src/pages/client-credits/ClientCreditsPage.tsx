@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
-import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
 import { yen, formatDate } from '@/utils/format'
 
 function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => void }) {
@@ -47,7 +47,7 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
   )
 }
 
-const STATUS_MAP: Record<ClientCredit['status'], { v: 'ok' | 'neut'; labelKey: MessageKey }> = {
+const STATUS_MAP: Record<ClientCredit['status'], StatusMeta> = {
   open:   { v: 'ok',   labelKey: 'clientCredit.status.open' },
   voided: { v: 'neut', labelKey: 'clientCredit.status.voided' },
 }
@@ -72,27 +72,24 @@ export default function ClientCreditsPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={8} loading={creditsQ.isLoading} empty={creditsQ.data?.items.length === 0} />
-            {creditsQ.data?.items.map(c => {
-              const s = STATUS_MAP[c.status]
-              return (
-                <tr key={c.client_credit_id} className={c.status === 'voided' ? 'dim' : ''}>
-                  <td className="muted">{c.client_credit_id}</td>
-                  <td className="strong">#{c.client_id}</td>
-                  <td className="num">{yen(c.amount_cents)}</td>
-                  <td className="num">{yen(c.remaining_cents)}</td>
-                  <td><Badge variant={s.v} dot>{t(s.labelKey)}</Badge></td>
-                  <td className="mono muted">#{c.source_bank_transaction_id}</td>
-                  <td className="muted">{formatDate(c.created_at)}</td>
-                  <td className="row-act">
-                    {c.status === 'open' && (
-                      <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
-                        <Icon name="link" size="sm" />{t('clientCredit.apply')}
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
+            {creditsQ.data?.items.map(c => (
+              <tr key={c.client_credit_id} className={c.status === 'voided' ? 'dim' : ''}>
+                <td className="muted">{c.client_credit_id}</td>
+                <td className="strong">#{c.client_id}</td>
+                <td className="num">{yen(c.amount_cents)}</td>
+                <td className="num">{yen(c.remaining_cents)}</td>
+                <td><StatusBadge map={STATUS_MAP} value={c.status} dot /></td>
+                <td className="mono muted">#{c.source_bank_transaction_id}</td>
+                <td className="muted">{formatDate(c.created_at)}</td>
+                <td className="row-act">
+                  {c.status === 'open' && (
+                    <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
+                      <Icon name="link" size="sm" />{t('clientCredit.apply')}
+                    </Button>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </DataTable>
       </Card>

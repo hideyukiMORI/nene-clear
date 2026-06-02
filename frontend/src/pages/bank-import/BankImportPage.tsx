@@ -2,9 +2,15 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/api/endpoints'
 import type { BankImportBatch } from '@/types'
-import { Icon, Badge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead } from '@/components/ui'
+import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { formatDate } from '@/utils/format'
+
+const BATCH_STATUS: Record<BankImportBatch['status'], StatusMeta> = {
+  imported: { v: 'ok',   labelKey: 'bankImport.status.imported' },
+  reversed: { v: 'neut', labelKey: 'bankImport.status.reversed' },
+}
 
 interface ReverseModalProps { batch: BankImportBatch; onClose: () => void }
 function ReverseModal({ batch, onClose }: ReverseModalProps) {
@@ -127,10 +133,7 @@ export default function BankImportPage() {
                 <td className="muted">{b.bank_import_batch_id}</td>
                 <td className="strong mono">{b.source_filename}</td>
                 <td className="num">{b.row_count}</td>
-                <td>{b.status === 'imported'
-                  ? <Badge variant="ok" dot>{t('bankImport.status.imported')}</Badge>
-                  : <Badge variant="neut" dot>{t('bankImport.status.reversed')}</Badge>}
-                </td>
+                <td><StatusBadge map={BATCH_STATUS} value={b.status} dot /></td>
                 <td className="muted">{formatDate(b.imported_at)}</td>
                 <td className="row-act">
                   {b.status === 'imported' && (
