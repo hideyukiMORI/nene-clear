@@ -13,6 +13,7 @@ final readonly class CreateUserInput
         public string $email,
         public Role $role,
         public ?string $password,
+        public int $actorUserId,
     ) {
     }
 }

@@ -49,6 +49,7 @@ final readonly class CreateUserHandler
             email: $email,
             role: $role,
             password: $password,
+            actorUserId: AuthContext::userId($request),
         ));
 
         return $this->response->create(UserResponse::toArray($user), 201, ['Location' => '/admin/users/' . $user->id]);

@@ -21,5 +21,5 @@ interface OrganizationRepositoryInterface
 
     public function save(Organization $organization): int;
 
-    public function delete(int $id): void;
+    public function delete(int $id, string $deletedAt): void;
 }

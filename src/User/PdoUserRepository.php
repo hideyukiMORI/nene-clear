@@ -95,18 +95,20 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
         return $this->query->lastInsertId();
     }
 
-    public function delete(?int $organizationId, int $id): void
+    public function delete(?int $organizationId, int $id, string $deletedAt): void
     {
         // Soft delete — financial/audit context never hard-deletes accounts.
+        // `$deletedAt` is supplied by the use case's injected clock so the row
+        // and its audit event share one instant (no wall-clock read here).
         if ($organizationId !== null) {
             $this->query->execute(
                 'UPDATE users SET is_deleted = 1, deleted_at = ? WHERE id = ? AND organization_id = ?',
-                [date('Y-m-d H:i:s'), $id, $organizationId],
+                [$deletedAt, $id, $organizationId],
             );
         } else {
             $this->query->execute(
                 'UPDATE users SET is_deleted = 1, deleted_at = ? WHERE id = ? AND organization_id IS NULL',
-                [date('Y-m-d H:i:s'), $id],
+                [$deletedAt, $id],
             );
         }
     }

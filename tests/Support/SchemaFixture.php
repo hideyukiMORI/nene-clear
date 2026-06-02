@@ -19,6 +19,8 @@ final class SchemaFixture
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 slug TEXT NOT NULL UNIQUE,
                 name TEXT NOT NULL,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at TEXT,
                 created_at TEXT,
                 updated_at TEXT
             )'
@@ -73,6 +75,8 @@ final class SchemaFixture
                 csv_amount_column INTEGER NOT NULL,
                 csv_counterparty_column INTEGER NOT NULL,
                 csv_header_rows INTEGER NOT NULL DEFAULT 1,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at TEXT,
                 created_at TEXT,
                 updated_at TEXT
             )'

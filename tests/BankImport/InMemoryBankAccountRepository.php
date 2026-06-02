@@ -27,8 +27,10 @@ final class InMemoryBankAccountRepository implements BankAccountRepositoryInterf
         ));
     }
 
-    public function deleteByOrganization(int $organizationId): void
+    public function deleteByOrganization(int $organizationId, string $deletedAt): void
     {
+        // Soft delete: drop from the visible set, mirroring the `is_deleted = 0`
+        // read filter. The in-memory double only needs the observable effect.
         foreach ($this->byId as $id => $account) {
             if ($account->organizationId === $organizationId) {
                 unset($this->byId[$id]);

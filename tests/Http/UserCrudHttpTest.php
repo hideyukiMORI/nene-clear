@@ -32,6 +32,7 @@ final class UserCrudHttpTest extends TestCase
         $query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
         SchemaFixture::createUsers($query);
         SchemaFixture::createLoginAttempts($query);
+        SchemaFixture::createAuditEvents($query);
 
         $users = new PdoUserRepository($query);
         $users->save($this->user('admin@acme.example', Role::Admin, 7));

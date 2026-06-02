@@ -6,6 +6,7 @@ namespace NeneClear\BankImport;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
+use Nene2\Http\PaginationResponse;
 use NeneClear\Auth\AuthContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -47,14 +48,14 @@ final readonly class ListBankTransactionsHandler
             counterparty: $counterparty,
         );
 
-        return $this->response->create([
-            'items' => array_map(
+        return $this->response->create((new PaginationResponse(
+            items: array_map(
                 BankTransactionResponse::toArray(...),
                 $this->transactions->findByOrganization($organizationId, $filter, $page->limit, $page->offset),
             ),
-            'limit' => $page->limit,
-            'offset' => $page->offset,
-            'total' => $this->transactions->countByOrganization($organizationId, $filter),
-        ]);
+            limit: $page->limit,
+            offset: $page->offset,
+            total: $this->transactions->countByOrganization($organizationId, $filter),
+        ))->toArray());
     }
 }

@@ -15,5 +15,5 @@ interface BankAccountRepositoryInterface
 
     public function save(BankAccount $account): int;
 
-    public function deleteByOrganization(int $organizationId): void;
+    public function deleteByOrganization(int $organizationId, string $deletedAt): void;
 }

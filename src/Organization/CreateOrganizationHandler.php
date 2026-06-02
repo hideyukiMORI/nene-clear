@@ -8,6 +8,7 @@ use Nene2\Http\JsonRequestBodyParser;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
+use NeneClear\Auth\AuthContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -39,7 +40,11 @@ final readonly class CreateOrganizationHandler
             throw new ValidationException($errors);
         }
 
-        $output = $this->useCase->execute(new CreateOrganizationInput(slug: $slug, name: $name));
+        $output = $this->useCase->execute(new CreateOrganizationInput(
+            slug: $slug,
+            name: $name,
+            actorUserId: AuthContext::userId($request),
+        ));
 
         return $this->response->create(
             ['organization_id' => $output->id, 'slug' => $output->slug, 'name' => $output->name],

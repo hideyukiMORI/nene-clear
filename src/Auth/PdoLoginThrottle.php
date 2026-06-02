@@ -91,6 +91,10 @@ final readonly class PdoLoginThrottle implements LoginThrottleInterface
 
     public function clear(string $identifier): void
     {
+        // Intentional hard delete: login_attempts holds transient rate-limit
+        // counters, not auditable business history. Resetting the counter on a
+        // successful login is the table's purpose, so the soft-delete policy
+        // (which covers business entities) does not apply here.
         $this->query->execute(
             'DELETE FROM login_attempts WHERE identifier_hash = ?',
             [$this->hash($identifier)],

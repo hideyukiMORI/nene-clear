@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Dunning;
 
 use Nene2\Http\JsonResponseFactory;
+use Nene2\Http\PaginationResponse;
 use NeneClear\Auth\AuthContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,8 +29,8 @@ final readonly class ListDunningPausesHandler
         $items = $this->pauses->findByOrganization($organizationId, $activeOnly, $limit, $offset);
         $total = $this->pauses->countByOrganization($organizationId, $activeOnly);
 
-        return $this->response->create([
-            'items' => array_map(static fn (DunningPause $p): array => [
+        return $this->response->create((new PaginationResponse(
+            items: array_map(static fn (DunningPause $p): array => [
                 'dunning_pause_id' => $p->id,
                 'invoice_id' => $p->invoiceId,
                 'paused_by' => $p->pausedBy,
@@ -39,9 +40,9 @@ final readonly class ListDunningPausesHandler
                 'unpaused_at' => $p->unpausedAt,
                 'is_active' => $p->isActive(),
             ], $items),
-            'limit' => $limit,
-            'offset' => $offset,
-            'total' => $total,
-        ]);
+            limit: $limit,
+            offset: $offset,
+            total: $total,
+        ))->toArray());
     }
 }

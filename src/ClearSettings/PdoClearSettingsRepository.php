@@ -38,16 +38,30 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
 
     public function save(ClearSettings $settings): void
     {
-        $this->query->execute('DELETE FROM clear_settings WHERE organization_id = ?', [$settings->organizationId]);
-        $this->query->execute(
-            'INSERT INTO clear_settings (organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days) '
-            . 'VALUES (?, ?, ?, ?)',
+        // Upsert without a destructive DELETE: update the existing row, and
+        // insert only when no row was affected (first save for the org).
+        $affected = $this->query->execute(
+            'UPDATE clear_settings SET upstream_base_url = ?, upstream_token_ref = ?, dunning_min_interval_days = ? '
+            . 'WHERE organization_id = ?',
             [
-                $settings->organizationId,
                 $settings->upstreamBaseUrl,
                 $settings->upstreamTokenRef,
                 $settings->dunningMinIntervalDays,
+                $settings->organizationId,
             ],
         );
+
+        if ($affected === 0) {
+            $this->query->execute(
+                'INSERT INTO clear_settings (organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days) '
+                . 'VALUES (?, ?, ?, ?)',
+                [
+                    $settings->organizationId,
+                    $settings->upstreamBaseUrl,
+                    $settings->upstreamTokenRef,
+                    $settings->dunningMinIntervalDays,
+                ],
+            );
+        }
     }
 }

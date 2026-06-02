@@ -6,6 +6,7 @@ namespace NeneClear\User;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
+use Nene2\Http\PaginationResponse;
 use NeneClear\Auth\AuthContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -23,11 +24,11 @@ final readonly class ListUsersHandler
         $page = PaginationQueryParser::parse($request, 50, 200);
         $output = $this->useCase->execute(AuthContext::organizationId($request), $page->limit, $page->offset);
 
-        return $this->response->create([
-            'items' => array_map(UserResponse::toArray(...), $output->items),
-            'limit' => $output->limit,
-            'offset' => $output->offset,
-            'total' => $output->total,
-        ]);
+        return $this->response->create((new PaginationResponse(
+            items: array_map(UserResponse::toArray(...), $output->items),
+            limit: $output->limit,
+            offset: $output->offset,
+            total: $output->total,
+        ))->toArray());
     }
 }

@@ -59,7 +59,7 @@ final class PdoOrganizationRepositoryTest extends TestCase
         self::assertSame(2, $repo->countAll());
         self::assertCount(2, $repo->findAll(50, 0));
 
-        $repo->delete($second);
+        $repo->delete($second, '2026-01-01 00:00:00');
         self::assertSame(1, $repo->countAll());
         self::assertNull($repo->findById($second));
     }

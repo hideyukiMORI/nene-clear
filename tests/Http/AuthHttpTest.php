@@ -33,6 +33,7 @@ final class AuthHttpTest extends TestCase
         $this->query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
         SchemaFixture::createUsers($this->query);
         SchemaFixture::createLoginAttempts($this->query);
+        SchemaFixture::createAuditEvents($this->query);
 
         (new PdoUserRepository($this->query))->save(new User(
             email: 'admin@acme.example',

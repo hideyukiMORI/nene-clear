@@ -23,7 +23,7 @@ final readonly class DeleteUserHandler
         $params = (array) $request->getAttribute(Router::PARAMETERS_ATTRIBUTE, []);
         $id = (int) ($params['id'] ?? 0);
 
-        $this->useCase->execute($id, AuthContext::organizationId($request));
+        $this->useCase->execute($id, AuthContext::organizationId($request), AuthContext::userId($request));
 
         return $this->response->createEmpty(204);
     }

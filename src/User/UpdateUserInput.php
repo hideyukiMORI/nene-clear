@@ -13,6 +13,7 @@ final readonly class UpdateUserInput
         public ?int $callerOrganizationId,
         public ?Role $role,
         public ?UserStatus $status,
+        public int $actorUserId,
     ) {
     }
 }

@@ -28,7 +28,11 @@ final readonly class ResumeDunningUseCase
             eventType: 'dunning_resumed',
             actorUserId: $actorUserId,
             occurredAt: $now,
-            payload: ['invoice_id' => $invoiceId],
+            payload: [
+                'invoice_id' => $invoiceId,
+                'before' => ['is_paused' => true],
+                'after' => ['is_paused' => false],
+            ],
         ));
     }
 }

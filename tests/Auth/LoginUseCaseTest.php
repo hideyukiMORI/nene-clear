@@ -9,6 +9,8 @@ use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginInput;
 use NeneClear\Auth\LoginUseCase;
 use NeneClear\Auth\Role;
+use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FixedClock;
 use NeneClear\Tests\User\InMemoryUserRepository;
 use NeneClear\User\User;
 use NeneClear\User\UserStatus;
@@ -16,9 +18,21 @@ use PHPUnit\Framework\TestCase;
 
 final class LoginUseCaseTest extends TestCase
 {
+    private InMemoryAuditEventRepository $audit;
+
+    protected function setUp(): void
+    {
+        $this->audit = new InMemoryAuditEventRepository();
+    }
+
     private function useCase(InMemoryUserRepository $users): LoginUseCase
     {
-        return new LoginUseCase($users, new JwtTokenService(secret: 'test-secret-test-secret-32chars!'));
+        return new LoginUseCase(
+            $users,
+            new JwtTokenService(secret: 'test-secret-test-secret-32chars!'),
+            $this->audit,
+            new FixedClock('2026-06-01T10:00:00+00:00'),
+        );
     }
 
     private function activeUser(string $password): User
@@ -72,5 +86,34 @@ final class LoginUseCaseTest extends TestCase
 
         $this->expectException(InvalidCredentialsException::class);
         $this->useCase($users)->execute(new LoginInput('invited@acme.example', 'correct horse'));
+    }
+
+    public function test_successful_login_is_audited(): void
+    {
+        $users = new InMemoryUserRepository([$this->activeUser('correct horse')]);
+        $this->useCase($users)->execute(new LoginInput('admin@acme.example', 'correct horse'));
+
+        self::assertCount(1, $this->audit->events);
+        self::assertSame('login_succeeded', $this->audit->events[0]->eventType);
+        self::assertSame('admin@acme.example', $this->audit->events[0]->payload['after']['email']);
+    }
+
+    public function test_failed_login_is_audited_without_leaking_password(): void
+    {
+        $users = new InMemoryUserRepository([$this->activeUser('correct horse')]);
+
+        try {
+            $this->useCase($users)->execute(new LoginInput('admin@acme.example', 'wrong-secret'));
+            self::fail('Expected InvalidCredentialsException');
+        } catch (InvalidCredentialsException) {
+            // expected
+        }
+
+        self::assertCount(1, $this->audit->events);
+        $event = $this->audit->events[0];
+        self::assertSame('login_failed', $event->eventType);
+        self::assertSame(0, $event->actorUserId);
+        self::assertSame('invalid_credentials', $event->payload['after']['failure_reason']);
+        self::assertStringNotContainsStringIgnoringCase('wrong-secret', json_encode($event->payload, JSON_THROW_ON_ERROR));
     }
 }

@@ -6,6 +6,7 @@ namespace NeneClear\Organization;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
+use Nene2\Http\PaginationResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -24,8 +25,8 @@ final readonly class ListOrganizationsHandler
         $page = PaginationQueryParser::parse($request, 50, 200);
         $output = $this->useCase->execute($page->limit, $page->offset);
 
-        return $this->response->create([
-            'items' => array_map(
+        return $this->response->create((new PaginationResponse(
+            items: array_map(
                 static fn (Organization $o): array => [
                     'organization_id' => $o->id,
                     'slug' => $o->slug,
@@ -33,9 +34,9 @@ final readonly class ListOrganizationsHandler
                 ],
                 $output->items,
             ),
-            'limit' => $output->limit,
-            'offset' => $output->offset,
-            'total' => $output->total,
-        ]);
+            limit: $output->limit,
+            offset: $output->offset,
+            total: $output->total,
+        ))->toArray());
     }
 }
