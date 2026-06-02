@@ -63,8 +63,11 @@ final class InMemoryOrganizationRepository implements OrganizationRepositoryInte
         return $id;
     }
 
-    public function delete(int $id): void
+    public function delete(int $id, string $deletedAt): void
     {
+        // Soft delete: drop from the visible set so reads no longer return it,
+        // mirroring the SQL `is_deleted = 0` filter. `$deletedAt` is recorded by
+        // the persistent adapter; the in-memory double only needs the effect.
         unset($this->byId[$id]);
     }
 }

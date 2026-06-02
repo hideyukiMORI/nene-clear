@@ -91,6 +91,36 @@ Stored and transmitted **exactly** as written (lowercase snake_case).
 Do not invent `cancelled`, `void`, `pending`, `unpaid`, etc. without registering
 them here first.
 
+### Audit event types (`audit_events.event_type`, exact strings)
+
+Append-only audit trail (`AuditEvent`, compliance §6). Every state-changing
+operation records exactly one event from this closed set. New mutating
+operations MUST register their `event_type` here **before** first use; spelling
+follows `{entity}_{past-tense-verb}` in lowercase snake_case.
+
+| `event_type` | Operation | Payload shape |
+| --- | --- | --- |
+| `bank_import` | Bank CSV imported | `after` |
+| `bank_import_batch_reversed` | Import batch reversed | `before` + `after` |
+| `reconciliation_confirmed` | Match confirmed | `before` + `after` |
+| `reconciliation_reversed` | Match reversed | `before` + `after` |
+| `client_credit_applied` | Overpayment credit applied | `before` + `after` |
+| `dunning_sent` | Dunning notice sent | `before` + `after` |
+| `dunning_paused` | Dunning paused for an invoice | `before` + `after` |
+| `dunning_resumed` | Dunning resumed for an invoice | `before` + `after` |
+| `user_created` | Operator account created | `after` |
+| `user_updated` | Operator role/status changed | `before` + `after` |
+| `user_deleted` | Operator account deleted | `before` |
+| `organization_created` | Tenant created | `after` |
+| `organization_deleted` | Tenant deleted | `before` |
+| `clear_settings_updated` | Upstream/dunning/bank-account settings changed | `before` + `after` |
+| `login_succeeded` | Authentication succeeded | `after` |
+| `login_failed` | Authentication rejected | `after` (attempted `email` + `failure_reason`) |
+
+Mutations that create a resource carry only `after`; deletions carry only
+`before`; in-place changes carry both. Payload keys reuse canonical field names
+(§3); booleans follow the `is_` rule (e.g. `is_paused`).
+
 ---
 
 ## 3. Canonical field / column names (snake_case)
@@ -125,6 +155,8 @@ them here first.
 | Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `bank_account_id`, `payment_reconciliation_id`, `client_credit_id` | camelCase, abbreviations |
 | Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`, `actor_id` (use role-specific names above) |
 | Audit event type | `event_type` | `type`, `action` |
+| Audit actor / time | `actor_user_id`, `occurred_at` | `user_id`, `actor_id`, `created_at` (on audit rows) |
+| Login failure reason (audit) | `failure_reason` | `reason`, `error`, `code` |
 | List envelope | `items`, `limit`, `offset` | `data`, `results`, `count` |
 
 Rules: money columns end in `_cents` (integer); event timestamps end in `_at`;
@@ -191,6 +223,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `proposeMatch`, `confirmMatch`, `reverseReconciliation`, `listReconciliations`, `getReconciliationById` | Reconciliation |
 | `listClientCredits`, `applyClientCredit` | Client credit |
 | `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice` | Dunning |
+| `listAuditEvents` | Audit trail (admin) |
 
 Extend this list (do not improvise) when adding operations. MCP tool names
 mirror these `operationId` values exactly (`listUnmatchedTransactions`,

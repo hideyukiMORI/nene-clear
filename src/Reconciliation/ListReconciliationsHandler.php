@@ -6,6 +6,7 @@ namespace NeneClear\Reconciliation;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
+use Nene2\Http\PaginationResponse;
 use NeneClear\Auth\AuthContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -28,14 +29,14 @@ final readonly class ListReconciliationsHandler
 
         $items = $this->reconciliations->findByOrganization($organizationId, $status, $page->limit, $page->offset);
 
-        return $this->response->create([
-            'items' => array_map(
+        return $this->response->create((new PaginationResponse(
+            items: array_map(
                 static fn (Reconciliation $r): array => ReconciliationResponse::toArray($r),
                 $items,
             ),
-            'limit' => $page->limit,
-            'offset' => $page->offset,
-            'total' => $this->reconciliations->countByOrganization($organizationId, $status),
-        ]);
+            limit: $page->limit,
+            offset: $page->offset,
+            total: $this->reconciliations->countByOrganization($organizationId, $status),
+        ))->toArray());
     }
 }

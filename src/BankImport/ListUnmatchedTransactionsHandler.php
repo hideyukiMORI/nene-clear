@@ -6,6 +6,7 @@ namespace NeneClear\BankImport;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
+use Nene2\Http\PaginationResponse;
 use NeneClear\Auth\AuthContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -23,14 +24,14 @@ final readonly class ListUnmatchedTransactionsHandler
         $organizationId = AuthContext::organizationId($request) ?? 0;
         $page = PaginationQueryParser::parse($request, 50, 200);
 
-        return $this->response->create([
-            'items' => array_map(
+        return $this->response->create((new PaginationResponse(
+            items: array_map(
                 BankTransactionResponse::toArray(...),
                 $this->transactions->findUnmatchedByOrganization($organizationId, $page->limit, $page->offset),
             ),
-            'limit' => $page->limit,
-            'offset' => $page->offset,
-            'total' => $this->transactions->countUnmatchedByOrganization($organizationId),
-        ]);
+            limit: $page->limit,
+            offset: $page->offset,
+            total: $this->transactions->countUnmatchedByOrganization($organizationId),
+        ))->toArray());
     }
 }

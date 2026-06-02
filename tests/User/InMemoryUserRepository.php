@@ -78,7 +78,7 @@ final class InMemoryUserRepository implements UserRepositoryInterface
         return $id;
     }
 
-    public function delete(?int $organizationId, int $id): void
+    public function delete(?int $organizationId, int $id, string $deletedAt): void
     {
         $user = $this->byId[$id] ?? null;
         if ($user !== null && $user->organizationId === $organizationId) {

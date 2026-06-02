@@ -41,7 +41,11 @@ final readonly class PauseDunningUseCase
             eventType: 'dunning_paused',
             actorUserId: $actorUserId,
             occurredAt: $now,
-            payload: ['invoice_id' => $invoiceId, 'reason' => $reason],
+            payload: [
+                'invoice_id' => $invoiceId,
+                'before' => ['is_paused' => false],
+                'after' => ['is_paused' => true, 'reason' => $reason],
+            ],
         ));
 
         return new DunningPause(

@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace NeneClear\User;
 
+use Nene2\Http\ClockInterface;
+use NeneClear\Audit\AuditEvent;
+use NeneClear\Audit\AuditEventRepositoryInterface;
 use NeneClear\Auth\Role;
 
 final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
 {
     public function __construct(
         private UserRepositoryInterface $users,
+        private AuditEventRepositoryInterface $auditEvents,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -44,6 +49,24 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
         if ($created === null) {
             throw new UserNotFoundException($id);
         }
+
+        // Audit: account creation carries `after` only (no prior state). The
+        // password hash is never recorded — only who/what changed.
+        $this->auditEvents->record(new AuditEvent(
+            organizationId: $input->organizationId ?? 0,
+            eventType: 'user_created',
+            actorUserId: $input->actorUserId,
+            occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
+            payload: [
+                'after' => [
+                    'user_id' => $created->id,
+                    'email' => $created->email,
+                    'role' => $created->role->value,
+                    'status' => $created->status->value,
+                    'organization_id' => $created->organizationId,
+                ],
+            ],
+        ));
 
         return $created;
     }

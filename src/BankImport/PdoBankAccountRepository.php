@@ -18,7 +18,7 @@ final readonly class PdoBankAccountRepository implements BankAccountRepositoryIn
 
     public function findById(int $id): ?BankAccount
     {
-        $row = $this->query->fetchOne('SELECT ' . self::COLUMNS . ' FROM bank_accounts WHERE id = ?', [$id]);
+        $row = $this->query->fetchOne('SELECT ' . self::COLUMNS . ' FROM bank_accounts WHERE id = ? AND is_deleted = 0', [$id]);
 
         return $row !== null ? $this->hydrate($row) : null;
     }
@@ -26,16 +26,21 @@ final readonly class PdoBankAccountRepository implements BankAccountRepositoryIn
     public function findByOrganization(int $organizationId): array
     {
         $rows = $this->query->fetchAll(
-            'SELECT ' . self::COLUMNS . ' FROM bank_accounts WHERE organization_id = ? ORDER BY id ASC',
+            'SELECT ' . self::COLUMNS . ' FROM bank_accounts WHERE organization_id = ? AND is_deleted = 0 ORDER BY id ASC',
             [$organizationId],
         );
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function deleteByOrganization(int $organizationId): void
+    public function deleteByOrganization(int $organizationId, string $deletedAt): void
     {
-        $this->query->execute('DELETE FROM bank_accounts WHERE organization_id = ?', [$organizationId]);
+        // Soft delete — bank accounts are referenced by import history and are
+        // never hard-deleted. `$deletedAt` comes from the use case's clock.
+        $this->query->execute(
+            'UPDATE bank_accounts SET is_deleted = 1, deleted_at = ? WHERE organization_id = ? AND is_deleted = 0',
+            [$deletedAt, $organizationId],
+        );
     }
 
     public function save(BankAccount $account): int

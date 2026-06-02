@@ -9,5 +9,5 @@ interface DeleteUserUseCaseInterface
     /**
      * @throws UserNotFoundException
      */
-    public function execute(int $id, ?int $callerOrganizationId): void;
+    public function execute(int $id, ?int $callerOrganizationId, int $actorUserId): void;
 }

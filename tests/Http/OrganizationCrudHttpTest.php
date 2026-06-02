@@ -34,6 +34,7 @@ final class OrganizationCrudHttpTest extends TestCase
         SchemaFixture::createOrganizations($this->query);
         SchemaFixture::createUsers($this->query);
         SchemaFixture::createLoginAttempts($this->query);
+        SchemaFixture::createAuditEvents($this->query);
 
         $users = new PdoUserRepository($this->query);
         $users->save(new User(

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace NeneClear\Auth;
 
+use Nene2\Http\ClockInterface;
+use NeneClear\Audit\AuditEvent;
+use NeneClear\Audit\AuditEventRepositoryInterface;
 use NeneClear\User\UserRepositoryInterface;
 use NeneClear\User\UserStatus;
 
@@ -18,6 +21,8 @@ final readonly class LoginUseCase implements LoginUseCaseInterface
     public function __construct(
         private UserRepositoryInterface $users,
         private TokenIssuerInterface $tokens,
+        private AuditEventRepositoryInterface $auditEvents,
+        private ClockInterface $clock,
     ) {
     }
 
@@ -29,8 +34,38 @@ final readonly class LoginUseCase implements LoginUseCaseInterface
         $passwordMatches = password_verify($input->password, $hash);
 
         if ($user === null || $user->status !== UserStatus::Active || !$passwordMatches) {
+            // Audit a rejected attempt. The actor is unknown (0) and the event is
+            // not tenant-scoped (organization 0): recording the would-be org —
+            // like recording the password — could leak whether the account
+            // exists. Only the attempted email and a coarse reason are kept.
+            $this->auditEvents->record(new AuditEvent(
+                organizationId: 0,
+                eventType: 'login_failed',
+                actorUserId: 0,
+                occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
+                payload: [
+                    'after' => [
+                        'email' => $input->email,
+                        'failure_reason' => 'invalid_credentials',
+                    ],
+                ],
+            ));
+
             throw new InvalidCredentialsException();
         }
+
+        $this->auditEvents->record(new AuditEvent(
+            organizationId: $user->organizationId ?? 0,
+            eventType: 'login_succeeded',
+            actorUserId: (int) $user->id,
+            occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
+            payload: [
+                'after' => [
+                    'user_id' => (int) $user->id,
+                    'email' => $user->email,
+                ],
+            ],
+        ));
 
         return new LoginOutput(
             token: $this->tokens->issueForUser($user),

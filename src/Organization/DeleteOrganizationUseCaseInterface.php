@@ -9,5 +9,5 @@ interface DeleteOrganizationUseCaseInterface
     /**
      * @throws OrganizationNotFoundException
      */
-    public function execute(int $id): void;
+    public function execute(int $id, int $actorUserId): void;
 }

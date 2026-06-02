@@ -10,15 +10,13 @@ use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
-use NeneClear\BankImport\BankAccountRepositoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 final readonly class UpdateClearSettingsHandler
 {
     public function __construct(
-        private ClearSettingsRepositoryInterface $settings,
-        private BankAccountRepositoryInterface $bankAccounts,
+        private UpdateClearSettingsUseCaseInterface $useCase,
         private JsonResponseFactory $response,
     ) {
     }
@@ -67,20 +65,14 @@ final readonly class UpdateClearSettingsHandler
             );
         }
 
-        $this->bankAccounts->deleteByOrganization($organizationId);
-        foreach ($newAccounts as $account) {
-            $this->bankAccounts->save($account);
-        }
-
-        $this->settings->save(new ClearSettings(
+        $updated = $this->useCase->execute(new UpdateClearSettingsInput(
             organizationId: $organizationId,
             upstreamBaseUrl: $upstreamBaseUrl,
             upstreamTokenRef: $upstreamTokenRef,
             dunningMinIntervalDays: $dunningMinIntervalDays,
+            bankAccounts: $newAccounts,
+            actorUserId: AuthContext::userId($request),
         ));
-
-        $updated = $this->settings->findByOrganization($organizationId)
-            ?? new ClearSettings($organizationId, $upstreamBaseUrl, $upstreamTokenRef, $dunningMinIntervalDays);
 
         return $this->response->create(ClearSettingsResponse::toArray($updated));
     }

@@ -21,5 +21,5 @@ interface UserRepositoryInterface
 
     public function save(User $user): int;
 
-    public function delete(?int $organizationId, int $id): void;
+    public function delete(?int $organizationId, int $id, string $deletedAt): void;
 }

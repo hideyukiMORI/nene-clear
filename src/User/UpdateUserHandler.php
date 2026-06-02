@@ -50,6 +50,7 @@ final readonly class UpdateUserHandler
             callerOrganizationId: AuthContext::organizationId($request),
             role: $role,
             status: $status,
+            actorUserId: AuthContext::userId($request),
         ));
 
         return $this->response->create(UserResponse::toArray($user));
