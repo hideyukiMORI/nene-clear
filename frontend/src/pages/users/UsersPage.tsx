@@ -2,17 +2,22 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listUsers, createUser, deleteUser } from '@/api/endpoints'
 import type { User } from '@/types'
-import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
 
 type Role = 'admin' | 'member' | 'viewer'
 
-const ROLE_MAP: Record<User['role'], { v: 'info' | 'neut'; labelKey: MessageKey }> = {
+const ROLE_MAP: Record<User['role'], StatusMeta> = {
   superadmin: { v: 'info', labelKey: 'users.role.superadmin' },
   admin:  { v: 'info', labelKey: 'users.role.admin' },
   member: { v: 'neut', labelKey: 'users.role.member' },
   viewer: { v: 'neut', labelKey: 'users.role.viewer' },
+}
+
+const STATUS_MAP: Record<User['status'], StatusMeta> = {
+  active:  { v: 'ok',   labelKey: 'users.status.active' },
+  invited: { v: 'warn', labelKey: 'users.status.invited' },
 }
 
 function InviteModal({ onClose }: { onClose: () => void }) {
@@ -88,22 +93,19 @@ export default function UsersPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={5} loading={usersQ.isLoading} empty={usersQ.data?.items.length === 0} />
-            {usersQ.data?.items.map(u => {
-              const r = ROLE_MAP[u.role]
-              return (
-                <tr key={u.user_id}>
-                  <td className="strong">{u.email}</td>
-                  <td><Badge variant={r.v}>{t(r.labelKey)}</Badge></td>
-                  <td>{u.status === 'active' ? <Badge variant="ok" dot>{t('users.status.active')}</Badge> : <Badge variant="warn" dot>{t('users.status.invited')}</Badge>}</td>
-                  <td className="muted">—</td>
-                  <td className="row-act">
-                    <Button variant="ghost-danger" size="sm" onClick={() => setDeleteTarget(u)}>
-                      <Icon name="trash" size="sm" />{t('users.delete')}
-                    </Button>
-                  </td>
-                </tr>
-              )
-            })}
+            {usersQ.data?.items.map(u => (
+              <tr key={u.user_id}>
+                <td className="strong">{u.email}</td>
+                <td><StatusBadge map={ROLE_MAP} value={u.role} /></td>
+                <td><StatusBadge map={STATUS_MAP} value={u.status} dot /></td>
+                <td className="muted">—</td>
+                <td className="row-act">
+                  <Button variant="ghost-danger" size="sm" onClick={() => setDeleteTarget(u)}>
+                    <Icon name="trash" size="sm" />{t('users.delete')}
+                  </Button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </DataTable>
       </Card>

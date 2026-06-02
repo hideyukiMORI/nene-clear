@@ -2,17 +2,16 @@ import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listAuditEvents } from '@/api/endpoints'
 import type { AuditEvent, AuditEventType } from '@/types'
-import { Badge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
-import type { BadgeVariant } from '@/components/ui'
+import { StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
+import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
 import { formatDateTime } from '@/utils/format'
 
 const PAGE = 20
 
 // Every registered event_type (terminology §2) with its display label key and a
 // badge tone: green for value-creating, red for reversing/deleting/failing.
-const EVENT_META: Record<AuditEventType, { v: BadgeVariant; labelKey: MessageKey }> = {
+const EVENT_META: Record<AuditEventType, StatusMeta> = {
   bank_import:                 { v: 'info', labelKey: 'audit.event.bank_import' },
   bank_import_batch_reversed:  { v: 'bad',  labelKey: 'audit.event.bank_import_batch_reversed' },
   reconciliation_confirmed:    { v: 'ok',   labelKey: 'audit.event.reconciliation_confirmed' },
@@ -100,8 +99,6 @@ export default function AuditLogPage() {
   }
 
   const total = auditQ.data?.total ?? 0
-  const currentPage = Math.floor(applied.offset / PAGE) + 1
-  const totalPages = Math.ceil(total / PAGE)
 
   return (
     <>
@@ -132,13 +129,12 @@ export default function AuditLogPage() {
           <tbody>
             <TableStateRow colSpan={4} loading={auditQ.isLoading} empty={auditQ.data?.items.length === 0} emptyKey="audit.empty" />
             {auditQ.data?.items.map(event => {
-              const meta = EVENT_META[event.event_type]
               const isOpen = expanded.has(event.audit_event_id)
               return (
                 <Fragment key={event.audit_event_id}>
                   <tr>
                     <td className="muted">{formatDateTime(event.occurred_at)}</td>
-                    <td><Badge variant={meta?.v ?? 'neut'} dot>{meta ? t(meta.labelKey) : event.event_type}</Badge></td>
+                    <td><StatusBadge map={EVENT_META} value={event.event_type} dot fallback={event.event_type} /></td>
                     <td>{actorLabel(event.actor_user_id)}</td>
                     <td className="row-act">
                       <Button variant="ghost" size="sm" onClick={() => toggle(event.audit_event_id)}>
@@ -156,17 +152,7 @@ export default function AuditLogPage() {
             })}
           </tbody>
         </DataTable>
-        {total > PAGE && (
-          <Pager
-            current={currentPage}
-            total={totalPages}
-            onPrev={() => goPage(Math.max(0, applied.offset - PAGE))}
-            onNext={() => goPage(applied.offset + PAGE)}
-            itemCount={total}
-            pageSize={PAGE}
-            offset={applied.offset}
-          />
-        )}
+        <Pager offset={applied.offset} pageSize={PAGE} total={total} onOffsetChange={goPage} />
       </Card>
     </>
   )

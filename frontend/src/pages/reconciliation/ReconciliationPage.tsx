@@ -6,9 +6,15 @@ import {
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
-import { Icon, Badge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead } from '@/components/ui'
+import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead } from '@/components/ui'
+import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { yen, formatDate } from '@/utils/format'
+
+const RECON_STATUS: Record<Reconciliation['status'], StatusMeta> = {
+  confirmed: { v: 'ok',   labelKey: 'reconciliation.status.confirmed' },
+  reversed:  { v: 'neut', labelKey: 'reconciliation.status.reversed' },
+}
 
 // ─── Confirm match modal ───
 function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => void }) {
@@ -207,7 +213,7 @@ export default function ReconciliationPage() {
                 <tr key={r.payment_reconciliation_id} className={r.status === 'reversed' ? 'dim' : ''}>
                   <td className="muted">{r.payment_reconciliation_id}</td>
                   <td className="mono">#{r.bank_transaction_id}</td>
-                  <td>{r.status === 'confirmed' ? <Badge variant="ok" dot>{t('reconciliation.status.confirmed')}</Badge> : <Badge variant="neut" dot>{t('reconciliation.status.reversed')}</Badge>}</td>
+                  <td><StatusBadge map={RECON_STATUS} value={r.status} dot /></td>
                   <td className="muted">{formatDate(r.confirmed_at)}</td>
                   <td className="row-act">
                     {r.status === 'confirmed' && (

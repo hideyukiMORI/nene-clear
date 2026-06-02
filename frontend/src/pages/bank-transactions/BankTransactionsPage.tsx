@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listBankTransactions, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
-import { Icon, Badge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
+import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
 import { yen } from '@/utils/format'
 
 const PAGE = 20
 
-const STATUS_BADGE: Record<BankTransaction['status'], { v: 'warn' | 'info' | 'ok' | 'neut'; labelKey: MessageKey }> = {
+const STATUS_BADGE: Record<BankTransaction['status'], StatusMeta> = {
   unmatched:         { v: 'warn', labelKey: 'bankTransaction.status.unmatched' },
   partially_matched: { v: 'info', labelKey: 'bankTransaction.status.partially_matched' },
   matched:           { v: 'ok',   labelKey: 'bankTransaction.status.matched' },
@@ -45,8 +45,6 @@ export default function BankTransactionsPage() {
   function goPage(off: number) { setApplied(p => ({ ...p, offset: off })) }
 
   const total = txQ.data?.total ?? 0
-  const currentPage = Math.floor(applied.offset / PAGE) + 1
-  const totalPages = Math.ceil(total / PAGE)
 
   return (
     <>
@@ -98,30 +96,17 @@ export default function BankTransactionsPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={4} loading={txQ.isLoading} empty={txQ.data?.items.length === 0} />
-            {txQ.data?.items.map(tx => {
-              const s = STATUS_BADGE[tx.status]
-              return (
-                <tr key={tx.bank_transaction_id} className={tx.status === 'voided' ? 'dim' : ''}>
-                  <td className="muted">{tx.value_date}</td>
-                  <td className="num">{yen(tx.amount_cents)}</td>
-                  <td className="strong">{tx.counterparty_text}</td>
-                  <td><Badge variant={s.v} dot>{t(s.labelKey)}</Badge></td>
-                </tr>
-              )
-            })}
+            {txQ.data?.items.map(tx => (
+              <tr key={tx.bank_transaction_id} className={tx.status === 'voided' ? 'dim' : ''}>
+                <td className="muted">{tx.value_date}</td>
+                <td className="num">{yen(tx.amount_cents)}</td>
+                <td className="strong">{tx.counterparty_text}</td>
+                <td><StatusBadge map={STATUS_BADGE} value={tx.status} dot /></td>
+              </tr>
+            ))}
           </tbody>
         </DataTable>
-        {total > PAGE && (
-          <Pager
-            current={currentPage}
-            total={totalPages}
-            onPrev={() => goPage(Math.max(0, applied.offset - PAGE))}
-            onNext={() => goPage(applied.offset + PAGE)}
-            itemCount={total}
-            pageSize={PAGE}
-            offset={applied.offset}
-          />
-        )}
+        <Pager offset={applied.offset} pageSize={PAGE} total={total} onOffsetChange={goPage} />
       </Card>
     </>
   )

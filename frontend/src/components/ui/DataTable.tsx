@@ -50,26 +50,35 @@ export function TableStateRow({ colSpan, loading, error, empty, emptyKey = 'comm
 }
 
 interface PagerProps {
-  current: number
-  total: number
-  onPrev: () => void
-  onNext: () => void
-  itemCount: number
-  pageSize: number
+  /** Current zero-based row offset. */
   offset: number
+  /** Page size (rows per page). */
+  pageSize: number
+  /** Total matching record count. */
+  total: number
+  /** Called with the new offset when the user pages. */
+  onOffsetChange: (offset: number) => void
 }
 
-export function Pager({ current, total, onPrev, onNext, itemCount, pageSize, offset }: PagerProps) {
+/**
+ * Table footer pager. Derives the current/total page and prev/next offsets
+ * internally, and renders nothing when everything fits on one page — callers
+ * pass only the raw offset/pageSize/total and an offset setter.
+ */
+export function Pager({ offset, pageSize, total, onOffsetChange }: PagerProps) {
   const { t } = useTranslation()
+  if (total <= pageSize) return null
+  const current = Math.floor(offset / pageSize) + 1
+  const totalPages = Math.ceil(total / pageSize)
   return (
     <div className="tbl-foot">
-      <span>{t('common.pagination.showing', { from: offset + 1, to: Math.min(offset + pageSize, itemCount), total: itemCount })}</span>
+      <span>{t('common.pagination.showing', { from: offset + 1, to: Math.min(offset + pageSize, total), total })}</span>
       <div className="pager">
-        <button onClick={onPrev} disabled={current === 1}>
+        <button onClick={() => onOffsetChange(Math.max(0, offset - pageSize))} disabled={current === 1}>
           <Icon name="chev-l" size="sm" />
         </button>
-        <span className="cur">{current} / {total}</span>
-        <button onClick={onNext} disabled={current >= total}>
+        <span className="cur">{current} / {totalPages}</span>
+        <button onClick={() => onOffsetChange(offset + pageSize)} disabled={current >= totalPages}>
           <Icon name="chev-r" size="sm" />
         </button>
       </div>
