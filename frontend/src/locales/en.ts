@@ -53,6 +53,8 @@ export const en: Record<MessageKey, string> = {
   'common.checking': 'Checking…',
   'common.unitItems': '',
   'common.pagination.showing': '{{from}}–{{to}} of {{total}}',
+  'common.pagination.prev': 'Previous page',
+  'common.pagination.next': 'Next page',
 
   // ── Table headers ──
   'table.valueDate': 'Value date',
@@ -210,6 +212,7 @@ export const en: Record<MessageKey, string> = {
   'settings.connectionFail': 'Connection failed',
   'settings.section.dunning': 'Dunning policy',
   'settings.dunningInterval': 'Min. dunning interval (days)',
+  'settings.intervalError': 'The dunning interval must be at least 1 day.',
   'settings.section.banks': 'Bank accounts',
   'settings.addBankAccount': 'Add account',
   'settings.noBankAccounts': 'No bank accounts registered.',

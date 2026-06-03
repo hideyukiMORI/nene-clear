@@ -25,15 +25,18 @@ test.describe('Users — invite + delete boundaries', () => {
     await expect(page.getByText('招待中')).toBeVisible()
   })
 
-  test('invite with empty email shows client-side error', async ({ page }) => {
+  test('invite submit is disabled until an email is entered', async ({ page }) => {
     await apiRoute(page, '**/admin/users?**', (route) => json(route, 200, list([])))
 
     await page.goto('/admin/users')
     await page.getByRole('button', { name: 'ユーザーを招待' }).click()
-    // Submit the modal form without an email.
-    await page.locator('.fixed').getByRole('button', { name: 'ユーザーを招待' }).click()
 
-    await expect(page.getByText('メールアドレスを入力してください')).toBeVisible()
+    // The modal guards an empty email by disabling submit (no inline message).
+    const submit = page.getByRole('dialog').getByRole('button', { name: '招待を送信' })
+    await expect(submit).toBeDisabled()
+
+    await page.getByRole('dialog').getByRole('textbox').fill('new@acme.example')
+    await expect(submit).toBeEnabled()
   })
 
   test('invite duplicate email (409) surfaces the upstream error', async ({ page }) => {
@@ -47,8 +50,8 @@ test.describe('Users — invite + delete boundaries', () => {
 
     await page.goto('/admin/users')
     await page.getByRole('button', { name: 'ユーザーを招待' }).click()
-    await page.locator('.fixed input[type="email"]').fill('taken@acme.example')
-    await page.locator('.fixed').getByRole('button', { name: 'ユーザーを招待' }).click()
+    await page.getByRole('dialog').getByRole('textbox').fill('taken@acme.example')
+    await page.getByRole('dialog').getByRole('button', { name: '招待を送信' }).click()
 
     await expect(page.getByText('そのメールアドレスはすでに使用されています。')).toBeVisible()
   })
@@ -63,7 +66,7 @@ test.describe('Users — invite + delete boundaries', () => {
     await page.getByRole('button', { name: '削除' }).first().click()
 
     await expect(page.getByText('このユーザーを削除しますか？')).toBeVisible()
-    await page.locator('.fixed').getByRole('button', { name: '削除' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: '削除' }).click()
 
     await expect(page.getByText('このユーザーを削除しますか？')).toHaveCount(0)
   })

@@ -33,8 +33,8 @@ test.describe('Bank transactions — list, filter, pagination boundaries', () =>
     await page.goto('/admin/bank-transactions')
 
     await expect(page.getByText('1 / 3')).toBeVisible()
-    await expect(page.getByRole('button', { name: '戻る' })).toBeDisabled()
-    await expect(page.getByRole('button', { name: '次へ' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: '前のページ' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: '次のページ' })).toBeEnabled()
   })
 
   test('pagination: last page has Next disabled', async ({ page }) => {
@@ -49,12 +49,12 @@ test.describe('Bank transactions — list, filter, pagination boundaries', () =>
     })
 
     await page.goto('/admin/bank-transactions')
-    await page.getByRole('button', { name: '次へ' }).click() // → page 2
-    await page.getByRole('button', { name: '次へ' }).click() // → page 3 (last)
+    await page.getByRole('button', { name: '次のページ' }).click() // → page 2
+    await page.getByRole('button', { name: '次のページ' }).click() // → page 3 (last)
 
     await expect(page.getByText('3 / 3')).toBeVisible()
-    await expect(page.getByRole('button', { name: '次へ' })).toBeDisabled()
-    await expect(page.getByRole('button', { name: '戻る' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: '次のページ' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: '前のページ' })).toBeEnabled()
   })
 
   test('no pagination controls when total fits one page', async ({ page }) => {
@@ -64,7 +64,7 @@ test.describe('Bank transactions — list, filter, pagination boundaries', () =>
 
     await page.goto('/admin/bank-transactions')
 
-    await expect(page.getByRole('button', { name: '次へ' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '次のページ' })).toHaveCount(0)
   })
 
   test('status filter triggers a scoped query', async ({ page }) => {

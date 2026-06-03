@@ -74,12 +74,12 @@ test('scenario: import → reconcile → reverse → logout keeps state consiste
   await navTo(page, '消込', /\/admin\/reconciliation/)
   await expect(page.getByText('カ）アクメ')).toBeVisible()
   await page.getByRole('button', { name: '消込を確定' }).first().click()
-  const modal = page.locator('.fixed')
+  const modal = page.getByRole('dialog')
   await modal.locator('input[type="number"]').nth(0).fill('1')
   await modal.locator('input[type="number"]').nth(1).fill('1100')
   await modal.getByRole('button', { name: '消込を確定' }).click()
   // Modal closes and the deposit leaves the unmatched list.
-  await expect(page.locator('.fixed')).toHaveCount(0)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('未消込の取引はありません')).toBeVisible()
 
   // ── 5. History shows the confirmed reconciliation ───────────────────────
@@ -88,9 +88,9 @@ test('scenario: import → reconcile → reverse → logout keeps state consiste
 
   // ── 6. Reverse it ───────────────────────────────────────────────────────
   await page.getByRole('button', { name: '消込を取消' }).first().click()
-  await page.locator('.fixed input[type="text"]').fill('誤った消込のため')
-  await page.locator('.fixed').getByRole('button', { name: '消込を取消' }).click()
-  await expect(page.locator('.fixed')).toHaveCount(0)
+  await page.getByRole('dialog').getByRole('textbox').fill('誤った消込のため')
+  await page.getByRole('dialog').getByRole('button', { name: '消込を取消' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('取消済')).toBeVisible()
 
   // Back on the unmatched tab, the deposit is available again.

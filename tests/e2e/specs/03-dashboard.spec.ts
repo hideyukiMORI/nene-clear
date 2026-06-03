@@ -16,7 +16,7 @@ test.describe('Dashboard', () => {
 
     await page.goto('/admin')
 
-    await expect(page.locator('p.text-4xl')).toContainText('7')
+    await expect(page.getByTestId('kpi-unmatched')).toContainText('7')
     await expect(page.getByText('INV-2026-009')).toBeVisible()
     await expect(page.getByText('¥1,100')).toBeVisible()
   })
@@ -29,7 +29,7 @@ test.describe('Dashboard', () => {
 
     await page.goto('/admin')
 
-    await expect(page.locator('p.text-4xl')).toContainText('0')
+    await expect(page.getByTestId('kpi-unmatched')).toContainText('0')
     await expect(page.getByText('データがありません。')).toBeVisible()
   })
 })

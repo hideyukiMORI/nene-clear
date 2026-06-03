@@ -49,6 +49,8 @@ export const ja = {
   'common.checking': '確認中…',
   'common.unitItems': '件',
   'common.pagination.showing': '{{from}}〜{{to}} 件 / {{total}} 件',
+  'common.pagination.prev': '前のページ',
+  'common.pagination.next': '次のページ',
 
   // ── Table headers ──
   'table.valueDate': '入金日',
@@ -206,6 +208,7 @@ export const ja = {
   'settings.connectionFail': '接続失敗',
   'settings.section.dunning': '督促ポリシー',
   'settings.dunningInterval': '督促の最短間隔（日）',
+  'settings.intervalError': '督促間隔は1日以上で入力してください。',
   'settings.section.banks': '銀行口座',
   'settings.addBankAccount': '口座を追加',
   'settings.noBankAccounts': '銀行口座が登録されていません。',

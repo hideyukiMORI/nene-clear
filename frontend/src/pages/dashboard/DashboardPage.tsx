@@ -29,6 +29,7 @@ export default function DashboardPage() {
       <KpiGrid style={{ marginBottom: 20 }}>
         <Kpi
           accent="accent"
+          testId="kpi-unmatched"
           icon={<Icon name="reconcile" />}
           label={t('dashboard.kpi.unmatched')}
           value={<>{unmatchedQ.isLoading ? '…' : unmatchedTotal}{unit && <small>{unit}</small>}</>}

@@ -129,7 +129,7 @@ function ReverseModal({ recon, onClose }: { recon: Reconciliation; onClose: () =
   })
   return (
     <Modal open onClose={onClose} title={t('reconciliation.confirmReverse')} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="refresh" size="sm" />{mut.isPending ? t('common.processing') : t('bankImport.reverse')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="refresh" size="sm" />{mut.isPending ? t('common.processing') : t('reconciliation.reverse')}</Button></>}
     >
       <div className="field"><label>{t('reconciliation.reversalReason')}</label><input className="inp" value={reason} onChange={e => setReason(e.target.value)} /></div>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
