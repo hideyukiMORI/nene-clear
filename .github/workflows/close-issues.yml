@@ -1,0 +1,76 @@
+name: Close issues on merge
+
+# Safety net for the rebase-merge case: when a PR is brought onto `main` by rebase
+# it ends up `closed` (not `merged`), so GitHub's PR-based auto-close never fires and
+# the linked Issue is left open. This workflow scans the commits pushed to `main` for
+# closing keywords (Closes/Fixes/Resolves #NN) and closes the referenced Issues.
+# See docs/workflow.md -> "Closing Issues on Merge".
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  issues: write
+
+jobs:
+  close-referenced-issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close issues referenced by closing keywords
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commits = context.payload.commits || [];
+            // Closing keywords per GitHub's spec; (#NN) link references are intentionally excluded.
+            const keyword = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi;
+            const closed = new Set();
+
+            for (const commit of commits) {
+              const message = commit.message || '';
+              const sha = commit.id;
+              let match;
+              while ((match = keyword.exec(message)) !== null) {
+                const number = parseInt(match[1], 10);
+                if (closed.has(number)) continue;
+                closed.add(number);
+
+                let issue;
+                try {
+                  ({ data: issue } = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: number,
+                  }));
+                } catch (e) {
+                  core.warning(`#${number}: not found (${e.status}); skipping`);
+                  continue;
+                }
+
+                // Never touch pull requests via the issues API.
+                if (issue.pull_request) {
+                  core.info(`#${number} is a pull request; skipping`);
+                  continue;
+                }
+                if (issue.state === 'closed') {
+                  core.info(`#${number} already closed; skipping`);
+                  continue;
+                }
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  body: `Closed automatically: resolved by ${sha} on \`main\`.`,
+                });
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: number,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+                core.info(`Closed #${number}`);
+              }
+            }
