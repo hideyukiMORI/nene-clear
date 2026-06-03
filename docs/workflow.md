@@ -40,6 +40,25 @@ Every PR should include:
 
 Do not commit directly to `main`.
 
+## Closing Issues on Merge
+
+GitHub only auto-closes a linked Issue when the PR is **merged**. If a PR is brought
+onto `main` by **rebase** (the PR ends up `closed`, not `merged`), the `Closes #NN`
+auto-close never fires and the Issue is silently left open. This has already caused a
+backlog of "forgot to close" Issues.
+
+To prevent it:
+
+- Put a closing keyword (`Closes #NN` / `Fixes #NN` / `Resolves #NN`) in the **squash/merge
+  commit body**, not only in the PR description. Closing keywords in the commit message
+  reach `main` regardless of how the PR is integrated.
+- The `Close issues on merge` workflow (`.github/workflows/close-issues.yml`) scans every
+  commit pushed to `main` for these keywords and closes the referenced Issue. This is the
+  safety net for rebase-merged work.
+- Note: the conventional `(#NN)` reference in the subject is **not** a closing keyword and
+  will not close anything — it only links the commit to the Issue. Always add an explicit
+  closing keyword when the work fully resolves an Issue.
+
 ## Local Project Memory
 
 - `docs/roadmap.md`: long-lived direction and phases
