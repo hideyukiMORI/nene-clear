@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Tests\Reconciliation;
 
 use NeneClear\Reconciliation\ClientCredit;
+use NeneClear\Reconciliation\ClientCreditFilter;
 use NeneClear\Reconciliation\ClientCreditRepositoryInterface;
 use NeneClear\Reconciliation\ClientCreditStatus;
 
@@ -94,22 +95,74 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
         }
     }
 
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, ClientCreditFilter $filter, int $limit, int $offset): array
     {
         $matches = array_values(array_filter(
             $this->byId,
-            static fn (ClientCredit $c): bool => $c->organizationId === $organizationId,
+            fn (ClientCredit $c): bool => $this->matches($c, $organizationId, $filter),
         ));
+
+        $asc = strtolower($filter->sortDirection) === 'asc';
+        usort($matches, function (ClientCredit $a, ClientCredit $b) use ($filter, $asc): int {
+            $r = $this->sortKey($a, $filter->sortColumn) <=> $this->sortKey($b, $filter->sortColumn);
+            $r = $asc ? $r : -$r;
+            return $r !== 0 ? $r : (($b->id ?? 0) <=> ($a->id ?? 0));
+        });
 
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countByOrganization(int $organizationId): int
+    public function countByOrganization(int $organizationId, ClientCreditFilter $filter): int
     {
         return count(array_filter(
             $this->byId,
-            static fn (ClientCredit $c): bool => $c->organizationId === $organizationId,
+            fn (ClientCredit $c): bool => $this->matches($c, $organizationId, $filter),
         ));
+    }
+
+    private function matches(ClientCredit $c, int $organizationId, ClientCreditFilter $f): bool
+    {
+        if ($c->organizationId !== $organizationId) {
+            return false;
+        }
+        if ($f->clientId !== null && $c->clientId !== $f->clientId) {
+            return false;
+        }
+        if ($f->status !== null && $c->status !== $f->status) {
+            return false;
+        }
+        if ($f->amountMinCents !== null && $c->amountCents < $f->amountMinCents) {
+            return false;
+        }
+        if ($f->amountMaxCents !== null && $c->amountCents > $f->amountMaxCents) {
+            return false;
+        }
+        if ($f->remainingMinCents !== null && $c->remainingCents < $f->remainingMinCents) {
+            return false;
+        }
+        if ($f->remainingMaxCents !== null && $c->remainingCents > $f->remainingMaxCents) {
+            return false;
+        }
+        $date = substr($c->createdAt, 0, 10);
+        if ($f->createdFrom !== null && $date < $f->createdFrom) {
+            return false;
+        }
+        if ($f->createdTo !== null && $date > $f->createdTo) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function sortKey(ClientCredit $c, string $column): int|string
+    {
+        return match ($column) {
+            'client_id' => $c->clientId,
+            'amount_cents' => $c->amountCents,
+            'remaining_cents' => $c->remainingCents,
+            'created_at' => $c->createdAt,
+            default => $c->id ?? 0,
+        };
     }
 
     /** @return list<ClientCredit> */

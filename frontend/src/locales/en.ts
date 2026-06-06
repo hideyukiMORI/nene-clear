@@ -87,6 +87,9 @@ export const en: Record<MessageKey, string> = {
 
   // ── Filter ──
   'filter.all': 'All',
+  'filter.clear': 'Clear',
+  'filter.count': '{{n}} matches',
+  'filter.noMatch': 'No rows match the filters',
 
   // ── Export ──
   'export.csv': 'Export CSV',

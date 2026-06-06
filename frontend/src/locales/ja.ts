@@ -83,6 +83,9 @@ export const ja = {
 
   // ── Filter ──
   'filter.all': 'すべて',
+  'filter.clear': 'クリア',
+  'filter.count': '該当 {{n}} 件',
+  'filter.noMatch': '条件に一致する行はありません',
 
   // ── Export ──
   'export.csv': 'CSV出力',

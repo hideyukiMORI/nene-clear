@@ -249,6 +249,21 @@ Extend this list (do not improvise) when adding operations. MCP tool names
 mirror these `operationId` values exactly (`listUnmatchedTransactions`,
 `proposeMatch`, `sendDunningNotice` are the Phase 4 MCP set — roadmap §Phase 4).
 
+### List query parameters (filter / sort)
+
+Table list endpoints accept these query parameters (Issue #130). Reuse these
+exact spellings; do not invent variants per endpoint.
+
+| Parameter | Meaning |
+| --- | --- |
+| `{field}_min_cents` / `{field}_max_cents` | Inclusive integer-cents range (e.g. `amount_min_cents`, `remaining_max_cents`) |
+| `{field}_from` / `{field}_to` | Inclusive date range `YYYY-MM-DD` (e.g. `created_from`, `value_date_from`) |
+| `sort_by` | Sort column; the handler validates it against a per-endpoint whitelist |
+| `sort_dir` | `asc` or `desc` (default `desc`) |
+
+Other single-value filters use the canonical field name itself (`status`,
+`client_id`, `event_type`, `entity_type`, `entity_id`, `counterparty`).
+
 ---
 
 ## 6. Upstream read models (Invoice API — not Clear SSOT)

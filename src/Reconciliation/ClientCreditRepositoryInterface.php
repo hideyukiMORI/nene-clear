@@ -19,7 +19,7 @@ interface ClientCreditRepositoryInterface
     /**
      * @return list<ClientCredit>
      */
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array;
+    public function findByOrganization(int $organizationId, ClientCreditFilter $filter, int $limit, int $offset): array;
 
-    public function countByOrganization(int $organizationId): int;
+    public function countByOrganization(int $organizationId, ClientCreditFilter $filter): int;
 }

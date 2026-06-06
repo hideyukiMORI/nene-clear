@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
-import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
-import type { StatusMeta } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
+import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { yen, formatDate } from '@/utils/format'
 
@@ -52,26 +52,108 @@ const STATUS_MAP: Record<ClientCredit['status'], StatusMeta> = {
   voided: { v: 'neut', labelKey: 'clientCredit.status.voided' },
 }
 
+const PAGE = 50
+type Filters = { clientId: string; status: string; amountMin: string; amountMax: string; remainingMin: string; remainingMax: string; createdFrom: string; createdTo: string }
+const EMPTY: Filters = { clientId: '', status: '', amountMin: '', amountMax: '', remainingMin: '', remainingMax: '', createdFrom: '', createdTo: '' }
+const yenToCents = (v: string) => (v ? Math.round(Number(v) * 100) : undefined)
+const isoDate = (v: string) => (v ? v.replace(/\//g, '-') : undefined)
+
 export default function ClientCreditsPage() {
   const { t } = useTranslation()
   const [applyTarget, setApplyTarget] = useState<ClientCredit | null>(null)
 
+  const [f, setF] = useState<Filters>(EMPTY)
+  const [applied, setApplied] = useState<Filters>(EMPTY)
+  const [sort, setSort] = useState<SortState>({ by: 'id', dir: 'desc' })
+  const [offset, setOffset] = useState(0)
+  const set = (k: keyof Filters) => (v: string) => setF(prev => ({ ...prev, [k]: v }))
+
   const creditsQ = useQuery({
-    queryKey: ['client-credits'],
-    queryFn: ({ signal }) => listClientCredits({ limit: 100 }, signal),
+    queryKey: ['client-credits', applied, sort, offset],
+    queryFn: ({ signal }) => listClientCredits({
+      clientId: applied.clientId || undefined,
+      status: applied.status || undefined,
+      amountMinCents: yenToCents(applied.amountMin),
+      amountMaxCents: yenToCents(applied.amountMax),
+      remainingMinCents: yenToCents(applied.remainingMin),
+      remainingMaxCents: yenToCents(applied.remainingMax),
+      createdFrom: isoDate(applied.createdFrom),
+      createdTo: isoDate(applied.createdTo),
+      sortBy: sort.by,
+      sortDir: sort.dir,
+      limit: PAGE,
+      offset,
+    }, signal),
   })
+
+  function search() { setApplied(f); setOffset(0) }
+  function clear() { setF(EMPTY); setApplied(EMPTY); setOffset(0) }
+  function onSort(col: string) { setSort(s => nextSort(s, col)); setOffset(0) }
+
+  const total = creditsQ.data?.total ?? 0
 
   return (
     <>
       <PageHead title={t('clientCredit.title')} sub={t('clientCredit.subtitle')} />
 
+      <FilterBar>
+        <FilterField label={t('table.client')}>
+          <div className="inp-icon">
+            <Icon name="search" />
+            <input className="inp" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={f.clientId} onChange={e => set('clientId')(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.status')}>
+          <select className="inp" value={f.status} onChange={e => set('status')(e.target.value)}>
+            <option value="">{t('filter.all')}</option>
+            <option value="open">{t('clientCredit.status.open')}</option>
+            <option value="voided">{t('clientCredit.status.voided')}</option>
+          </select>
+        </FilterField>
+        <FilterField label={t('table.amount')}>
+          <div className="range-pair">
+            <input className="inp tnum" type="number" value={f.amountMin} onChange={e => set('amountMin')(e.target.value)} />
+            <span className="tilde">〜</span>
+            <input className="inp tnum" type="number" value={f.amountMax} onChange={e => set('amountMax')(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.remaining')}>
+          <div className="range-pair">
+            <input className="inp tnum" type="number" value={f.remainingMin} onChange={e => set('remainingMin')(e.target.value)} />
+            <span className="tilde">〜</span>
+            <input className="inp tnum" type="number" value={f.remainingMax} onChange={e => set('remainingMax')(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.createdAt')}>
+          <div className="range-pair">
+            <DatePicker value={f.createdFrom} onChange={set('createdFrom')} />
+            <span className="tilde">〜</span>
+            <DatePicker value={f.createdTo} onChange={set('createdTo')} />
+          </div>
+        </FilterField>
+        <div className="filter-actions">
+          <span className="filter-count">{t('filter.count', { n: total })}</span>
+          <Button variant="ghost" size="sm" onClick={clear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={search}><Icon name="search" size="sm" />{t('common.search')}</Button>
+        </div>
+      </FilterBar>
+
       <Card>
         <DataTable>
           <thead>
-            <tr><th>{t('table.id')}</th><th>{t('table.client')}</th><th>{t('table.amount')}</th><th>{t('table.remaining')}</th><th>{t('table.status')}</th><th>{t('table.sourceTransaction')}</th><th>{t('table.createdAt')}</th><th /></tr>
+            <tr>
+              <SortableTh column="id" sort={sort} onSort={onSort}>{t('table.id')}</SortableTh>
+              <SortableTh column="client_id" sort={sort} onSort={onSort}>{t('table.client')}</SortableTh>
+              <SortableTh column="amount_cents" sort={sort} onSort={onSort}>{t('table.amount')}</SortableTh>
+              <SortableTh column="remaining_cents" sort={sort} onSort={onSort}>{t('table.remaining')}</SortableTh>
+              <th>{t('table.status')}</th>
+              <th>{t('table.sourceTransaction')}</th>
+              <SortableTh column="created_at" sort={sort} onSort={onSort}>{t('table.createdAt')}</SortableTh>
+              <th />
+            </tr>
           </thead>
           <tbody>
-            <TableStateRow colSpan={8} loading={creditsQ.isLoading} empty={creditsQ.data?.items.length === 0} />
+            <TableStateRow colSpan={8} loading={creditsQ.isLoading} empty={creditsQ.data?.items.length === 0} emptyKey="filter.noMatch" />
             {creditsQ.data?.items.map(c => (
               <tr key={c.client_credit_id} className={c.status === 'voided' ? 'dim' : ''}>
                 <td className="muted">{c.client_credit_id}</td>
@@ -92,6 +174,7 @@ export default function ClientCreditsPage() {
             ))}
           </tbody>
         </DataTable>
+        <Pager offset={offset} pageSize={PAGE} total={total} onOffsetChange={setOffset} />
       </Card>
 
       {applyTarget && <ApplyModal credit={applyTarget} onClose={() => setApplyTarget(null)} />}
