@@ -2,8 +2,8 @@ import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listAuditEvents } from '@/api/endpoints'
 import type { AuditEvent, AuditEventType } from '@/types'
-import { StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
-import type { StatusMeta } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead, DatePicker, SortableTh, nextSort } from '@/components/ui'
+import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { formatDateTime } from '@/utils/format'
 
@@ -68,20 +68,31 @@ function EventDetail({ event }: { event: AuditEvent }) {
 export default function AuditLogPage() {
   const { t } = useTranslation()
   const [eventType, setEventType] = useState('')
-  const [applied, setApplied] = useState<{ eventType: string; offset: number }>({ eventType: '', offset: 0 })
+  const [actor, setActor] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [applied, setApplied] = useState<{ eventType: string; actor: string; from: string; to: string; offset: number }>({ eventType: '', actor: '', from: '', to: '', offset: 0 })
+  const [sort, setSort] = useState<SortState>({ by: 'occurred_at', dir: 'desc' })
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set())
 
   const auditQ = useQuery({
-    queryKey: ['audit-events', applied],
+    queryKey: ['audit-events', applied, sort],
     queryFn: ({ signal }) => listAuditEvents({
       eventType: applied.eventType || undefined,
+      actorUserId: applied.actor || undefined,
+      occurredFrom: applied.from ? applied.from.replace(/\//g, '-') : undefined,
+      occurredTo: applied.to ? applied.to.replace(/\//g, '-') : undefined,
+      sortBy: sort.by,
+      sortDir: sort.dir,
       limit: PAGE,
       offset: applied.offset,
     }, signal),
   })
 
-  function search() { setApplied({ eventType, offset: 0 }) }
+  function search() { setApplied({ eventType, actor, from, to, offset: 0 }) }
+  function clear() { setEventType(''); setActor(''); setFrom(''); setTo(''); setApplied({ eventType: '', actor: '', from: '', to: '', offset: 0 }) }
   function goPage(off: number) { setApplied(p => ({ ...p, offset: off })) }
+  function onSort(col: string) { setSort(s => nextSort(s, col)); setApplied(p => ({ ...p, offset: 0 })) }
 
   function toggle(id: number) {
     setExpanded(prev => {
@@ -113,16 +124,30 @@ export default function AuditLogPage() {
             ))}
           </select>
         </FilterField>
-        <Button variant="primary" onClick={search}>{t('common.search')}</Button>
+        <FilterField label={t('audit.table.actor')}>
+          <input className="inp tnum" type="number" placeholder="#" style={{ width: 110 }} value={actor} onChange={e => setActor(e.target.value)} />
+        </FilterField>
+        <FilterField label={t('audit.table.time')}>
+          <div className="range-pair">
+            <DatePicker value={from} onChange={setFrom} />
+            <span className="tilde">〜</span>
+            <DatePicker value={to} onChange={setTo} />
+          </div>
+        </FilterField>
+        <div className="filter-actions">
+          <span className="filter-count">{t('filter.count', { n: total })}</span>
+          <Button variant="ghost" size="sm" onClick={clear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={search}><Icon name="search" size="sm" />{t('common.search')}</Button>
+        </div>
       </FilterBar>
 
       <Card>
         <DataTable>
           <thead>
             <tr>
-              <th>{t('audit.table.time')}</th>
-              <th>{t('audit.table.event')}</th>
-              <th>{t('audit.table.actor')}</th>
+              <SortableTh column="occurred_at" sort={sort} onSort={onSort}>{t('audit.table.time')}</SortableTh>
+              <SortableTh column="event_type" sort={sort} onSort={onSort}>{t('audit.table.event')}</SortableTh>
+              <SortableTh column="actor_user_id" sort={sort} onSort={onSort}>{t('audit.table.actor')}</SortableTh>
               <th>{t('audit.table.detail')}</th>
             </tr>
           </thead>

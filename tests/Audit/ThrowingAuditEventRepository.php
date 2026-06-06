@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Tests\Audit;
 
 use NeneClear\Audit\AuditEvent;
+use NeneClear\Audit\AuditEventFilter;
 use NeneClear\Audit\AuditEventRepositoryInterface;
 use RuntimeException;
 
@@ -22,23 +23,13 @@ final class ThrowingAuditEventRepository implements AuditEventRepositoryInterfac
         throw new RuntimeException('audit write failed (simulated)');
     }
 
-    public function findByOrganization(
-        int $organizationId,
-        ?string $eventType,
-        ?string $entityType,
-        ?int $entityId,
-        int $limit,
-        int $offset,
-    ): array {
+    public function findByOrganization(int $organizationId, AuditEventFilter $filter, int $limit, int $offset): array
+    {
         return [];
     }
 
-    public function countByOrganization(
-        int $organizationId,
-        ?string $eventType,
-        ?string $entityType,
-        ?int $entityId,
-    ): int {
+    public function countByOrganization(int $organizationId, AuditEventFilter $filter): int
+    {
         return 0;
     }
 }

@@ -24,27 +24,29 @@ final readonly class ListAuditEventsHandler
         $organizationId = AuthContext::organizationId($request) ?? 0;
         $page = PaginationQueryParser::parse($request, 50, 200);
 
-        $query = $request->getQueryParams();
+        $q = $request->getQueryParams();
+        $str = static fn (string $k): ?string => isset($q[$k]) && is_string($q[$k]) && $q[$k] !== '' ? $q[$k] : null;
+        $int = static fn (string $k): ?int => isset($q[$k]) && is_numeric($q[$k]) ? (int) $q[$k] : null;
 
-        $eventTypeParam = $query['event_type'] ?? null;
-        $eventType = is_string($eventTypeParam) && $eventTypeParam !== '' ? $eventTypeParam : null;
-
-        $entityTypeParam = $query['entity_type'] ?? null;
-        $entityType = is_string($entityTypeParam) && $entityTypeParam !== '' ? $entityTypeParam : null;
-
-        $entityIdParam = $query['entity_id'] ?? null;
-        $entityId = is_numeric($entityIdParam) ? (int) $entityIdParam : null;
-
-        $items = $this->auditEvents->findByOrganization($organizationId, $eventType, $entityType, $entityId, $page->limit, $page->offset);
+        $filter = new AuditEventFilter(
+            eventType: $str('event_type'),
+            entityType: $str('entity_type'),
+            entityId: $int('entity_id'),
+            actorUserId: $int('actor_user_id'),
+            occurredFrom: $str('occurred_from'),
+            occurredTo: $str('occurred_to'),
+            sortColumn: $str('sort_by') ?? 'occurred_at',
+            sortDirection: $str('sort_dir') ?? 'desc',
+        );
 
         return $this->response->create((new PaginationResponse(
             items: array_map(
                 static fn (AuditEvent $e): array => AuditEventResponse::toArray($e),
-                $items,
+                $this->auditEvents->findByOrganization($organizationId, $filter, $page->limit, $page->offset),
             ),
             limit: $page->limit,
             offset: $page->offset,
-            total: $this->auditEvents->countByOrganization($organizationId, $eventType, $entityType, $entityId),
+            total: $this->auditEvents->countByOrganization($organizationId, $filter),
         ))->toArray());
     }
 }

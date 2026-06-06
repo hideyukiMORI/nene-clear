@@ -13,6 +13,8 @@ final readonly class BankTransactionFilter
         public ?int $amountMinCents = null,
         public ?int $amountMaxCents = null,
         public ?string $counterparty = null,
+        public string $sortColumn = 'value_date',
+        public string $sortDirection = 'desc',
     ) {
     }
 }

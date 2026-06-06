@@ -79,6 +79,8 @@ export interface BankTransactionFilter {
   amount_min_cents?: number
   amount_max_cents?: number
   counterparty?: string
+  sortBy?: string
+  sortDir?: string
   limit?: number
   offset?: number
 }
@@ -91,6 +93,8 @@ export function listBankTransactions(filter: BankTransactionFilter, signal?: Abo
   if (filter.amount_min_cents != null) q.set('amount_min_cents', String(filter.amount_min_cents))
   if (filter.amount_max_cents != null) q.set('amount_max_cents', String(filter.amount_max_cents))
   if (filter.counterparty) q.set('counterparty', filter.counterparty)
+  if (filter.sortBy) q.set('sort_by', filter.sortBy)
+  if (filter.sortDir) q.set('sort_dir', filter.sortDir)
   q.set('limit', String(filter.limit ?? 50))
   q.set('offset', String(filter.offset ?? 0))
   return api.get<ListEnvelope<BankTransaction>>(`${BASE}/bank-transactions?${q}`, signal)
@@ -188,9 +192,25 @@ export function listDunningNotices(params: { limit?: number; offset?: number }, 
 }
 
 // --- Audit trail (admin) ---
-export function listAuditEvents(params: { eventType?: string; limit?: number; offset?: number }, signal?: AbortSignal) {
+export interface AuditQuery {
+  eventType?: string
+  actorUserId?: string
+  occurredFrom?: string
+  occurredTo?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listAuditEvents(params: AuditQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
   if (params.eventType) q.set('event_type', params.eventType)
+  if (params.actorUserId) q.set('actor_user_id', params.actorUserId)
+  if (params.occurredFrom) q.set('occurred_from', params.occurredFrom)
+  if (params.occurredTo) q.set('occurred_to', params.occurredTo)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
   return api.get<ListEnvelope<AuditEvent>>(`${BASE}/audit-events?${q}`, signal)
 }
 

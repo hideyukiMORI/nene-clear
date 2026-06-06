@@ -39,6 +39,9 @@ final readonly class ListBankTransactionsHandler
 
         $counterparty = isset($q['counterparty']) && is_string($q['counterparty']) ? $q['counterparty'] : null;
 
+        $sortBy = isset($q['sort_by']) && is_string($q['sort_by']) && $q['sort_by'] !== '' ? $q['sort_by'] : 'value_date';
+        $sortDir = isset($q['sort_dir']) && is_string($q['sort_dir']) && $q['sort_dir'] !== '' ? $q['sort_dir'] : 'desc';
+
         $filter = new BankTransactionFilter(
             status: $status,
             valueDateFrom: $valueDateFrom,
@@ -46,6 +49,8 @@ final readonly class ListBankTransactionsHandler
             amountMinCents: $amountMinCents,
             amountMaxCents: $amountMaxCents,
             counterparty: $counterparty,
+            sortColumn: $sortBy,
+            sortDirection: $sortDir,
         );
 
         return $this->response->create((new PaginationResponse(
