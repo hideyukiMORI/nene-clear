@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Export;
 
 use NeneClear\Auth\AuthContext;
+use NeneClear\Reconciliation\ClientCreditFilter;
 use NeneClear\Reconciliation\ClientCreditRepositoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -26,10 +27,11 @@ final readonly class ExportClientCreditsCsvHandler
     {
         $organizationId = AuthContext::organizationId($request) ?? 0;
 
+        $filter = new ClientCreditFilter();
         $rows = [];
         $offset = 0;
         do {
-            $batch = $this->credits->findByOrganization($organizationId, self::BATCH, $offset);
+            $batch = $this->credits->findByOrganization($organizationId, $filter, self::BATCH, $offset);
             foreach ($batch as $credit) {
                 $rows[] = [
                     $credit->id ?? '',

@@ -88,21 +88,90 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
         );
     }
 
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, ClientCreditFilter $filter, int $limit, int $offset): array
     {
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $params[] = $limit;
+        $params[] = $offset;
+
         $rows = $this->query->fetchAll(
-            'SELECT ' . self::COLUMNS . ' FROM client_credits WHERE organization_id = ? ORDER BY id DESC LIMIT ? OFFSET ?',
-            [$organizationId, $limit, $offset],
+            'SELECT ' . self::COLUMNS . ' FROM client_credits WHERE ' . $where
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
+            $params,
         );
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function countByOrganization(int $organizationId): int
+    public function countByOrganization(int $organizationId, ClientCreditFilter $filter): int
     {
-        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM client_credits WHERE organization_id = ?', [$organizationId]);
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM client_credits WHERE ' . $where, $params);
 
         return (int) ($row['c'] ?? 0);
+    }
+
+    /**
+     * @return array{0: string, 1: list<string|int>}
+     */
+    private function whereClause(int $organizationId, ClientCreditFilter $filter): array
+    {
+        $clauses = ['organization_id = ?'];
+        /** @var list<string|int> $params */
+        $params = [$organizationId];
+
+        if ($filter->clientId !== null) {
+            $clauses[] = 'client_id = ?';
+            $params[] = $filter->clientId;
+        }
+        if ($filter->status !== null) {
+            $clauses[] = 'status = ?';
+            $params[] = $filter->status->value;
+        }
+        if ($filter->amountMinCents !== null) {
+            $clauses[] = 'amount_cents >= ?';
+            $params[] = $filter->amountMinCents;
+        }
+        if ($filter->amountMaxCents !== null) {
+            $clauses[] = 'amount_cents <= ?';
+            $params[] = $filter->amountMaxCents;
+        }
+        if ($filter->remainingMinCents !== null) {
+            $clauses[] = 'remaining_cents >= ?';
+            $params[] = $filter->remainingMinCents;
+        }
+        if ($filter->remainingMaxCents !== null) {
+            $clauses[] = 'remaining_cents <= ?';
+            $params[] = $filter->remainingMaxCents;
+        }
+        if ($filter->createdFrom !== null) {
+            $clauses[] = 'DATE(created_at) >= ?';
+            $params[] = $filter->createdFrom;
+        }
+        if ($filter->createdTo !== null) {
+            $clauses[] = 'DATE(created_at) <= ?';
+            $params[] = $filter->createdTo;
+        }
+
+        return [implode(' AND ', $clauses), $params];
+    }
+
+    /**
+     * Whitelisted ORDER BY — column and direction are mapped from a closed set,
+     * so user input is never interpolated into SQL.
+     */
+    private static function orderBy(ClientCreditFilter $filter): string
+    {
+        $column = match ($filter->sortColumn) {
+            'client_id' => 'client_id',
+            'amount_cents' => 'amount_cents',
+            'remaining_cents' => 'remaining_cents',
+            'created_at' => 'created_at',
+            default => 'id',
+        };
+        $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
+
+        return $column . ' ' . $direction . ', id DESC';
     }
 
     /**

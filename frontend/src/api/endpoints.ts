@@ -137,8 +137,33 @@ export function reverseReconciliation(id: number, reversalReason: string) {
 }
 
 // --- Client credits ---
-export function listClientCredits(params: { limit?: number; offset?: number }, signal?: AbortSignal) {
+export interface ClientCreditQuery {
+  clientId?: string
+  status?: string
+  amountMinCents?: number
+  amountMaxCents?: number
+  remainingMinCents?: number
+  remainingMaxCents?: number
+  createdFrom?: string
+  createdTo?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listClientCredits(params: ClientCreditQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+  if (params.clientId) q.set('client_id', params.clientId)
+  if (params.status) q.set('status', params.status)
+  if (params.amountMinCents != null) q.set('amount_min_cents', String(params.amountMinCents))
+  if (params.amountMaxCents != null) q.set('amount_max_cents', String(params.amountMaxCents))
+  if (params.remainingMinCents != null) q.set('remaining_min_cents', String(params.remainingMinCents))
+  if (params.remainingMaxCents != null) q.set('remaining_max_cents', String(params.remainingMaxCents))
+  if (params.createdFrom) q.set('created_from', params.createdFrom)
+  if (params.createdTo) q.set('created_to', params.createdTo)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
   return api.get<ListEnvelope<ClientCredit>>(`${BASE}/client-credits?${q}`, signal)
 }
 

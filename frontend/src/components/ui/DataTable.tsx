@@ -18,6 +18,33 @@ export function DataTable({ children, className }: DataTableProps) {
   )
 }
 
+export type SortDir = 'asc' | 'desc'
+export interface SortState { by: string; dir: SortDir }
+
+/** Toggle helper: same column flips direction; a new column starts ascending. */
+export function nextSort(current: SortState, column: string): SortState {
+  if (current.by === column) return { by: column, dir: current.dir === 'asc' ? 'desc' : 'asc' }
+  return { by: column, dir: 'asc' }
+}
+
+interface SortableThProps {
+  column: string
+  sort: SortState
+  onSort: (column: string) => void
+  children: ReactNode
+}
+
+/** A sortable column header (design 04): click to sort, shows ↑/↓ via aria-sort. */
+export function SortableTh({ column, sort, onSort, children }: SortableThProps) {
+  const active = sort.by === column
+  const ariaSort = active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : undefined
+  return (
+    <th className="sortable" aria-sort={ariaSort} onClick={() => onSort(column)}>
+      {children}<span className="sort-ic" />
+    </th>
+  )
+}
+
 interface TableStateRowProps {
   colSpan: number
   loading?: boolean
