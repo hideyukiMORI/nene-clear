@@ -16,16 +16,65 @@ function getToken(): string | null {
   return sessionStorage.getItem(STORAGE_KEY)
 }
 
+// Reactive auth store: the token lives in sessionStorage (so it survives a
+// reload), but mutations also notify subscribers. The auth shell (RequireAuth)
+// subscribes via useSyncExternalStore, so storing a token reveals the app and
+// clearing it (logout or an expired 401) shows the login screen in place —
+// without a hard navigation that would blank the page and lose the route.
+const authListeners = new Set<() => void>()
+
+function notifyAuthChange(): void {
+  for (const listener of authListeners) listener()
+}
+
+/** Subscribe to token changes (for useSyncExternalStore in the auth shell). */
+export function subscribeAuthChange(listener: () => void): () => void {
+  authListeners.add(listener)
+  return () => {
+    authListeners.delete(listener)
+  }
+}
+
 export function storeToken(token: string): void {
   sessionStorage.setItem(STORAGE_KEY, token)
+  notifyAuthChange()
 }
 
 export function clearToken(): void {
   sessionStorage.removeItem(STORAGE_KEY)
+  notifyAuthChange()
 }
 
+/**
+ * Decodes a JWT payload (base64url). Returns null for tokens that are not a
+ * three-part JWT (e.g. E2E stub tokens) or that fail to decode.
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+
+  try {
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    b64 += '='.repeat((4 - (b64.length % 4)) % 4)
+    return JSON.parse(atob(b64)) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+/**
+ * True when there is a token AND, if it is a decodable JWT, it has not expired.
+ * Non-JWT stub tokens (no `exp`) are treated as valid. Pure — safe to use as a
+ * useSyncExternalStore snapshot (it never mutates state).
+ */
 export function isAuthenticated(): boolean {
-  return getToken() !== null
+  const token = getToken()
+  if (token === null) return false
+
+  const claims = decodeJwtPayload(token)
+  const exp = claims !== null && typeof claims.exp === 'number' ? claims.exp : null
+
+  return exp === null || exp * 1000 > Date.now()
 }
 
 /**
@@ -38,17 +87,8 @@ export function getUserRole(): string | null {
   const token = getToken()
   if (token === null) return null
 
-  const parts = token.split('.')
-  if (parts.length !== 3) return null
-
-  try {
-    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
-    b64 += '='.repeat((4 - (b64.length % 4)) % 4)
-    const claims = JSON.parse(atob(b64)) as { role?: unknown }
-    return typeof claims.role === 'string' ? claims.role : null
-  } catch {
-    return null
-  }
+  const claims = decodeJwtPayload(token)
+  return claims !== null && typeof claims.role === 'string' ? claims.role : null
 }
 
 /** Admin-tier roles (admin or the cross-tenant superadmin). */
@@ -81,12 +121,12 @@ async function request<T>(
     signal,
   })
 
-  // A 401 on a normal call means the session expired → clear and bounce to login.
-  // The login endpoint itself is excluded: its 401 is "wrong credentials" and
-  // must surface to the form, not trigger a redirect loop.
+  // A 401 on a normal call means the session expired → clear the token. The auth
+  // shell reacts to that and shows the login screen in place, at the current URL,
+  // so re-logging in returns the user to the same screen. The login endpoint is
+  // excluded: its 401 is "wrong credentials" and must surface to the form.
   if (res.status === 401 && !path.includes('/auth/login')) {
     clearToken()
-    window.location.href = '/login'
     throw new ApiError(401, { type: 'unauthorized', title: 'Unauthorized', status: 401 })
   }
 

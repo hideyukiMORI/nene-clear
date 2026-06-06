@@ -75,5 +75,6 @@ test('scenario: locale switch + dunning send + too-frequent + logout', async ({ 
   // ── 6. Logout ───────────────────────────────────────────────────────────
   await logout(page)
   await page.goto('/admin')
-  await expect(page).toHaveURL(/\/login/)
+  // Reloading with the token cleared lands on the login form (in place).
+  await expect(page.locator('input[name="email"]')).toBeVisible()
 })

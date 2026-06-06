@@ -142,17 +142,19 @@ describe('401 handling', () => {
     })
   })
 
-  it('clears the token and redirects to /login on 401', async () => {
+  it('clears the token on 401 (auth shell shows login in place — no hard redirect)', async () => {
     storeToken('expired-jwt')
     fetchMock.mockResolvedValue(mockResponse({ ok: false, status: 401 }))
 
     await expect(api.get('/admin/x')).rejects.toBeInstanceOf(ApiError)
 
     expect(isAuthenticated()).toBe(false)
-    expect(window.location.href).toBe('/login')
+    // The token is cleared but the URL is left intact, so re-login returns the
+    // user to the same screen.
+    expect(window.location.href).toBe('')
   })
 
-  it('does NOT redirect on 401 from the login endpoint', async () => {
+  it('does NOT clear or redirect on 401 from the login endpoint', async () => {
     fetchMock.mockResolvedValue(
       mockResponse({
         ok: false,

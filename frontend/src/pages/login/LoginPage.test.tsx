@@ -1,13 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-const navigateMock = vi.fn()
 const loginMock = vi.fn()
 const storeTokenMock = vi.fn()
-
-vi.mock('react-router-dom', () => ({
-  useNavigate: () => navigateMock,
-}))
 
 vi.mock('@/api/endpoints', () => ({
   login: (email: string, password: string) => loginMock(email, password),
@@ -29,7 +24,6 @@ function fillAndSubmit(email: string, password: string) {
 
 describe('LoginPage', () => {
   beforeEach(() => {
-    navigateMock.mockReset()
     loginMock.mockReset()
     storeTokenMock.mockReset()
   })
@@ -41,7 +35,7 @@ describe('LoginPage', () => {
     expect(document.querySelector('input[name="password"]')).toBeInTheDocument()
   })
 
-  it('stores the token and navigates to /admin on success', async () => {
+  it('stores the token on success (the auth shell reveals the route in place)', async () => {
     loginMock.mockResolvedValue({ token: 'jwt-success' })
     render(<LoginPage />)
 
@@ -50,7 +44,6 @@ describe('LoginPage', () => {
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith('admin@acme.example', 'secret-pass')
       expect(storeTokenMock).toHaveBeenCalledWith('jwt-success')
-      expect(navigateMock).toHaveBeenCalledWith('/admin', { replace: true })
     })
   })
 
@@ -68,7 +61,7 @@ describe('LoginPage', () => {
         screen.getByText('メールアドレスまたはパスワードが正しくありません。'),
       ).toBeInTheDocument()
     })
-    expect(navigateMock).not.toHaveBeenCalled()
+    expect(storeTokenMock).not.toHaveBeenCalled()
   })
 
   it('blocks submit and does not call the API when fields are empty', async () => {

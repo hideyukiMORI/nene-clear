@@ -1,5 +1,6 @@
+import { useSyncExternalStore } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { isAuthenticated, isAdmin } from '@/api/client'
+import { isAuthenticated, isAdmin, subscribeAuthChange } from '@/api/client'
 import AppShell from '@/components/AppShell'
 import LoginPage from '@/pages/login/LoginPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
@@ -12,9 +13,17 @@ import SettingsPage from '@/pages/settings/SettingsPage'
 import UsersPage from '@/pages/users/UsersPage'
 import AuditLogPage from '@/pages/audit/AuditLogPage'
 
+/**
+ * Auth shell. Subscribes to the reactive token store so an expired/cleared
+ * session swaps the app for the login screen *in place* — same URL, no blank
+ * page, no hard redirect. Logging back in flips the store and reveals the route
+ * the user was on. (Honours the secure behaviour: the 401 handler clears the
+ * token; this just renders the consequence.)
+ */
 function RequireAuth({ children }: { children: React.ReactNode }) {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />
+  const authed = useSyncExternalStore(subscribeAuthChange, isAuthenticated, isAuthenticated)
+  if (!authed) {
+    return <LoginPage />
   }
   return <>{children}</>
 }
@@ -28,10 +37,6 @@ function RequireAdmin({ children }: { children: React.ReactNode }) {
 }
 
 export const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
   {
     path: '/admin',
     element: (
