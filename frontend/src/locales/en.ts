@@ -20,7 +20,7 @@ export const en: Record<MessageKey, string> = {
   'nav.dunning': 'Dunning',
   'nav.settings': 'Settings',
   'nav.users': 'Users',
-  'nav.auditLog': 'Audit Log',
+  'nav.auditLog': 'Audit logs',
   'nav.logout': 'Sign out',
 
   // ── Login ──
@@ -251,7 +251,7 @@ export const en: Record<MessageKey, string> = {
   'users.status.invited': 'Invited',
 
   // ── Audit log (operation history) ──
-  'audit.title': 'Audit Log',
+  'audit.title': 'Audit logs',
   'audit.subtitle': 'An audit trail recording who changed what, when, and how (before/after) for every operation.',
   'audit.filter.event': 'Event type',
   'audit.filter.all': 'All operations',

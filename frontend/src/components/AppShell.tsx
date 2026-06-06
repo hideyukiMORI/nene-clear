@@ -1,10 +1,12 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/hooks/useTranslation'
-import { clearToken } from '@/api/client'
+import { clearToken, isAdmin } from '@/api/client'
 import { Icon, LogoMark } from '@/components/ui'
 import type { MessageKey } from '@/locales'
 
-const NAV: Array<{ to: string; labelKey: MessageKey; icon: string; end?: boolean; badge?: number }> = [
+type NavEntry = { to: string; labelKey: MessageKey; icon: string; end?: boolean; badge?: number; adminOnly?: boolean }
+
+const NAV: NavEntry[] = [
   { to: '/admin', labelKey: 'nav.dashboard', icon: 'grid', end: true },
   { to: '/admin/bank-import', labelKey: 'nav.bankImport', icon: 'import' },
   { to: '/admin/bank-transactions', labelKey: 'bankTransaction.title', icon: 'table' },
@@ -13,10 +15,11 @@ const NAV: Array<{ to: string; labelKey: MessageKey; icon: string; end?: boolean
   { to: '/admin/dunning', labelKey: 'nav.dunning', icon: 'bell' },
 ]
 
-const ADMIN_NAV: Array<{ to: string; labelKey: MessageKey; icon: string }> = [
+const ADMIN_NAV: NavEntry[] = [
   { to: '/admin/settings', labelKey: 'nav.settings', icon: 'gear' },
   { to: '/admin/users', labelKey: 'nav.users', icon: 'users' },
-  { to: '/admin/audit-log', labelKey: 'nav.auditLog', icon: 'clock' },
+  // The audit log is administrators-only (backend gates it behind manage_users).
+  { to: '/admin/audit-log', labelKey: 'nav.auditLog', icon: 'clock', adminOnly: true },
 ]
 
 function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; label: string; badge?: number; end?: boolean }) {
@@ -36,6 +39,8 @@ function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; la
 export default function AppShell() {
   const { t, locale, switchLocale } = useTranslation()
   const navigate = useNavigate()
+  const admin = isAdmin()
+  const adminNav = ADMIN_NAV.filter(item => !item.adminOnly || admin)
 
   function handleLogout() {
     clearToken()
@@ -58,7 +63,7 @@ export default function AppShell() {
             <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} badge={item.badge} end={item.end} />
           ))}
           <div className="side-sect">{t('nav.section.admin')}</div>
-          {ADMIN_NAV.map(item => (
+          {adminNav.map(item => (
             <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
           ))}
         </nav>
