@@ -8,6 +8,7 @@ import type { UpstreamInvoice } from '@/types'
 import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDateTime, daysOverdue } from '@/utils/format'
 
 // ─── Send confirm modal ───
@@ -92,6 +93,14 @@ export default function DunningPage() {
 
   const activePauses = new Set((pausesQ.data?.items ?? []).map(p => p.invoice_id))
 
+  // Row cursor (j/k) targets the actionable "eligible invoices" list; Enter/o
+  // opens the send dialog for the cursored invoice (skipped when paused).
+  const eligibleRows = invoicesQ.data?.items ?? []
+  const cursor = useRowCursor(eligibleRows.length, (i) => {
+    const inv = eligibleRows[i]
+    if (inv && !activePauses.has(inv.invoice_id)) setSendTarget(inv)
+  })
+
   return (
     <>
       <PageHead title={t('dunning.title')} sub={t('dunning.subtitle')} />
@@ -130,12 +139,12 @@ export default function DunningPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={6} loading={invoicesQ.isLoading} empty={invoicesQ.data?.items.length === 0} emptyKey="dunning.noEligible" />
-            {invoicesQ.data?.items.map(inv => {
+            {invoicesQ.data?.items.map((inv, index) => {
               const paused = activePauses.has(inv.invoice_id)
               const elap = daysOverdue(inv.due_at)
               const daysNum = parseInt(elap)
               return (
-                <tr key={inv.invoice_id} className={paused ? 'dim' : ''}>
+                <tr key={inv.invoice_id} data-kbd-row={index} className={[paused ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                   <td className="strong mono">{inv.invoice_number}</td>
                   <td>
                     {inv.status === 'overdue' ? <Badge variant="bad" dot>{t('dunning.status.overdue')}</Badge> : <Badge variant="warn" dot>{t('dunning.status.partial')}</Badge>}

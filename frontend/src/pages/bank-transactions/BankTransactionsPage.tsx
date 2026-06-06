@@ -6,6 +6,7 @@ import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, Filte
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 import { yen } from '@/utils/format'
 
 const PAGE = 20
@@ -49,6 +50,10 @@ export default function BankTransactionsPage() {
   function onSort(col: string) { setSort(s => nextSort(s, col)); setApplied(p => ({ ...p, offset: 0 })) }
 
   const total = txQ.data?.total ?? 0
+
+  // Read-only ledger: j/k move the row cursor; there is no per-row "open" action.
+  const rows = txQ.data?.items ?? []
+  const cursor = useRowCursor(rows.length, () => undefined)
 
   return (
     <>
@@ -105,8 +110,8 @@ export default function BankTransactionsPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={4} loading={txQ.isLoading} empty={txQ.data?.items.length === 0} />
-            {txQ.data?.items.map(tx => (
-              <tr key={tx.bank_transaction_id} className={tx.status === 'voided' ? 'dim' : ''}>
+            {txQ.data?.items.map((tx, index) => (
+              <tr key={tx.bank_transaction_id} data-kbd-row={index} className={[tx.status === 'voided' ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                 <td className="muted">{tx.value_date}</td>
                 <td className="num">{yen(tx.amount_cents)}</td>
                 <td className="strong">{tx.counterparty_text}</td>

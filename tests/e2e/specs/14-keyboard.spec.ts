@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { apiRoute, json, list, bypassLogin } from '../fixtures/helpers'
+import { apiRoute, json, list, user, bypassLogin } from '../fixtures/helpers'
 
 /**
  * Keyboard shortcuts + command palette, wired through the real AppShell mount.
@@ -60,5 +60,30 @@ test.describe('Keyboard shortcuts', () => {
 
     await page.keyboard.press('/')
     await expect(page.locator('[data-kbd="search"]')).toBeFocused()
+  })
+
+  test('list cursor: j highlights a row, Enter opens its action', async ({ page }) => {
+    await apiRoute(page, '**/admin/users?**', (route) =>
+      json(
+        route,
+        200,
+        list([
+          user({ user_id: 1, email: 'a@acme.example', role: 'admin', status: 'active' }),
+          user({ user_id: 2, email: 'b@acme.example', role: 'viewer', status: 'active' }),
+        ]),
+      ),
+    )
+    await page.goto('/admin/users')
+    await expect(page.getByText('a@acme.example')).toBeVisible()
+
+    // No cursor until j; then the first row is highlighted.
+    await expect(page.locator('tr.is-cursor')).toHaveCount(0)
+    await page.keyboard.press('j')
+    await expect(page.locator('tr.is-cursor')).toHaveCount(1)
+    await expect(page.getByRole('row', { name: /a@acme.example/ })).toHaveClass(/is-cursor/)
+
+    // Enter opens the cursored row's primary action (delete confirmation).
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('dialog')).toBeVisible()
   })
 })

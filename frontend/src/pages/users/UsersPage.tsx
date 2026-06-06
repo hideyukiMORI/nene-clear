@@ -5,6 +5,7 @@ import type { User } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 
 type Role = 'admin' | 'member' | 'viewer'
 
@@ -78,6 +79,13 @@ export default function UsersPage() {
 
   const usersQ = useQuery({ queryKey: ['users'], queryFn: ({ signal }) => listUsers({ limit: 100 }, signal) })
 
+  // Row cursor (j/k); Enter/o opens the delete confirmation for the cursored user.
+  const rows = usersQ.data?.items ?? []
+  const cursor = useRowCursor(rows.length, (i) => {
+    const u = rows[i]
+    if (u) setDeleteTarget(u)
+  })
+
   return (
     <>
       <PageHead
@@ -93,8 +101,8 @@ export default function UsersPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={5} loading={usersQ.isLoading} empty={usersQ.data?.items.length === 0} />
-            {usersQ.data?.items.map(u => (
-              <tr key={u.user_id}>
+            {usersQ.data?.items.map((u, index) => (
+              <tr key={u.user_id} data-kbd-row={index} className={cursor === index ? 'is-cursor' : undefined}>
                 <td className="strong">{u.email}</td>
                 <td><StatusBadge map={ROLE_MAP} value={u.role} /></td>
                 <td><StatusBadge map={STATUS_MAP} value={u.status} dot /></td>

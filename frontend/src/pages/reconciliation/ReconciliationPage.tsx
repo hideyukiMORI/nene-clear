@@ -10,6 +10,7 @@ import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/utils/format'
 
 const RECON_STATUS: Record<Reconciliation['status'], StatusMeta> = {
@@ -172,6 +173,19 @@ export default function ReconciliationPage() {
   function hOnSort(col: string) { setHSort(s => nextSort(s, col)); setHApplied(p => ({ ...p, offset: 0 })) }
   const hTotal = reconciliationsQ.data?.total ?? 0
 
+  // Row cursor (j/k) for the active tab; Enter/o opens the row's primary action.
+  const unmatchedRows = unmatchedQ.data?.items ?? []
+  const historyRows = reconciliationsQ.data?.items ?? []
+  const cursor = useRowCursor(tab === 'unmatched' ? unmatchedRows.length : historyRows.length, (i) => {
+    if (tab === 'unmatched') {
+      const tx = unmatchedRows[i]
+      if (tx) setMatchTarget(tx)
+    } else {
+      const r = historyRows[i]
+      if (r && r.status === 'confirmed') setReverseTarget(r)
+    }
+  })
+
   return (
     <>
       <PageHead
@@ -201,8 +215,8 @@ export default function ReconciliationPage() {
             </thead>
             <tbody>
               <TableStateRow colSpan={5} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyKey="reconciliation.noUnmatched" />
-              {unmatchedQ.data?.items.map(tx => (
-                <tr key={tx.bank_transaction_id}>
+              {unmatchedQ.data?.items.map((tx, index) => (
+                <tr key={tx.bank_transaction_id} data-kbd-row={index} className={cursor === index ? 'is-cursor' : undefined}>
                   <td className="muted">{tx.value_date}</td>
                   <td className="num">{yen(tx.amount_cents)}</td>
                   <td className="strong">{tx.counterparty_text}</td>
@@ -258,8 +272,8 @@ export default function ReconciliationPage() {
             </thead>
             <tbody>
               <TableStateRow colSpan={5} loading={reconciliationsQ.isLoading} empty={reconciliationsQ.data?.items.length === 0} />
-              {reconciliationsQ.data?.items.map(r => (
-                <tr key={r.payment_reconciliation_id} className={r.status === 'reversed' ? 'dim' : ''}>
+              {reconciliationsQ.data?.items.map((r, index) => (
+                <tr key={r.payment_reconciliation_id} data-kbd-row={index} className={[r.status === 'reversed' ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                   <td className="muted">{r.payment_reconciliation_id}</td>
                   <td className="mono">#{r.bank_transaction_id}</td>
                   <td><StatusBadge map={RECON_STATUS} value={r.status} dot /></td>
