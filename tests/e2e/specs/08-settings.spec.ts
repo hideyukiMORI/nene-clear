@@ -15,13 +15,14 @@ test.describe('Settings — dunning interval + connection test', () => {
   test('loads current settings and bank accounts', async ({ page }) => {
     await page.goto('/admin/settings')
 
-    await expect(page.locator('input[type="number"]')).toHaveValue('7')
-    await expect(page.getByText(/テスト銀行/)).toBeVisible()
+    await expect(page.getByTestId('dunning-interval')).toHaveValue('7')
+    // The bank name is now an editable field, so assert its value rather than text.
+    await expect(page.locator('.acct-card input').first()).toHaveValue('テスト銀行')
   })
 
   test('save shows the saved confirmation', async ({ page }) => {
     await page.goto('/admin/settings')
-    await page.locator('input[type="number"]').fill('14')
+    await page.getByTestId('dunning-interval').fill('14')
     await page.getByRole('button', { name: '保存' }).click()
 
     await expect(page.getByText('保存しました')).toBeVisible()
@@ -37,10 +38,10 @@ test.describe('Settings — dunning interval + connection test', () => {
     })
 
     await page.goto('/admin/settings')
-    await page.locator('input[type="number"]').fill('0')
+    await page.getByTestId('dunning-interval').fill('0')
     await page.getByRole('button', { name: '保存' }).click()
 
-    // zod min(1) blocks the request and shows a field error.
+    // The client guard (min 1) blocks the request and shows a field error.
     await page.waitForTimeout(300)
     expect(putCalled).toBe(false)
   })

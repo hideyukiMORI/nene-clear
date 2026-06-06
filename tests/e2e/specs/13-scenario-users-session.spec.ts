@@ -54,24 +54,24 @@ test('scenario: user admin → 409 → modal reset → delete → 401 expiry →
 
   // ── 2. Invite a user (success) → list grows ─────────────────────────────
   await page.getByRole('button', { name: 'ユーザーを招待' }).click()
-  await page.locator('.fixed input[type="email"]').fill('new@acme.example')
-  await page.locator('.fixed').getByRole('button', { name: 'ユーザーを招待' }).click()
-  await expect(page.locator('.fixed')).toHaveCount(0)
+  await page.getByRole('dialog').getByRole('textbox').fill('new@acme.example')
+  await page.getByRole('dialog').getByRole('button', { name: '招待を送信' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('new@acme.example')).toBeVisible()
 
   // ── 3. Invite again → 409 shown inside the modal ────────────────────────
   await page.getByRole('button', { name: 'ユーザーを招待' }).click()
-  await page.locator('.fixed input[type="email"]').fill('dup@acme.example')
-  await page.locator('.fixed').getByRole('button', { name: 'ユーザーを招待' }).click()
+  await page.getByRole('dialog').getByRole('textbox').fill('dup@acme.example')
+  await page.getByRole('dialog').getByRole('button', { name: '招待を送信' }).click()
   await expect(page.getByText('そのメールアドレスはすでに使用されています。')).toBeVisible()
 
   // ── 4. Cancel, then reopen — the modal must be clean (no stale error) ────
-  await page.locator('.fixed').getByRole('button', { name: 'キャンセル' }).click()
-  await expect(page.locator('.fixed')).toHaveCount(0)
+  await page.getByRole('dialog').getByRole('button', { name: 'キャンセル' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.getByRole('button', { name: 'ユーザーを招待' }).click()
   await expect(page.getByText('そのメールアドレスはすでに使用されています。')).toHaveCount(0)
-  await expect(page.locator('.fixed input[type="email"]')).toHaveValue('')
-  await page.locator('.fixed').getByRole('button', { name: 'キャンセル' }).click()
+  await expect(page.getByRole('dialog').getByRole('textbox')).toHaveValue('')
+  await page.getByRole('dialog').getByRole('button', { name: 'キャンセル' }).click()
 
   // ── 5. Delete a user → confirm → list shrinks ───────────────────────────
   await page
@@ -79,8 +79,8 @@ test('scenario: user admin → 409 → modal reset → delete → 401 expiry →
     .getByRole('button', { name: '削除' })
     .click()
   await expect(page.getByText('このユーザーを削除しますか？')).toBeVisible()
-  await page.locator('.fixed').getByRole('button', { name: '削除' }).click()
-  await expect(page.locator('.fixed')).toHaveCount(0)
+  await page.getByRole('dialog').getByRole('button', { name: '削除' }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('old@acme.example')).toHaveCount(0)
 
   // ── 6. Session expires → next data load bounces to /login ───────────────

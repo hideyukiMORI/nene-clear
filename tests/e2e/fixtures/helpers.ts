@@ -172,6 +172,22 @@ export function dunningNotice(over: Record<string, unknown> = {}) {
   }
 }
 
+/** Eligible upstream invoice as surfaced on the dunning screen. */
+export function upstreamInvoice(over: Record<string, unknown> = {}) {
+  return {
+    invoice_id: 123,
+    invoice_number: 'INV-2026-009',
+    client_id: 45,
+    issued_at: '2026-03-31',
+    due_at: '2026-04-30',
+    total_cents: 110000,
+    outstanding_cents: 110000,
+    status: 'overdue',
+    currency: 'JPY',
+    ...over,
+  }
+}
+
 export function user(over: Record<string, unknown> = {}) {
   return {
     user_id: 1,

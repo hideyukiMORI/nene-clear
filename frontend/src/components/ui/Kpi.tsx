@@ -8,6 +8,8 @@ interface KpiProps {
   value: ReactNode
   sub?: ReactNode
   accent?: KpiAccent
+  /** Optional stable hook for tests (renders data-testid on the card). */
+  testId?: string
 }
 
 const accentClass: Record<KpiAccent, string> = {
@@ -17,9 +19,9 @@ const accentClass: Record<KpiAccent, string> = {
   bad: 'kpi badn',
 }
 
-export function Kpi({ icon, label, value, sub, accent = 'default' }: KpiProps) {
+export function Kpi({ icon, label, value, sub, accent = 'default', testId }: KpiProps) {
   return (
-    <div className={accentClass[accent]}>
+    <div className={accentClass[accent]} data-testid={testId}>
       <div className="kpi-top">
         <span className="kpi-ic">{icon}</span>
         {label}

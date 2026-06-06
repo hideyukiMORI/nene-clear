@@ -50,10 +50,11 @@ test.describe('Bank import — upload + reverse boundaries', () => {
     await page.goto('/admin/bank-import')
     await page.getByRole('button', { name: '取消' }).first().click()
 
-    const confirmBtn = page.locator('.fixed').getByRole('button', { name: '取消' })
+    const dialog = page.getByRole('dialog')
+    const confirmBtn = dialog.getByRole('button', { name: '取消' })
     await expect(confirmBtn).toBeDisabled()
 
-    await page.locator('.fixed input[type="text"]').fill('誤った取込のため')
+    await dialog.getByRole('textbox').fill('誤った取込のため')
     await expect(confirmBtn).toBeEnabled()
   })
 
@@ -64,11 +65,11 @@ test.describe('Bank import — upload + reverse boundaries', () => {
 
     await page.goto('/admin/bank-import')
     await page.getByRole('button', { name: '取消' }).first().click()
-    await page.locator('.fixed input[type="text"]').fill('誤った取込のため')
-    await page.locator('.fixed').getByRole('button', { name: '取消' }).click()
+    await page.getByRole('dialog').getByRole('textbox').fill('誤った取込のため')
+    await page.getByRole('dialog').getByRole('button', { name: '取消' }).click()
 
     // Dialog closes (reversal reason input disappears).
-    await expect(page.locator('.fixed input[type="text"]')).toHaveCount(0)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
   test('reversed batch row shows no reverse button', async ({ page }) => {

@@ -26,7 +26,7 @@ export function Modal({ open, onClose, title, sub, children, footer, size = 'def
 
   return (
     <div className="modal-scrim" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className={modalClass}>
+      <div className={modalClass} role="dialog" aria-modal="true" aria-label={title}>
         <div className="modal-head">
           <div>
             <h3>{title}</h3>

@@ -29,7 +29,7 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
     await page.getByRole('button', { name: '消込を確定' }).first().click()
 
     // Fill the allocation (invoice id + amount in yen).
-    const modal = page.locator('.fixed')
+    const modal = page.getByRole('dialog')
     await modal.locator('input[type="number"]').nth(0).fill('1')
     await modal.locator('input[type="number"]').nth(1).fill('1100')
     await modal.getByRole('button', { name: '消込を確定' }).click()
@@ -47,12 +47,12 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
 
     await page.goto('/admin/reconciliation')
     await page.getByRole('button', { name: '消込を確定' }).first().click()
-    const modal = page.locator('.fixed')
+    const modal = page.getByRole('dialog')
     await modal.locator('input[type="number"]').nth(0).fill('1')
     await modal.locator('input[type="number"]').nth(1).fill('1100')
     await modal.getByRole('button', { name: '消込を確定' }).click()
 
-    await expect(page.locator('.fixed')).toHaveCount(0)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
   test('history: reverse button disabled until reason entered, then succeeds', async ({ page }) => {
@@ -65,13 +65,13 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
     await page.getByRole('button', { name: '消込一覧' }).click()
     await page.getByRole('button', { name: '消込を取消' }).first().click()
 
-    const confirmBtn = page.locator('.fixed').getByRole('button', { name: '消込を取消' })
+    const confirmBtn = page.getByRole('dialog').getByRole('button', { name: '消込を取消' })
     await expect(confirmBtn).toBeDisabled()
-    await page.locator('.fixed input[type="text"]').fill('オペレーター誤操作')
+    await page.getByRole('dialog').getByRole('textbox').fill('オペレーター誤操作')
     await expect(confirmBtn).toBeEnabled()
     await confirmBtn.click()
 
-    await expect(page.locator('.fixed')).toHaveCount(0)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
   test('reverse of an already-reversed match (409) shows the conflict', async ({ page }) => {
@@ -85,8 +85,8 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
     await page.goto('/admin/reconciliation')
     await page.getByRole('button', { name: '消込一覧' }).click()
     await page.getByRole('button', { name: '消込を取消' }).first().click()
-    await page.locator('.fixed input[type="text"]').fill('二重取消')
-    await page.locator('.fixed').getByRole('button', { name: '消込を取消' }).click()
+    await page.getByRole('dialog').getByRole('textbox').fill('二重取消')
+    await page.getByRole('dialog').getByRole('button', { name: '消込を取消' }).click()
 
     await expect(page.getByText('この消込はすでに取り消されています。')).toBeVisible()
   })

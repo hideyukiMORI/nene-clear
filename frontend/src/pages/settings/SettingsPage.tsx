@@ -19,11 +19,23 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
   const [testing, setTesting] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [intervalError, setIntervalError] = useState('')
 
   const saveMut = useMutation({
     mutationFn: () => updateClearSettings({ upstream_base_url: upstreamUrl, upstream_token_ref: upstreamToken, dunning_min_interval_days: dunningInterval, bank_accounts: accounts } as Partial<ClearSettings>),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['clear-settings'] }); setSaved(true); setTimeout(() => setSaved(false), 3000) },
   })
+
+  // The dunning interval must be at least one day. Guard client-side so an
+  // invalid value never reaches the API (mirrors the upstream constraint).
+  function handleSave() {
+    if (!Number.isInteger(dunningInterval) || dunningInterval < 1) {
+      setIntervalError(t('settings.intervalError'))
+      return
+    }
+    setIntervalError('')
+    saveMut.mutate()
+  }
 
   async function handleTest() {
     setTestResult(null); setTesting(true)
@@ -58,7 +70,8 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
         <div className="form-row">
           <div className="field">
             <label>{t('settings.dunningInterval')}</label>
-            <input className="inp tnum" type="number" value={dunningInterval} style={{ width: 120 }} onChange={e => setDunningInterval(Number(e.target.value))} />
+            <input className="inp tnum" type="number" min={1} data-testid="dunning-interval" value={dunningInterval} style={{ width: 120 }} onChange={e => setDunningInterval(Number(e.target.value))} />
+            {intervalError && <span className="field-error" style={{ color: 'var(--bad)', fontSize: 12 }}>{intervalError}</span>}
           </div>
         </div>
       </div>
@@ -111,7 +124,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
           : <span />
         }
         {saveMut.isError && <Notice variant="bad">{saveMut.error.message}</Notice>}
-        <Button variant="primary" disabled={saveMut.isPending} onClick={() => saveMut.mutate()}>
+        <Button variant="primary" disabled={saveMut.isPending} onClick={handleSave}>
           <Icon name="check" />{saveMut.isPending ? t('common.saving') : t('settings.save')}
         </Button>
       </CardFoot>
