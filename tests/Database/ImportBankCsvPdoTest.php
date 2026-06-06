@@ -6,6 +6,7 @@ namespace NeneClear\Tests\Database;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
@@ -60,7 +61,7 @@ final class ImportBankCsvPdoTest extends TestCase
             fn () => $accounts,
             fn () => $batches,
             fn () => $transactions,
-            fn () => new PdoAuditEventRepository($this->query),
+            fn () => new AuditRecorder(new PdoAuditEventRepository($this->query)),
             new BankCsvParser(),
             new FixedClock(),
         );

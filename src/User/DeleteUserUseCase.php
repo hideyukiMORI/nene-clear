@@ -8,19 +8,18 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class DeleteUserUseCase implements DeleteUserUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): UserRepositoryInterface $users
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $users,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -32,7 +31,7 @@ final readonly class DeleteUserUseCase implements DeleteUserUseCaseInterface
         $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $tx) use ($id, $callerOrganizationId, $actorUserId): void {
                 $users = ($this->users)($tx);
-                $auditEvents = ($this->auditEvents)($tx);
+                $auditRecorder = ($this->auditRecorder)($tx);
 
                 $user = $users->findById($id);
 
@@ -45,21 +44,15 @@ final readonly class DeleteUserUseCase implements DeleteUserUseCaseInterface
 
                 // Audit: deletion carries the prior state (`before` only) so the removed
                 // account's identity and privileges remain reconstructable.
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $user->organizationId ?? 0,
-                    eventType: 'user_deleted',
-                    actorUserId: $actorUserId,
-                    occurredAt: $now,
-                    payload: [
-                        'before' => [
-                            'user_id' => $user->id,
-                            'email' => $user->email,
-                            'role' => $user->role->value,
-                            'status' => $user->status->value,
-                            'organization_id' => $user->organizationId,
-                        ],
-                    ],
-                ));
+                $auditRecorder->record(
+                    $user->organizationId ?? 0,
+                    $actorUserId,
+                    $now,
+                    'user_deleted',
+                    'user',
+                    $user->id,
+                    ['before' => UserResponse::toArray($user)],
+                );
             },
         );
     }

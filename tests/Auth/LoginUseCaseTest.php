@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Auth;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\Auth\InvalidCredentialsException;
 use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginInput;
@@ -30,7 +31,7 @@ final class LoginUseCaseTest extends TestCase
         return new LoginUseCase(
             $users,
             new JwtTokenService(secret: 'test-secret-test-secret-32chars!'),
-            $this->audit,
+            new AuditRecorder($this->audit),
             new FixedClock('2026-06-01T10:00:00+00:00'),
         );
     }

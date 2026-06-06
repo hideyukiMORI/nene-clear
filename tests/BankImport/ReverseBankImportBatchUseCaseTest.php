@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\BankImport;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\BankImportBatch;
 use NeneClear\BankImport\BankImportBatchAlreadyReversedException;
 use NeneClear\BankImport\BankImportBatchHasMatchedLinesException;
@@ -34,7 +35,7 @@ final class ReverseBankImportBatchUseCaseTest extends TestCase
             new FakeTransactionManager(),
             fn () => $this->batches,
             fn () => $this->transactions,
-            fn () => $this->audit,
+            fn () => new AuditRecorder($this->audit),
             new FixedClock(),
         );
     }

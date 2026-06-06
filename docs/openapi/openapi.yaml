@@ -1154,6 +1154,17 @@ paths:
           description: Filter by exact event type (see terminology registry §audit event types).
           schema:
             type: string
+        - name: entity_type
+          in: query
+          description: Filter by subject record type (see terminology registry §audit entity types).
+          schema:
+            type: string
+        - name: entity_id
+          in: query
+          description: Filter by subject record id (use together with entity_type).
+          schema:
+            type: integer
+            format: int64
       responses:
         '200':
           description: A page of audit events.
@@ -1961,7 +1972,7 @@ components:
 
     AuditEvent:
       type: object
-      required: [audit_event_id, organization_id, event_type, occurred_at, payload]
+      required: [audit_event_id, organization_id, event_type, entity_type, occurred_at, payload]
       properties:
         audit_event_id:
           type: integer
@@ -1972,6 +1983,14 @@ components:
         event_type:
           type: string
           description: Exact event type string (see terminology registry §audit event types).
+        entity_type:
+          type: string
+          description: Subject record type (see terminology registry §audit entity types).
+        entity_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Subject record id; null when there is no single subject (e.g. failed login).
         actor_user_id:
           type: integer
           format: int64

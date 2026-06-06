@@ -8,8 +8,7 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\BankImport\BankTransactionStatus;
@@ -22,7 +21,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
      * @param Closure(DatabaseQueryExecutorInterface): ReconciliationRepositoryInterface $reconciliations
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
@@ -31,7 +30,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
         private Closure $reconciliations,
         private Closure $clientCredits,
         private InvoiceUpstreamClientInterface $invoiceClient,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -100,7 +99,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 $reconciliations = ($this->reconciliations)($ex);
                 $transactions = ($this->transactions)($ex);
                 $clientCredits = ($this->clientCredits)($ex);
-                $auditEvents = ($this->auditEvents)($ex);
+                $auditRecorder = ($this->auditRecorder)($ex);
 
                 $reconciliationId = $reconciliations->save(new Reconciliation(
                     organizationId: $input->organizationId,
@@ -149,12 +148,14 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                     ));
                 }
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId,
-                    eventType: 'reconciliation_confirmed',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $now,
-                    payload: [
+                $auditRecorder->record(
+                    $input->organizationId,
+                    $input->actorUserId,
+                    $now,
+                    'reconciliation_confirmed',
+                    'payment_reconciliation',
+                    $reconciliationId,
+                    [
                         'before' => [
                             'bank_transaction_status' => $tx->status->value,
                             'bank_transaction_amount_cents' => $tx->amountCents,
@@ -181,7 +182,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                             ),
                         ],
                     ],
-                ));
+                );
 
                 return new ConfirmMatchOutput(reconciliationId: $reconciliationId);
             },

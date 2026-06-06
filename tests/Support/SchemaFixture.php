@@ -130,6 +130,8 @@ final class SchemaFixture
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 organization_id INTEGER NOT NULL,
                 event_type TEXT NOT NULL,
+                entity_type TEXT NOT NULL DEFAULT \'\',
+                entity_id INTEGER,
                 actor_user_id INTEGER NOT NULL,
                 occurred_at TEXT NOT NULL,
                 payload_json TEXT NOT NULL

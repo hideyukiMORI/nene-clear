@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\User;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\Auth\Role;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
 use NeneClear\Tests\Support\FakeTransactionManager;
@@ -26,7 +27,7 @@ final class UpdateUserUseCaseTest extends TestCase
 
     private function useCase(InMemoryUserRepository $repo): UpdateUserUseCase
     {
-        return new UpdateUserUseCase(new FakeTransactionManager(), fn () => $repo, fn () => $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new UpdateUserUseCase(new FakeTransactionManager(), fn () => $repo, fn () => new AuditRecorder($this->audit), new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     private function seedUser(int $orgId = 7): InMemoryUserRepository

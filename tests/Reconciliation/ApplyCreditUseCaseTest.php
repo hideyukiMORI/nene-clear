@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Reconciliation;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceItem;
 use NeneClear\Reconciliation\ApplyCreditInput;
@@ -34,7 +35,7 @@ final class ApplyCreditUseCaseTest extends TestCase
             new NullQueryExecutor(),
             fn () => $this->clientCredits,
             $this->invoiceClient,
-            fn () => $this->audit,
+            fn () => new AuditRecorder($this->audit),
         );
     }
 

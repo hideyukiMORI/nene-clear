@@ -18,6 +18,8 @@ final class InMemoryAuditEventRepository implements AuditEventRepositoryInterfac
         $this->events[] = new AuditEvent(
             organizationId: $event->organizationId,
             eventType: $event->eventType,
+            entityType: $event->entityType,
+            entityId: $event->entityId,
             actorUserId: $event->actorUserId,
             occurredAt: $event->occurredAt,
             payload: $event->payload,
@@ -27,12 +29,20 @@ final class InMemoryAuditEventRepository implements AuditEventRepositoryInterfac
         return $id;
     }
 
-    public function findByOrganization(int $organizationId, ?string $eventType, int $limit, int $offset): array
-    {
+    public function findByOrganization(
+        int $organizationId,
+        ?string $eventType,
+        ?string $entityType,
+        ?int $entityId,
+        int $limit,
+        int $offset,
+    ): array {
         $matches = array_values(array_filter(
             $this->events,
             static fn (AuditEvent $e): bool => $e->organizationId === $organizationId
-                && ($eventType === null || $e->eventType === $eventType),
+                && ($eventType === null || $e->eventType === $eventType)
+                && ($entityType === null || $e->entityType === $entityType)
+                && ($entityId === null || $e->entityId === $entityId),
         ));
 
         // Newest first, mirroring the SQL `ORDER BY id DESC`.
@@ -41,12 +51,18 @@ final class InMemoryAuditEventRepository implements AuditEventRepositoryInterfac
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countByOrganization(int $organizationId, ?string $eventType): int
-    {
+    public function countByOrganization(
+        int $organizationId,
+        ?string $eventType,
+        ?string $entityType,
+        ?int $entityId,
+    ): int {
         return count(array_filter(
             $this->events,
             static fn (AuditEvent $e): bool => $e->organizationId === $organizationId
-                && ($eventType === null || $e->eventType === $eventType),
+                && ($eventType === null || $e->eventType === $eventType)
+                && ($entityType === null || $e->entityType === $entityType)
+                && ($entityId === null || $e->entityId === $entityId),
         ));
     }
 }

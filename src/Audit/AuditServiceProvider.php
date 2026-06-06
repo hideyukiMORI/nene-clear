@@ -26,6 +26,14 @@ final readonly class AuditServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
                 ),
             )
+            // Non-transactional recorder (e.g. login auditing). Transactional use
+            // cases build their own recorder from the transaction executor instead.
+            ->set(
+                AuditRecorderInterface::class,
+                static fn (ContainerInterface $c): AuditRecorderInterface => new AuditRecorder(
+                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                ),
+            )
             ->set(
                 AuditRouteRegistrar::class,
                 static fn (ContainerInterface $c): AuditRouteRegistrar => new AuditRouteRegistrar(

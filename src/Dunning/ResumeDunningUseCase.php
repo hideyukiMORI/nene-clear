@@ -8,19 +8,18 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class ResumeDunningUseCase
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): DunningPauseRepositoryInterface $pauses
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $pauses,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -33,21 +32,23 @@ final readonly class ResumeDunningUseCase
         $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $ex) use ($organizationId, $invoiceId, $actorUserId, $now): void {
                 $pauses = ($this->pauses)($ex);
-                $auditEvents = ($this->auditEvents)($ex);
+                $auditRecorder = ($this->auditRecorder)($ex);
 
                 $pauses->resumeByInvoice($organizationId, $invoiceId, $actorUserId, $now);
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $organizationId,
-                    eventType: 'dunning_resumed',
-                    actorUserId: $actorUserId,
-                    occurredAt: $now,
-                    payload: [
+                $auditRecorder->record(
+                    $organizationId,
+                    $actorUserId,
+                    $now,
+                    'dunning_resumed',
+                    'invoice',
+                    $invoiceId,
+                    [
                         'invoice_id' => $invoiceId,
                         'before' => ['is_paused' => true],
                         'after' => ['is_paused' => false],
                     ],
-                ));
+                );
             },
         );
     }

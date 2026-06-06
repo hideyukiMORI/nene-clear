@@ -8,8 +8,7 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\BankAccountRepositoryInterface;
 
 /**
@@ -23,13 +22,13 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
     /**
      * @param Closure(DatabaseQueryExecutorInterface): ClearSettingsRepositoryInterface $settings
      * @param Closure(DatabaseQueryExecutorInterface): BankAccountRepositoryInterface $bankAccounts
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $settings,
         private Closure $bankAccounts,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -45,7 +44,7 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
             function (DatabaseQueryExecutorInterface $ex) use ($input, $now): ClearSettings {
                 $settingsRepo = ($this->settings)($ex);
                 $bankAccounts = ($this->bankAccounts)($ex);
-                $auditEvents = ($this->auditEvents)($ex);
+                $auditRecorder = ($this->auditRecorder)($ex);
 
                 $before = $settingsRepo->findByOrganization($input->organizationId);
 
@@ -71,16 +70,18 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
                         $input->dunningMinIntervalDays,
                     );
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId,
-                    eventType: 'clear_settings_updated',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $now,
-                    payload: [
+                $auditRecorder->record(
+                    $input->organizationId,
+                    $input->actorUserId,
+                    $now,
+                    'clear_settings_updated',
+                    'clear_settings',
+                    $input->organizationId,
+                    [
                         'before' => $before !== null ? self::snapshot($before) : null,
                         'after' => self::snapshot($updated),
                     ],
-                ));
+                );
 
                 return $updated;
             },

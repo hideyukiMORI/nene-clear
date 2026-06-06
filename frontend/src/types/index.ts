@@ -144,6 +144,9 @@ export interface AuditEvent {
   audit_event_id: number
   organization_id: number
   event_type: AuditEventType
+  // Subject record the event changed (terminology §audit entity types).
+  entity_type: string
+  entity_id: number | null
   actor_user_id: number
   occurred_at: string
   payload: Record<string, unknown>
