@@ -5,6 +5,7 @@ import type { ClientCredit } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/utils/format'
 
 function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => void }) {
@@ -92,6 +93,13 @@ export default function ClientCreditsPage() {
 
   const total = creditsQ.data?.total ?? 0
 
+  // Row cursor (j/k); Enter/o opens the apply dialog for the cursored credit.
+  const rows = creditsQ.data?.items ?? []
+  const cursor = useRowCursor(rows.length, (i) => {
+    const c = rows[i]
+    if (c && c.status === 'open') setApplyTarget(c)
+  })
+
   return (
     <>
       <PageHead title={t('clientCredit.title')} sub={t('clientCredit.subtitle')} />
@@ -154,8 +162,8 @@ export default function ClientCreditsPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={8} loading={creditsQ.isLoading} empty={creditsQ.data?.items.length === 0} emptyKey="filter.noMatch" />
-            {creditsQ.data?.items.map(c => (
-              <tr key={c.client_credit_id} className={c.status === 'voided' ? 'dim' : ''}>
+            {creditsQ.data?.items.map((c, index) => (
+              <tr key={c.client_credit_id} data-kbd-row={index} className={[c.status === 'voided' ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                 <td className="muted">{c.client_credit_id}</td>
                 <td className="strong">#{c.client_id}</td>
                 <td className="num">{yen(c.amount_cents)}</td>

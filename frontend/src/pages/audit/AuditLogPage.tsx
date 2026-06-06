@@ -5,6 +5,7 @@ import type { AuditEvent, AuditEventType } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead, DatePicker, SortableTh, nextSort } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 import { formatDateTime } from '@/utils/format'
 
 const PAGE = 20
@@ -111,6 +112,13 @@ export default function AuditLogPage() {
 
   const total = auditQ.data?.total ?? 0
 
+  // Row cursor (j/k); Enter/o toggles the cursored event's detail panel.
+  const rows = auditQ.data?.items ?? []
+  const cursor = useRowCursor(rows.length, (i) => {
+    const event = rows[i]
+    if (event) toggle(event.audit_event_id)
+  })
+
   return (
     <>
       <PageHead title={t('audit.title')} sub={t('audit.subtitle')} />
@@ -153,11 +161,11 @@ export default function AuditLogPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={4} loading={auditQ.isLoading} empty={auditQ.data?.items.length === 0} emptyKey="audit.empty" />
-            {auditQ.data?.items.map(event => {
+            {auditQ.data?.items.map((event, index) => {
               const isOpen = expanded.has(event.audit_event_id)
               return (
                 <Fragment key={event.audit_event_id}>
-                  <tr>
+                  <tr data-kbd-row={index} className={cursor === index ? 'is-cursor' : undefined}>
                     <td className="muted">{formatDateTime(event.occurred_at)}</td>
                     <td><StatusBadge map={EVENT_META} value={event.event_type} dot fallback={event.event_type} /></td>
                     <td>{actorLabel(event.actor_user_id)}</td>

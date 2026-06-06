@@ -5,6 +5,7 @@ import type { BankImportBatch } from '@/types'
 import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useRowCursor } from '@/components/keyboard'
 import { formatDate } from '@/utils/format'
 
 const BATCH_STATUS: Record<BankImportBatch['status'], StatusMeta> = {
@@ -81,6 +82,13 @@ export default function BankImportPage() {
   function clearBatches() { setFileName(''); setBStatus(''); setRowMin(''); setRowMax(''); setImpFrom(''); setImpTo(''); setApplied({ fileName: '', status: '', rowMin: '', rowMax: '', impFrom: '', impTo: '', offset: 0 }) }
   function onSortBatches(col: string) { setSort(s => nextSort(s, col)); setApplied(p => ({ ...p, offset: 0 })) }
   const batchTotal = batchQ.data?.total ?? 0
+
+  // Row cursor (j/k); Enter/o opens the reverse dialog for the cursored batch.
+  const batchRows = batchQ.data?.items ?? []
+  const cursor = useRowCursor(batchRows.length, (i) => {
+    const b = batchRows[i]
+    if (b && b.status === 'imported') setReverseTarget(b)
+  })
 
   const uploadMut = useMutation({
     mutationFn: ({ id, file }: { id: number; file: File }) => importBankCsv(id, file),
@@ -195,8 +203,8 @@ export default function BankImportPage() {
           </thead>
           <tbody>
             <TableStateRow colSpan={6} loading={batchQ.isLoading} empty={batchQ.data?.items.length === 0} />
-            {batchQ.data?.items.map(b => (
-              <tr key={b.bank_import_batch_id} className={b.status === 'reversed' ? 'dim' : ''}>
+            {batchQ.data?.items.map((b, index) => (
+              <tr key={b.bank_import_batch_id} data-kbd-row={index} className={[b.status === 'reversed' ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                 <td className="muted">{b.bank_import_batch_id}</td>
                 <td className="strong mono">{b.source_filename}</td>
                 <td className="num">{b.row_count}</td>
