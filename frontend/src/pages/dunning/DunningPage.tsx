@@ -166,7 +166,7 @@ export default function DunningPage() {
         <FilterField label={t('table.invoiceNumber')}>
           <div className="inp-icon">
             <Icon name="search" />
-            <input className="inp" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
+            <input className="inp" data-kbd="search" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
           </div>
         </FilterField>
         <FilterField label={t('table.recipient')}>

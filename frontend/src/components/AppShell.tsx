@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/hooks/useTranslation'
 import { clearToken, isAdmin } from '@/api/client'
 import { Icon, LogoMark } from '@/components/ui'
+import { KeyboardShortcuts, openShortcutsOverlay } from '@/components/keyboard'
 import type { MessageKey } from '@/locales'
 
 type NavEntry = { to: string; labelKey: MessageKey; icon: string; end?: boolean; badge?: number; adminOnly?: boolean }
@@ -93,6 +94,14 @@ export default function AppShell() {
               <button className={locale === 'ja' ? 'on' : ''} onClick={() => switchLocale('ja')}>JA</button>
               <button className={locale === 'en' ? 'on' : ''} onClick={() => switchLocale('en')}>EN</button>
             </div>
+            <button
+              className="iconbtn"
+              title={t('shortcuts.open')}
+              aria-label={t('shortcuts.open')}
+              onClick={() => openShortcutsOverlay()}
+            >
+              <kbd className="kbd" aria-hidden="true">?</kbd>
+            </button>
             <span className="sep" />
             <button className="iconbtn" title={t('nav.logout')} onClick={handleLogout}>
               <Icon name="logout" />
@@ -105,6 +114,9 @@ export default function AppShell() {
           </div>
         </div>
       </div>
+
+      {/* Global keyboard dispatcher — mounted once, inside the authenticated shell. */}
+      <KeyboardShortcuts />
     </div>
   )
 }

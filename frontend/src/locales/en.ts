@@ -285,4 +285,16 @@ export const en: Record<MessageKey, string> = {
   'audit.event.organization_deleted': 'Organization deleted',
   'audit.event.login_succeeded': 'Login succeeded',
   'audit.event.login_failed': 'Login failed',
+
+  // ── Keyboard shortcuts / command palette ──
+  'shortcuts.title': 'Keyboard shortcuts',
+  'shortcuts.titleEn': 'Keyboard shortcuts',
+  'shortcuts.footHint': 'Press ? to reopen',
+  'shortcuts.footModMac': 'Modifier shown as ⌘ on macOS',
+  'shortcuts.footModOther': 'Modifier shown as Ctrl',
+  'shortcuts.open': 'Keyboard shortcuts (?)',
+  'commandPalette.title': 'Command palette',
+  'commandPalette.titleEn': 'Command palette',
+  'commandPalette.hint': 'Select with j / k or ↑ ↓, Enter to go',
+  'actions.close': 'Close',
 }

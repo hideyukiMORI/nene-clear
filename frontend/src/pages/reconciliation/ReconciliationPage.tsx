@@ -230,7 +230,7 @@ export default function ReconciliationPage() {
             </select>
           </FilterField>
           <FilterField label={t('table.invoiceId')}>
-            <input className="inp tnum" type="number" placeholder="#" style={{ width: 110 }} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
+            <input className="inp tnum" data-kbd="search" type="number" placeholder="#" style={{ width: 110 }} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
           </FilterField>
           <FilterField label={t('table.confirmedAt')}>
             <div className="range-pair">

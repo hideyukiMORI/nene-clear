@@ -281,6 +281,18 @@ export const ja = {
   'audit.event.organization_deleted': '組織削除',
   'audit.event.login_succeeded': 'ログイン成功',
   'audit.event.login_failed': 'ログイン失敗',
+
+  // ── Keyboard shortcuts / command palette ──
+  'shortcuts.title': 'キーボードショートカット',
+  'shortcuts.titleEn': 'Keyboard shortcuts',
+  'shortcuts.footHint': '? で再表示',
+  'shortcuts.footModMac': '修飾キーは macOS で ⌘ と表示',
+  'shortcuts.footModOther': '修飾キーは Ctrl と表示',
+  'shortcuts.open': 'ショートカット一覧 (?)',
+  'commandPalette.title': 'コマンドパレット',
+  'commandPalette.titleEn': 'Command palette',
+  'commandPalette.hint': 'j / k・↑ ↓ で選択、Enter で移動',
+  'actions.close': '閉じる',
 } as const
 
 export type MessageKey = keyof typeof ja

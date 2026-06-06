@@ -87,7 +87,7 @@ export default function BankTransactionsPage() {
         <FilterField label={t('table.counterparty')}>
           <div className="inp-icon">
             <Icon name="search" />
-            <input className="inp" placeholder={t('common.search')} style={{ paddingLeft: 32 }} value={counterparty} onChange={e => setCounterparty(e.target.value)} />
+            <input className="inp" data-kbd="search" placeholder={t('common.search')} style={{ paddingLeft: 32 }} value={counterparty} onChange={e => setCounterparty(e.target.value)} />
           </div>
         </FilterField>
         <Button variant="primary" onClick={search}><Icon name="search" />{t('common.search')}</Button>

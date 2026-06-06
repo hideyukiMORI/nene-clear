@@ -149,7 +149,7 @@ export default function BankImportPage() {
         <FilterField label={t('table.fileName')}>
           <div className="inp-icon">
             <Icon name="search" />
-            <input className="inp" style={{ paddingLeft: 32, width: 160 }} placeholder={t('common.search')} value={fileName} onChange={e => setFileName(e.target.value)} />
+            <input className="inp" data-kbd="search" style={{ paddingLeft: 32, width: 160 }} placeholder={t('common.search')} value={fileName} onChange={e => setFileName(e.target.value)} />
           </div>
         </FilterField>
         <FilterField label={t('table.status')}>
