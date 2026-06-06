@@ -51,7 +51,7 @@ export default function AppShell() {
     <div className="app">
       <aside className="side">
         <div className="side-brand">
-          <LogoMark height={24} />
+          <LogoMark height={26} className="logo-mark" />
           <div>
             <b>NeNe Clear</b>
             <small>AR Suite</small>
