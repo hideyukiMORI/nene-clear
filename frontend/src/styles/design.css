@@ -97,6 +97,7 @@
 
 /* ========================================================================= */
 *{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
 html,body{ margin:0; height:100%; }
 body{
   font-family:var(--font);
@@ -129,6 +130,7 @@ svg.ic-lg{ width:22px; height:22px; }
   border-bottom:1px solid var(--side-line);
   color:var(--side-fg-strong);
 }
+.side-brand .logo-mark{ width:26px; height:26px; flex:none; }
 .side-brand b{ font-size:15px; font-weight:700; letter-spacing:.02em; }
 .side-brand small{ display:block; font-size:10px; font-weight:400; letter-spacing:.14em;
   color:var(--side-fg); text-transform:uppercase; margin-top:1px; }
@@ -188,7 +190,10 @@ svg.ic-lg{ width:22px; height:22px; }
 .sep{ width:1px; height:24px; background:var(--line); }
 
 .scroll{ flex:1; overflow-y:auto; }
-.page{ padding:24px 28px 60px; max-width:1240px; }
+/* Fluid content: fills the viewport on wide/4K monitors instead of
+   cramming into a narrow left column; centers past a generous max so
+   ultra-wide screens stay balanced rather than over-stretched. */
+.page{ padding:24px clamp(28px,2.6vw,56px) 60px; max-width:1760px; margin:0 auto; }
 
 /* page header */
 .page-head{
@@ -287,7 +292,7 @@ table.tbl tbody tr:hover{ background:var(--navy-50); }
 table.tbl td.num{ font-variant-numeric:tabular-nums; font-weight:600; color:var(--ink); }
 table.tbl td.strong{ font-weight:600; color:var(--ink); }
 table.tbl td.muted{ color:var(--faint); }
-table.tbl .row-act{ display:flex; gap:6px; }
+table.tbl .row-act{ display:flex; gap:6px; justify-content:flex-end; }
 table.tbl tbody tr.dim{ opacity:.55; }
 .tbl-foot{ display:flex; align-items:center; justify-content:space-between;
   padding:11px 18px; border-top:1px solid var(--line); font-size:12.5px; color:var(--muted); }
@@ -429,6 +434,7 @@ select.inp{ appearance:none; padding-right:32px;
     linear-gradient(180deg, rgba(255,255,255,.04), transparent 30%);
   pointer-events:none; }
 .login-aside .brand{ display:flex; align-items:center; gap:12px; position:relative; z-index:1; }
+.login-aside .brand .logo-mark{ width:36px; height:36px; }
 .login-aside .brand b{ font-size:20px; font-weight:700; letter-spacing:.02em; }
 .login-grid{ position:absolute; inset:0; opacity:.4;
   background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
@@ -502,10 +508,43 @@ hr.div{ border:0; border-top:1px solid var(--line); margin:0; }
 .twk-seg button.on{ background:var(--surface); color:var(--navy-600);
   box-shadow:0 1px 2px rgba(10,22,40,.12); }
 
-/* responsive: stack login + collapse sidebar a touch */
+/* ───────── Responsive login ─────────
+   Wide (>980px): two-column (navy aside + form).
+   Tablet (≤980px): navy "hero band" on top, form below.
+   Phone (≤560px): condensed band, comfortable form. */
 @media (max-width:980px){
-  .login{ grid-template-columns:1fr; }
-  .login-aside{ display:none; }
+  .login{ display:flex; flex-direction:column; height:auto; min-height:100vh; }
+  .login-aside{
+    display:flex; flex:none;
+    justify-content:flex-start; gap:22px;
+    padding:30px 34px 28px;
+  }
+  .login-aside .pitch{ max-width:none; }
+  .login-aside .pitch h2{ font-size:22px; margin-bottom:10px; }
+  .login-aside .pitch p{ font-size:12.5px; line-height:1.7; max-width:520px; }
+  .login-aside .feats{ flex-direction:row; flex-wrap:wrap; gap:9px; }
+  .login-aside .feat{
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.11);
+    border-radius:999px; padding:7px 13px 7px 9px; font-size:12px; gap:8px; color:#d9e2ec;
+  }
+  .login-aside .feat .fi{ width:22px; height:22px; }
+  .login-aside .feat .fi .ic{ width:13px; height:13px; }
+  .login-main{ flex:1; padding:40px 34px 48px; }
+  .login-card{ max-width:440px; margin:0 auto; }
+}
+@media (max-width:560px){
+  .login-aside{ padding:24px 22px; gap:16px; }
+  .login-aside .brand .logo-mark{ width:30px; height:30px; }
+  .login-aside .brand b{ font-size:17px; }
+  .login-aside .pitch h2{ font-size:18px; line-height:1.5; margin-bottom:0; }
+  .login-aside .pitch h2 br{ display:none; }
+  .login-aside .pitch p{ display:none; }
+  .login-aside .feats{ display:none; }
+  .login-main{ padding:30px 22px 40px; }
+  .login-card .lh{ margin-bottom:22px; }
+  .login-card .lh h1{ font-size:20px; }
+  .login-card form .spread{ flex-wrap:wrap; row-gap:11px; }
+  .login-card form .spread > *{ white-space:nowrap; }
 }
 
 /* =========================================================================

@@ -34,7 +34,7 @@ export default function LoginPage() {
       <div className="login-aside">
         <div className="login-grid" />
         <div className="brand">
-          <LogoMark height={32} />
+          <LogoMark height={36} className="logo-mark" />
           <b>NeNe Clear</b>
         </div>
         <div className="pitch">
