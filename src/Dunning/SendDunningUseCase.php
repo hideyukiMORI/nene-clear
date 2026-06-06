@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace NeneClear\Dunning;
 
+use Closure;
 use DateInterval;
 use DateTimeImmutable;
+use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
 use NeneClear\Audit\AuditEvent;
 use NeneClear\Audit\AuditEventRepositoryInterface;
@@ -19,15 +22,24 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
     private const int DEFAULT_MIN_INTERVAL_DAYS = 7;
     private const string TEMPLATE_VERSION = '1.0';
 
+    /**
+     * @param DatabaseQueryExecutorInterface $reader executor for pre-transaction reads
+     * @param Closure(DatabaseQueryExecutorInterface): DunningNoticeRepositoryInterface $notices
+     * @param Closure(DatabaseQueryExecutorInterface): ClearSettingsRepositoryInterface $clearSettings
+     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param ?Closure(DatabaseQueryExecutorInterface): DunningPauseRepositoryInterface $pauses
+     */
     public function __construct(
-        private DunningNoticeRepositoryInterface $notices,
-        private ClearSettingsRepositoryInterface $clearSettings,
+        private DatabaseTransactionManagerInterface $transactionManager,
+        private DatabaseQueryExecutorInterface $reader,
+        private Closure $notices,
+        private Closure $clearSettings,
         private InvoiceUpstreamClientInterface $invoiceClient,
         private DunningMailerInterface $mailer,
-        private AuditEventRepositoryInterface $auditEvents,
+        private Closure $auditEvents,
         private ClockInterface $clock,
         private MessageCatalog $catalog,
-        private ?DunningPauseRepositoryInterface $pauses = null,
+        private ?Closure $pauses = null,
     ) {
     }
 
@@ -39,15 +51,15 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             throw new InvoiceAlreadyPaidException($input->invoiceId, $invoice->status);
         }
 
-        $pause = $this->pauses?->findActiveByInvoice($input->organizationId, $input->invoiceId);
+        $pause = ($this->pauses)?->__invoke($this->reader)->findActiveByInvoice($input->organizationId, $input->invoiceId);
         if ($pause !== null) {
             throw new DunningPausedException($input->invoiceId, $pause->pausedReason);
         }
 
-        $settings = $this->clearSettings->findByOrganization($input->organizationId);
+        $settings = ($this->clearSettings)($this->reader)->findByOrganization($input->organizationId);
         $minIntervalDays = $settings !== null ? $settings->dunningMinIntervalDays : self::DEFAULT_MIN_INTERVAL_DAYS;
 
-        $lastNotice = $this->notices->findLastByInvoice($input->organizationId, $input->invoiceId);
+        $lastNotice = ($this->notices)($this->reader)->findLastByInvoice($input->organizationId, $input->invoiceId);
         if ($lastNotice !== null) {
             $lastSentAt = new DateTimeImmutable($lastNotice->sentAt);
             $nextAllowed = $lastSentAt->add(new DateInterval('P' . $minIntervalDays . 'D'));
@@ -88,7 +100,43 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             sentAt: $nowStr,
         );
 
-        $noticeId = $this->notices->save($notice);
+        // Record the notice and its audit event atomically first (Issue #122), then
+        // send the email. The mailer is an external side effect kept OUTSIDE the
+        // transaction: recording before sending means a delivery failure leaves an
+        // honest "attempted" trail rather than an un-recordable already-sent email.
+        $noticeId = $this->transactionManager->transactional(
+            function (DatabaseQueryExecutorInterface $ex) use ($input, $invoice, $client, $notice, $nowStr, $lastNotice): int {
+                $notices = ($this->notices)($ex);
+                $auditEvents = ($this->auditEvents)($ex);
+
+                $noticeId = $notices->save($notice);
+
+                $auditEvents->record(new AuditEvent(
+                    organizationId: $input->organizationId,
+                    eventType: 'dunning_sent',
+                    actorUserId: $input->actorUserId,
+                    occurredAt: $nowStr,
+                    payload: [
+                        'dunning_notice_id' => $noticeId,
+                        'invoice_id' => $input->invoiceId,
+                        'before' => [
+                            'invoice_status' => $invoice->status,
+                            'invoice_outstanding_cents' => $invoice->outstandingCents,
+                            'previous_dunning_sent_at' => $lastNotice?->sentAt,
+                        ],
+                        'after' => [
+                            'invoice_number' => $invoice->invoiceNumber,
+                            'recipient_email' => $client->recipientEmail,
+                            'outstanding_at_send_cents' => $invoice->outstandingCents,
+                            'channel' => $this->mailer->channel(),
+                            'template_version' => self::TEMPLATE_VERSION,
+                        ],
+                    ],
+                ));
+
+                return $noticeId;
+            },
+        );
 
         $this->mailer->send(new DunningMailPayload(
             to: $client->recipientEmail,
@@ -97,29 +145,6 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             organizationId: $input->organizationId,
             invoiceId: $input->invoiceId,
             dunningNoticeId: $noticeId,
-        ));
-
-        $this->auditEvents->record(new AuditEvent(
-            organizationId: $input->organizationId,
-            eventType: 'dunning_sent',
-            actorUserId: $input->actorUserId,
-            occurredAt: $nowStr,
-            payload: [
-                'dunning_notice_id' => $noticeId,
-                'invoice_id' => $input->invoiceId,
-                'before' => [
-                    'invoice_status' => $invoice->status,
-                    'invoice_outstanding_cents' => $invoice->outstandingCents,
-                    'previous_dunning_sent_at' => $lastNotice?->sentAt,
-                ],
-                'after' => [
-                    'invoice_number' => $invoice->invoiceNumber,
-                    'recipient_email' => $client->recipientEmail,
-                    'outstanding_at_send_cents' => $invoice->outstandingCents,
-                    'channel' => $this->mailer->channel(),
-                    'template_version' => self::TEMPLATE_VERSION,
-                ],
-            ],
         ));
 
         return new SendDunningOutput(dunningNoticeId: $noticeId);

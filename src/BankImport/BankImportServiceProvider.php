@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace NeneClear\BankImport;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Container\ContainerInterface;
@@ -44,10 +46,11 @@ final readonly class BankImportServiceProvider implements ServiceProviderInterfa
             ->set(
                 ImportBankCsvUseCaseInterface::class,
                 static fn (ContainerInterface $c): ImportBankCsvUseCaseInterface => new ImportBankCsvUseCase(
-                    ServiceResolver::get($c, BankAccountRepositoryInterface::class),
-                    ServiceResolver::get($c, BankImportBatchRepositoryInterface::class),
-                    ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankImportBatchRepositoryInterface => new PdoBankImportBatchRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     new BankCsvParser(),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
@@ -55,9 +58,10 @@ final readonly class BankImportServiceProvider implements ServiceProviderInterfa
             ->set(
                 ReverseBankImportBatchUseCaseInterface::class,
                 static fn (ContainerInterface $c): ReverseBankImportBatchUseCaseInterface => new ReverseBankImportBatchUseCase(
-                    ServiceResolver::get($c, BankImportBatchRepositoryInterface::class),
-                    ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankImportBatchRepositoryInterface => new PdoBankImportBatchRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

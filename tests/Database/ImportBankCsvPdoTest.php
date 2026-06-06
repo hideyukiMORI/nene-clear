@@ -15,6 +15,7 @@ use NeneClear\BankImport\ImportBankCsvUseCase;
 use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\BankImport\PdoBankImportBatchRepository;
 use NeneClear\BankImport\PdoBankTransactionRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\Tests\Support\SchemaFixture;
 use PHPUnit\Framework\TestCase;
@@ -55,10 +56,11 @@ final class ImportBankCsvPdoTest extends TestCase
         $transactions = new PdoBankTransactionRepository($this->query);
 
         $this->useCase = new ImportBankCsvUseCase(
-            $accounts,
-            $batches,
-            $transactions,
-            new PdoAuditEventRepository($this->query),
+            new FakeTransactionManager(),
+            fn () => $accounts,
+            fn () => $batches,
+            fn () => $transactions,
+            fn () => new PdoAuditEventRepository($this->query),
             new BankCsvParser(),
             new FixedClock(),
         );

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace NeneClear\User;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Container\ContainerInterface;
@@ -44,24 +46,27 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
             ->set(
                 CreateUserUseCaseInterface::class,
                 static fn (ContainerInterface $c): CreateUserUseCaseInterface => new CreateUserUseCase(
-                    ServiceResolver::get($c, UserRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
                 UpdateUserUseCaseInterface::class,
                 static fn (ContainerInterface $c): UpdateUserUseCaseInterface => new UpdateUserUseCase(
-                    ServiceResolver::get($c, UserRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
                 DeleteUserUseCaseInterface::class,
                 static fn (ContainerInterface $c): DeleteUserUseCaseInterface => new DeleteUserUseCase(
-                    ServiceResolver::get($c, UserRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

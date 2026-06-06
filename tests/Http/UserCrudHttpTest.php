@@ -29,7 +29,8 @@ final class UserCrudHttpTest extends TestCase
     protected function setUp(): void
     {
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-usercrud-', true) . '.sqlite';
-        $query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
+        $kit = DatabaseTestKit::sqlite($this->dbPath);
+        $query = $kit->queryExecutor;
         SchemaFixture::createUsers($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createAuditEvents($query);
@@ -39,7 +40,7 @@ final class UserCrudHttpTest extends TestCase
         $users->save($this->user('member@acme.example', Role::Member, 7));
         $this->crossTenantUserId = $users->save($this->user('other@org8.example', Role::Member, 8));
 
-        $this->app = ApplicationFactory::create(query: $query, jwtSecret: self::SECRET);
+        $this->app = ApplicationFactory::create(query: $query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET);
         $this->psr17 = new Psr17Factory();
     }
 

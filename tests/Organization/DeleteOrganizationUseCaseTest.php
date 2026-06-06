@@ -8,6 +8,7 @@ use NeneClear\Organization\DeleteOrganizationUseCase;
 use NeneClear\Organization\Organization;
 use NeneClear\Organization\OrganizationNotFoundException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
@@ -22,7 +23,7 @@ final class DeleteOrganizationUseCaseTest extends TestCase
 
     private function useCase(InMemoryOrganizationRepository $repo): DeleteOrganizationUseCase
     {
-        return new DeleteOrganizationUseCase($repo, $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new DeleteOrganizationUseCase(new FakeTransactionManager(), fn () => $repo, fn () => $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     public function test_deletes_existing_organization(): void

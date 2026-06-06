@@ -7,6 +7,7 @@ namespace NeneClear\Tests\Dunning;
 use NeneClear\Dunning\PauseDunningUseCase;
 use NeneClear\Dunning\ResumeDunningUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
@@ -23,8 +24,8 @@ final class PauseDunningUseCaseTest extends TestCase
         $this->pauses = new InMemoryDunningPauseRepository();
         $this->audit = new InMemoryAuditEventRepository();
         $this->clock = new FixedClock('2026-06-01T10:00:00+00:00');
-        $this->pauseUseCase = new PauseDunningUseCase($this->pauses, $this->audit, $this->clock);
-        $this->resumeUseCase = new ResumeDunningUseCase($this->pauses, $this->audit, $this->clock);
+        $this->pauseUseCase = new PauseDunningUseCase(new FakeTransactionManager(), fn () => $this->pauses, fn () => $this->audit, $this->clock);
+        $this->resumeUseCase = new ResumeDunningUseCase(new FakeTransactionManager(), fn () => $this->pauses, fn () => $this->audit, $this->clock);
     }
 
     public function test_pause_creates_record_and_audit_event(): void

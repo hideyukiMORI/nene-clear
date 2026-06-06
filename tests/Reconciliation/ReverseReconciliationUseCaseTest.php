@@ -19,7 +19,9 @@ use NeneClear\Reconciliation\ReverseReconciliationInput;
 use NeneClear\Reconciliation\ReverseReconciliationUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
 use NeneClear\Tests\BankImport\InMemoryBankTransactionRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
+use NeneClear\Tests\Support\NullQueryExecutor;
 use PHPUnit\Framework\TestCase;
 
 final class ReverseReconciliationUseCaseTest extends TestCase
@@ -42,19 +44,23 @@ final class ReverseReconciliationUseCaseTest extends TestCase
 
         $clock = new FixedClock();
         $this->confirmUseCase = new ConfirmMatchUseCase(
-            $this->transactions,
-            $this->reconciliations,
-            $this->clientCredits,
+            new FakeTransactionManager(),
+            new NullQueryExecutor(),
+            fn () => $this->transactions,
+            fn () => $this->reconciliations,
+            fn () => $this->clientCredits,
             $this->invoiceClient,
-            $this->audit,
+            fn () => $this->audit,
             $clock,
         );
         $this->reverseUseCase = new ReverseReconciliationUseCase(
-            $this->reconciliations,
-            $this->clientCredits,
-            $this->transactions,
+            new FakeTransactionManager(),
+            new NullQueryExecutor(),
+            fn () => $this->reconciliations,
+            fn () => $this->clientCredits,
+            fn () => $this->transactions,
             $this->invoiceClient,
-            $this->audit,
+            fn () => $this->audit,
             $clock,
         );
     }

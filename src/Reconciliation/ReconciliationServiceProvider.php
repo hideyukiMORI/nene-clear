@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
+use NeneClear\BankImport\PdoBankTransactionRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
@@ -48,31 +51,37 @@ final readonly class ReconciliationServiceProvider implements ServiceProviderInt
             ->set(
                 ConfirmMatchUseCaseInterface::class,
                 static fn (ContainerInterface $c): ConfirmMatchUseCaseInterface => new ConfirmMatchUseCase(
-                    ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
-                    ServiceResolver::get($c, ReconciliationRepositoryInterface::class),
-                    ServiceResolver::get($c, ClientCreditRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ReconciliationRepositoryInterface => new PdoReconciliationRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClientCreditRepositoryInterface => new PdoClientCreditRepository($tx),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
                 ReverseReconciliationUseCaseInterface::class,
                 static fn (ContainerInterface $c): ReverseReconciliationUseCaseInterface => new ReverseReconciliationUseCase(
-                    ServiceResolver::get($c, ReconciliationRepositoryInterface::class),
-                    ServiceResolver::get($c, ClientCreditRepositoryInterface::class),
-                    ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): ReconciliationRepositoryInterface => new PdoReconciliationRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClientCreditRepositoryInterface => new PdoClientCreditRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
                 ApplyCreditUseCaseInterface::class,
                 static fn (ContainerInterface $c): ApplyCreditUseCaseInterface => new ApplyCreditUseCase(
-                    ServiceResolver::get($c, ClientCreditRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClientCreditRepositoryInterface => new PdoClientCreditRepository($tx),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                 ),
             )
             ->set(

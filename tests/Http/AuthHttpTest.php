@@ -30,7 +30,8 @@ final class AuthHttpTest extends TestCase
     protected function setUp(): void
     {
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-auth-', true) . '.sqlite';
-        $this->query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
+        $kit = DatabaseTestKit::sqlite($this->dbPath);
+        $this->query = $kit->queryExecutor;
         SchemaFixture::createUsers($this->query);
         SchemaFixture::createLoginAttempts($this->query);
         SchemaFixture::createAuditEvents($this->query);
@@ -43,7 +44,7 @@ final class AuthHttpTest extends TestCase
             organizationId: 7,
         ));
 
-        $this->app = ApplicationFactory::create(query: $this->query, jwtSecret: self::SECRET);
+        $this->app = ApplicationFactory::create(query: $this->query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET);
         $this->psr17 = new Psr17Factory();
     }
 

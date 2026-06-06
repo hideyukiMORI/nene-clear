@@ -4,15 +4,23 @@ declare(strict_types=1);
 
 namespace NeneClear\Dunning;
 
+use Closure;
+use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
 use NeneClear\Audit\AuditEvent;
 use NeneClear\Audit\AuditEventRepositoryInterface;
 
 final readonly class PauseDunningUseCase
 {
+    /**
+     * @param Closure(DatabaseQueryExecutorInterface): DunningPauseRepositoryInterface $pauses
+     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     */
     public function __construct(
-        private DunningPauseRepositoryInterface $pauses,
-        private AuditEventRepositoryInterface $auditEvents,
+        private DatabaseTransactionManagerInterface $transactionManager,
+        private Closure $pauses,
+        private Closure $auditEvents,
         private ClockInterface $clock,
     ) {
     }
@@ -21,40 +29,48 @@ final readonly class PauseDunningUseCase
     {
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
-        $existing = $this->pauses->findActiveByInvoice($organizationId, $invoiceId);
-        if ($existing !== null) {
-            return $existing;
-        }
+        // The pause insert and its audit record commit (or roll back) together (Issue #122).
+        return $this->transactionManager->transactional(
+            function (DatabaseQueryExecutorInterface $ex) use ($organizationId, $invoiceId, $actorUserId, $reason, $now): DunningPause {
+                $pauses = ($this->pauses)($ex);
+                $auditEvents = ($this->auditEvents)($ex);
 
-        $pause = new DunningPause(
-            organizationId: $organizationId,
-            invoiceId: $invoiceId,
-            pausedBy: $actorUserId,
-            pausedAt: $now,
-            pausedReason: $reason,
-        );
+                $existing = $pauses->findActiveByInvoice($organizationId, $invoiceId);
+                if ($existing !== null) {
+                    return $existing;
+                }
 
-        $id = $this->pauses->save($pause);
+                $pause = new DunningPause(
+                    organizationId: $organizationId,
+                    invoiceId: $invoiceId,
+                    pausedBy: $actorUserId,
+                    pausedAt: $now,
+                    pausedReason: $reason,
+                );
 
-        $this->auditEvents->record(new AuditEvent(
-            organizationId: $organizationId,
-            eventType: 'dunning_paused',
-            actorUserId: $actorUserId,
-            occurredAt: $now,
-            payload: [
-                'invoice_id' => $invoiceId,
-                'before' => ['is_paused' => false],
-                'after' => ['is_paused' => true, 'reason' => $reason],
-            ],
-        ));
+                $id = $pauses->save($pause);
 
-        return new DunningPause(
-            organizationId: $pause->organizationId,
-            invoiceId: $pause->invoiceId,
-            pausedBy: $pause->pausedBy,
-            pausedAt: $pause->pausedAt,
-            pausedReason: $pause->pausedReason,
-            id: $id,
+                $auditEvents->record(new AuditEvent(
+                    organizationId: $organizationId,
+                    eventType: 'dunning_paused',
+                    actorUserId: $actorUserId,
+                    occurredAt: $now,
+                    payload: [
+                        'invoice_id' => $invoiceId,
+                        'before' => ['is_paused' => false],
+                        'after' => ['is_paused' => true, 'reason' => $reason],
+                    ],
+                ));
+
+                return new DunningPause(
+                    organizationId: $pause->organizationId,
+                    invoiceId: $pause->invoiceId,
+                    pausedBy: $pause->pausedBy,
+                    pausedAt: $pause->pausedAt,
+                    pausedReason: $pause->pausedReason,
+                    id: $id,
+                );
+            },
         );
     }
 }

@@ -9,6 +9,7 @@ use NeneClear\Organization\CreateOrganizationUseCase;
 use NeneClear\Organization\Organization;
 use NeneClear\Organization\OrganizationAlreadyExistsException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
@@ -23,7 +24,7 @@ final class CreateOrganizationUseCaseTest extends TestCase
 
     private function useCase(InMemoryOrganizationRepository $repo): CreateOrganizationUseCase
     {
-        return new CreateOrganizationUseCase($repo, $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new CreateOrganizationUseCase(new FakeTransactionManager(), fn () => $repo, fn () => $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     public function test_creates_organization_and_returns_output_with_id(): void

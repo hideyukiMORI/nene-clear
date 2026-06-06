@@ -32,7 +32,8 @@ final class BankImportHttpTest extends TestCase
     protected function setUp(): void
     {
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-bankhttp-', true) . '.sqlite';
-        $query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
+        $kit = DatabaseTestKit::sqlite($this->dbPath);
+        $query = $kit->queryExecutor;
         SchemaFixture::createUsers($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createBankAccounts($query);
@@ -58,7 +59,7 @@ final class BankImportHttpTest extends TestCase
             csvHeaderRows: 1,
         ));
 
-        $this->app = ApplicationFactory::create(query: $query, jwtSecret: self::SECRET);
+        $this->app = ApplicationFactory::create(query: $query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET);
         $this->psr17 = new Psr17Factory();
     }
 

@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace NeneClear\ClearSettings;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\BankImport\BankAccountRepositoryInterface;
+use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use Psr\Container\ContainerInterface;
@@ -34,9 +37,10 @@ final readonly class ClearSettingsServiceProvider implements ServiceProviderInte
             ->set(
                 UpdateClearSettingsUseCaseInterface::class,
                 static fn (ContainerInterface $c): UpdateClearSettingsUseCaseInterface => new UpdateClearSettingsUseCase(
-                    ServiceResolver::get($c, ClearSettingsRepositoryInterface::class),
-                    ServiceResolver::get($c, BankAccountRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx)),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
