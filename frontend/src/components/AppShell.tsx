@@ -43,8 +43,11 @@ export default function AppShell() {
   const adminNav = ADMIN_NAV.filter(item => !item.adminOnly || admin)
 
   function handleLogout() {
+    // Clearing the token flips the reactive auth store → the login screen
+    // renders in place. Reset the URL to the app root so the next login lands
+    // on the dashboard rather than whatever deep route we were on.
+    navigate('/admin', { replace: true })
     clearToken()
-    navigate('/login', { replace: true })
   }
 
   return (

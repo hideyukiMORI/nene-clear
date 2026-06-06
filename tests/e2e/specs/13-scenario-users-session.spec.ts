@@ -8,7 +8,8 @@ import {
  *
  * login → users → invite (ok) → invite duplicate (409 in modal) → cancel →
  * reopen (modal must be clean, no stale error) → delete a user → session
- * expires mid-session (401) → bounced to login → re-login → back in.
+ * expires mid-session (401) → login shown in place → re-login → back on the
+ * same screen.
  *
  * Bug surface: modal state leakage between opens, cache invalidation on
  * invite/delete, and recovery from an expired session.
@@ -83,16 +84,18 @@ test('scenario: user admin → 409 → modal reset → delete → 401 expiry →
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByText('old@acme.example')).toHaveCount(0)
 
-  // ── 6. Session expires → next data load bounces to /login ───────────────
+  // ── 6. Session expires → next data load shows login in place (same URL) ──
   sessionValid = false
   await page.reload()
-  await expect(page).toHaveURL(/\/login/)
+  // Still on /admin/users, but the cleared token flips the shell to the login form.
+  await expect(page).toHaveURL(/\/admin\/users/)
+  await expect(page.locator('input[name="email"]')).toBeVisible()
 
-  // ── 7. Re-login succeeds ────────────────────────────────────────────────
+  // ── 7. Re-login returns to the same screen (the users page) ──────────────
   sessionValid = true
   await page.locator('input[name="email"]').fill('admin@nene-clear.dev')
   await page.locator('input[name="password"]').fill('admin1234')
   await page.getByRole('button').click()
-  await page.waitForURL(/\/admin$/)
-  await expect(page.getByRole('heading', { name: 'ダッシュボード' })).toBeVisible()
+  await expect(page).toHaveURL(/\/admin\/users/)
+  await expect(page.getByText('admin@acme.example')).toBeVisible()
 })

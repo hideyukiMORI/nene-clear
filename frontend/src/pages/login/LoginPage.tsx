@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { login } from '@/api/endpoints'
 import { storeToken } from '@/api/client'
 import { Icon, Button, Notice, LogoMark } from '@/components/ui'
@@ -7,7 +6,6 @@ import { useTranslation } from '@/hooks/useTranslation'
 
 export default function LoginPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -19,8 +17,9 @@ export default function LoginPage() {
     setLoading(true)
     try {
       const { token } = await login(email, password)
+      // Storing the token flips the reactive auth store; the auth shell then
+      // reveals the route the user is on (no navigation needed).
       storeToken(token)
-      navigate('/admin', { replace: true })
     } catch {
       setError(t('login.error'))
     } finally {

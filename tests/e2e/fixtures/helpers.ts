@@ -41,11 +41,13 @@ export async function loginViaForm(
       user: { user_id: 1, email, role: opts.role ?? 'admin', organization_id: opts.orgId ?? 7 },
     }),
   )
-  await page.goto('/login')
+  await page.goto('/admin')
   await page.locator('input[name="email"]').fill(email)
   await page.locator('input[name="password"]').fill('admin1234')
   await page.getByRole('button').click()
-  await page.waitForURL(/\/admin$/)
+  // The auth shell renders the app in place once the token is stored; the
+  // logout button only exists inside the authenticated shell.
+  await page.getByRole('button', { name: 'ログアウト' }).waitFor()
 }
 
 /** Click a sidebar nav link by its visible label and wait for the route. */
@@ -54,10 +56,14 @@ export async function navTo(page: Page, label: string, urlRe: RegExp): Promise<v
   await page.waitForURL(urlRe)
 }
 
-/** Click the logout button and confirm we land on /login. */
+/**
+ * Click the logout button and confirm the session is gone. The token is cleared
+ * and the login screen renders in place (same URL) — so we wait for the login
+ * form, not a /login navigation.
+ */
 export async function logout(page: Page, label = 'ログアウト'): Promise<void> {
   await page.getByRole('button', { name: label }).click()
-  await page.waitForURL(/\/login/)
+  await page.locator('input[name="email"]').waitFor()
 }
 
 /**
