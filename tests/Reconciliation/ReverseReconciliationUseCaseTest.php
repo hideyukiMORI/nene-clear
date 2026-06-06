@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Reconciliation;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
@@ -50,7 +51,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             fn () => $this->reconciliations,
             fn () => $this->clientCredits,
             $this->invoiceClient,
-            fn () => $this->audit,
+            fn () => new AuditRecorder($this->audit),
             $clock,
         );
         $this->reverseUseCase = new ReverseReconciliationUseCase(
@@ -60,7 +61,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             fn () => $this->clientCredits,
             fn () => $this->transactions,
             $this->invoiceClient,
-            fn () => $this->audit,
+            fn () => new AuditRecorder($this->audit),
             $clock,
         );
     }

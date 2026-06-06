@@ -145,6 +145,34 @@ final class AuditHttpTest extends TestCase
         self::assertSame(['user_created'], array_values($types));
     }
 
+    public function test_entity_type_is_recorded_and_filterable(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+        $created = $this->decode($this->request('POST', '/admin/users', $token, [
+            'email' => 'new@acme.example',
+            'role' => 'member',
+            'password' => 'a-strong-password',
+        ]));
+        $newUserId = $created['user_id'];
+
+        // The user_created event carries entity_type=user and entity_id=<new id>.
+        $body = $this->decode($this->request('GET', '/admin/audit-events?event_type=user_created', $token));
+        self::assertSame('user', $body['items'][0]['entity_type']);
+        self::assertSame($newUserId, $body['items'][0]['entity_id']);
+
+        // entity_type + entity_id narrow to that record's history only.
+        $filtered = $this->decode($this->request(
+            'GET',
+            "/admin/audit-events?entity_type=user&entity_id={$newUserId}",
+            $token,
+        ));
+        self::assertNotEmpty($filtered['items']);
+        foreach ($filtered['items'] as $item) {
+            self::assertSame('user', $item['entity_type']);
+            self::assertSame($newUserId, $item['entity_id']);
+        }
+    }
+
     public function test_member_lacks_capability_to_read_audit_trail(): void
     {
         $token = $this->tokenFor('member@acme.example');

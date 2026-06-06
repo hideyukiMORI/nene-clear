@@ -10,7 +10,8 @@ use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorder;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
@@ -48,7 +49,7 @@ final readonly class OrganizationServiceProvider implements ServiceProviderInter
                 static fn (ContainerInterface $c): CreateOrganizationUseCaseInterface => new CreateOrganizationUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): OrganizationRepositoryInterface => new PdoOrganizationRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -57,7 +58,7 @@ final readonly class OrganizationServiceProvider implements ServiceProviderInter
                 static fn (ContainerInterface $c): DeleteOrganizationUseCaseInterface => new DeleteOrganizationUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): OrganizationRepositoryInterface => new PdoOrganizationRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

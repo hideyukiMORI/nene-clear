@@ -24,10 +24,18 @@ final readonly class ListAuditEventsHandler
         $organizationId = AuthContext::organizationId($request) ?? 0;
         $page = PaginationQueryParser::parse($request, 50, 200);
 
-        $eventTypeParam = $request->getQueryParams()['event_type'] ?? null;
+        $query = $request->getQueryParams();
+
+        $eventTypeParam = $query['event_type'] ?? null;
         $eventType = is_string($eventTypeParam) && $eventTypeParam !== '' ? $eventTypeParam : null;
 
-        $items = $this->auditEvents->findByOrganization($organizationId, $eventType, $page->limit, $page->offset);
+        $entityTypeParam = $query['entity_type'] ?? null;
+        $entityType = is_string($entityTypeParam) && $entityTypeParam !== '' ? $entityTypeParam : null;
+
+        $entityIdParam = $query['entity_id'] ?? null;
+        $entityId = is_numeric($entityIdParam) ? (int) $entityIdParam : null;
+
+        $items = $this->auditEvents->findByOrganization($organizationId, $eventType, $entityType, $entityId, $page->limit, $page->offset);
 
         return $this->response->create((new PaginationResponse(
             items: array_map(
@@ -36,7 +44,7 @@ final readonly class ListAuditEventsHandler
             ),
             limit: $page->limit,
             offset: $page->offset,
-            total: $this->auditEvents->countByOrganization($organizationId, $eventType),
+            total: $this->auditEvents->countByOrganization($organizationId, $eventType, $entityType, $entityId),
         ))->toArray());
     }
 }

@@ -12,7 +12,7 @@ use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\User\UserRepositoryInterface;
@@ -51,7 +51,7 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                 static fn (ContainerInterface $c): LoginUseCaseInterface => new LoginUseCase(
                     ServiceResolver::get($c, UserRepositoryInterface::class),
                     ServiceResolver::get($c, TokenIssuerInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, AuditRecorderInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

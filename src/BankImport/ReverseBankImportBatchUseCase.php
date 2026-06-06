@@ -8,21 +8,20 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class ReverseBankImportBatchUseCase implements ReverseBankImportBatchUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): BankImportBatchRepositoryInterface $batches
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $batches,
         private Closure $transactions,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -35,7 +34,7 @@ final readonly class ReverseBankImportBatchUseCase implements ReverseBankImportB
             function (DatabaseQueryExecutorInterface $tx) use ($input): ReverseBankImportBatchOutput {
                 $batches = ($this->batches)($tx);
                 $transactions = ($this->transactions)($tx);
-                $auditEvents = ($this->auditEvents)($tx);
+                $auditRecorder = ($this->auditRecorder)($tx);
 
                 $batch = $batches->findById($input->batchId);
 
@@ -65,12 +64,14 @@ final readonly class ReverseBankImportBatchUseCase implements ReverseBankImportB
                 $transactions->voidByBatchId($input->batchId);
                 $batches->reverseById($input->batchId, $now, $input->reversalReason);
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId,
-                    eventType: 'bank_import_batch_reversed',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $now,
-                    payload: [
+                $auditRecorder->record(
+                    $input->organizationId,
+                    $input->actorUserId,
+                    $now,
+                    'bank_import_batch_reversed',
+                    'bank_import_batch',
+                    $input->batchId,
+                    [
                         'bank_import_batch_id' => $input->batchId,
                         'before' => [
                             'status' => 'imported',
@@ -82,7 +83,7 @@ final readonly class ReverseBankImportBatchUseCase implements ReverseBankImportB
                             'rows_voided' => $unmatchedCount,
                         ],
                     ],
-                ));
+                );
 
                 return new ReverseBankImportBatchOutput(
                     batchId: $input->batchId,

@@ -121,6 +121,24 @@ Mutations that create a resource carry only `after`; deletions carry only
 `before`; in-place changes carry both. Payload keys reuse canonical field names
 (§3); booleans follow the `is_` rule (e.g. `is_paused`).
 
+### Audit entity types (`audit_events.entity_type`, exact strings)
+
+Each audit event also records the **subject record** it changed via
+`entity_type` + `entity_id` (Issue #124), so a single record's history is
+queryable. `entity_id` is null when there is no single subject (e.g. a failed
+login). New events MUST map to one of these registered `entity_type` values:
+
+| `entity_type` | `entity_id` is | Used by |
+| --- | --- | --- |
+| `bank_import_batch` | `bank_import_batch_id` | `bank_import`, `bank_import_batch_reversed` |
+| `payment_reconciliation` | `payment_reconciliation_id` | `reconciliation_confirmed`, `reconciliation_reversed` |
+| `client_credit` | `client_credit_id` | `client_credit_applied` |
+| `dunning_notice` | `dunning_notice_id` | `dunning_sent` |
+| `invoice` | upstream `invoice_id` | `dunning_paused`, `dunning_resumed` |
+| `user` | `user_id` (null on failed login) | `user_created/updated/deleted`, `login_succeeded`, `login_failed` |
+| `organization` | `organization_id` | `organization_created`, `organization_deleted` |
+| `clear_settings` | owning `organization_id` | `clear_settings_updated` |
+
 ---
 
 ## 3. Canonical field / column names (snake_case)
@@ -155,6 +173,8 @@ Mutations that create a resource carry only `after`; deletions carry only
 | Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `bank_account_id`, `payment_reconciliation_id`, `client_credit_id` | camelCase, abbreviations |
 | Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`, `actor_id` (use role-specific names above) |
 | Audit event type | `event_type` | `type`, `action` |
+| Audit subject type | `entity_type` | `entity`, `target_type`, `resource` |
+| Audit subject id | `entity_id` | `target_id`, `resource_id` |
 | Audit actor / time | `actor_user_id`, `occurred_at` | `user_id`, `actor_id`, `created_at` (on audit rows) |
 | Login failure reason (audit) | `failure_reason` | `reason`, `error`, `code` |
 | List envelope | `items`, `limit`, `offset` | `data`, `results`, `count` |

@@ -10,8 +10,7 @@ use DateTimeImmutable;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
 use NeneClear\I18n\Locale;
 use NeneClear\I18n\MessageCatalog;
@@ -26,7 +25,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
      * @param DatabaseQueryExecutorInterface $reader executor for pre-transaction reads
      * @param Closure(DatabaseQueryExecutorInterface): DunningNoticeRepositoryInterface $notices
      * @param Closure(DatabaseQueryExecutorInterface): ClearSettingsRepositoryInterface $clearSettings
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      * @param ?Closure(DatabaseQueryExecutorInterface): DunningPauseRepositoryInterface $pauses
      */
     public function __construct(
@@ -36,7 +35,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         private Closure $clearSettings,
         private InvoiceUpstreamClientInterface $invoiceClient,
         private DunningMailerInterface $mailer,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
         private MessageCatalog $catalog,
         private ?Closure $pauses = null,
@@ -107,16 +106,18 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         $noticeId = $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $ex) use ($input, $invoice, $client, $notice, $nowStr, $lastNotice): int {
                 $notices = ($this->notices)($ex);
-                $auditEvents = ($this->auditEvents)($ex);
+                $auditRecorder = ($this->auditRecorder)($ex);
 
                 $noticeId = $notices->save($notice);
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId,
-                    eventType: 'dunning_sent',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $nowStr,
-                    payload: [
+                $auditRecorder->record(
+                    $input->organizationId,
+                    $input->actorUserId,
+                    $nowStr,
+                    'dunning_sent',
+                    'dunning_notice',
+                    $noticeId,
+                    [
                         'dunning_notice_id' => $noticeId,
                         'invoice_id' => $input->invoiceId,
                         'before' => [
@@ -132,7 +133,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
                             'template_version' => self::TEMPLATE_VERSION,
                         ],
                     ],
-                ));
+                );
 
                 return $noticeId;
             },

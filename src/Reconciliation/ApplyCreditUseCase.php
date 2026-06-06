@@ -7,8 +7,7 @@ namespace NeneClear\Reconciliation;
 use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 
 final readonly class ApplyCreditUseCase implements ApplyCreditUseCaseInterface
@@ -16,14 +15,14 @@ final readonly class ApplyCreditUseCase implements ApplyCreditUseCaseInterface
     /**
      * @param DatabaseQueryExecutorInterface $reader executor for pre-transaction reads (before upstream calls)
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private DatabaseQueryExecutorInterface $reader,
         private Closure $clientCredits,
         private InvoiceUpstreamClientInterface $invoiceClient,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
     ) {
     }
 
@@ -60,16 +59,18 @@ final readonly class ApplyCreditUseCase implements ApplyCreditUseCaseInterface
         return $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $ex) use ($input, $credit): ApplyCreditOutput {
                 $clientCredits = ($this->clientCredits)($ex);
-                $auditEvents = ($this->auditEvents)($ex);
+                $auditRecorder = ($this->auditRecorder)($ex);
 
                 $updated = $clientCredits->applyAmount($input->organizationId, $input->creditId, $input->amountCents);
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId,
-                    eventType: 'client_credit_applied',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $credit->createdAt,
-                    payload: [
+                $auditRecorder->record(
+                    $input->organizationId,
+                    $input->actorUserId,
+                    $credit->createdAt,
+                    'client_credit_applied',
+                    'client_credit',
+                    $input->creditId,
+                    [
                         'client_credit_id' => $input->creditId,
                         'invoice_id' => $input->invoiceId,
                         'amount_cents' => $input->amountCents,
@@ -82,7 +83,7 @@ final readonly class ApplyCreditUseCase implements ApplyCreditUseCaseInterface
                             'status' => $updated->status->value,
                         ],
                     ],
-                ));
+                );
 
                 return new ApplyCreditOutput(credit: $updated);
             },

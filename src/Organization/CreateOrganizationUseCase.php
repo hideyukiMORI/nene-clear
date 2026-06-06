@@ -8,19 +8,18 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class CreateOrganizationUseCase implements CreateOrganizationUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): OrganizationRepositoryInterface $organizations
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $organizations,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -33,7 +32,7 @@ final readonly class CreateOrganizationUseCase implements CreateOrganizationUseC
         return $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $tx) use ($input): CreateOrganizationOutput {
                 $organizations = ($this->organizations)($tx);
-                $auditEvents = ($this->auditEvents)($tx);
+                $auditRecorder = ($this->auditRecorder)($tx);
 
                 if ($organizations->existsBySlug($input->slug)) {
                     throw new OrganizationAlreadyExistsException($input->slug);
@@ -43,19 +42,21 @@ final readonly class CreateOrganizationUseCase implements CreateOrganizationUseC
 
                 // Audit: a tenant lifecycle event is scoped to the affected tenant, so it
                 // surfaces in that organization's own audit trail.
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $id,
-                    eventType: 'organization_created',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
-                    payload: [
+                $auditRecorder->record(
+                    $id,
+                    $input->actorUserId,
+                    $this->clock->now()->format('Y-m-d H:i:s'),
+                    'organization_created',
+                    'organization',
+                    $id,
+                    [
                         'after' => [
                             'organization_id' => $id,
                             'slug' => $input->slug,
                             'name' => $input->name,
                         ],
                     ],
-                ));
+                );
 
                 return new CreateOrganizationOutput(id: $id, slug: $input->slug, name: $input->name);
             },

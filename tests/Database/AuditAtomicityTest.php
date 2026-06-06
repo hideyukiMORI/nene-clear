@@ -6,6 +6,8 @@ namespace NeneClear\Tests\Database;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
+use NeneClear\Audit\AuditRecorder;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
 use NeneClear\BankImport\BankAccountRepositoryInterface;
@@ -70,7 +72,7 @@ final class AuditAtomicityTest extends TestCase
             static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
             static fn (DatabaseQueryExecutorInterface $tx): BankImportBatchRepositoryInterface => new PdoBankImportBatchRepository($tx),
             static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
-            static fn (DatabaseQueryExecutorInterface $tx): ThrowingAuditEventRepository => new ThrowingAuditEventRepository(),
+            static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new ThrowingAuditEventRepository()),
             new BankCsvParser(),
             new FixedClock(),
         );

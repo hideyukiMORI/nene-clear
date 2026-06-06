@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Organization;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\Organization\CreateOrganizationInput;
 use NeneClear\Organization\CreateOrganizationUseCase;
 use NeneClear\Organization\Organization;
@@ -24,7 +25,7 @@ final class CreateOrganizationUseCaseTest extends TestCase
 
     private function useCase(InMemoryOrganizationRepository $repo): CreateOrganizationUseCase
     {
-        return new CreateOrganizationUseCase(new FakeTransactionManager(), fn () => $repo, fn () => $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new CreateOrganizationUseCase(new FakeTransactionManager(), fn () => $repo, fn () => new AuditRecorder($this->audit), new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     public function test_creates_organization_and_returns_output_with_id(): void

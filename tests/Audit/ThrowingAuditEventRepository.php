@@ -22,13 +22,23 @@ final class ThrowingAuditEventRepository implements AuditEventRepositoryInterfac
         throw new RuntimeException('audit write failed (simulated)');
     }
 
-    public function findByOrganization(int $organizationId, ?string $eventType, int $limit, int $offset): array
-    {
+    public function findByOrganization(
+        int $organizationId,
+        ?string $eventType,
+        ?string $entityType,
+        ?int $entityId,
+        int $limit,
+        int $offset,
+    ): array {
         return [];
     }
 
-    public function countByOrganization(int $organizationId, ?string $eventType): int
-    {
+    public function countByOrganization(
+        int $organizationId,
+        ?string $eventType,
+        ?string $entityType,
+        ?int $entityId,
+    ): int {
         return 0;
     }
 }

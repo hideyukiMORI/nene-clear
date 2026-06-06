@@ -15,6 +15,8 @@ final readonly class AuditEventResponse
             'audit_event_id' => $event->id,
             'organization_id' => $event->organizationId,
             'event_type' => $event->eventType,
+            'entity_type' => $event->entityType,
+            'entity_id' => $event->entityId,
             'actor_user_id' => $event->actorUserId,
             'occurred_at' => $event->occurredAt,
             'payload' => $event->payload,

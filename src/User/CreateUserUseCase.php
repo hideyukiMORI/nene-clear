@@ -8,20 +8,19 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Auth\Role;
 
 final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): UserRepositoryInterface $users
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $users,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -45,7 +44,7 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
         return $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $tx) use ($input, $status, $hash): User {
                 $users = ($this->users)($tx);
-                $auditEvents = ($this->auditEvents)($tx);
+                $auditRecorder = ($this->auditRecorder)($tx);
 
                 if ($users->existsByEmail($input->email)) {
                     throw new UserAlreadyExistsException($input->email);
@@ -66,22 +65,16 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
                 }
 
                 // Audit: account creation carries `after` only (no prior state). The
-                // password hash is never recorded — only who/what changed.
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId ?? 0,
-                    eventType: 'user_created',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
-                    payload: [
-                        'after' => [
-                            'user_id' => $created->id,
-                            'email' => $created->email,
-                            'role' => $created->role->value,
-                            'status' => $created->status->value,
-                            'organization_id' => $created->organizationId,
-                        ],
-                    ],
-                ));
+                // snapshot reuses UserResponse, so the password hash is never recorded.
+                $auditRecorder->record(
+                    $input->organizationId ?? 0,
+                    $input->actorUserId,
+                    $this->clock->now()->format('Y-m-d H:i:s'),
+                    'user_created',
+                    'user',
+                    $created->id,
+                    ['after' => UserResponse::toArray($created)],
+                );
 
                 return $created;
             },

@@ -8,8 +8,7 @@ use Closure;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
@@ -21,7 +20,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
      * @param Closure(DatabaseQueryExecutorInterface): ReconciliationRepositoryInterface $reconciliations
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
-     * @param Closure(DatabaseQueryExecutorInterface): AuditEventRepositoryInterface $auditEvents
+     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
@@ -30,7 +29,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
         private Closure $clientCredits,
         private Closure $transactions,
         private InvoiceUpstreamClientInterface $invoiceClient,
-        private Closure $auditEvents,
+        private Closure $auditRecorder,
         private ClockInterface $clock,
     ) {
     }
@@ -70,18 +69,20 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                 $reconciliations = ($this->reconciliations)($ex);
                 $transactions = ($this->transactions)($ex);
                 $clientCredits = ($this->clientCredits)($ex);
-                $auditEvents = ($this->auditEvents)($ex);
+                $auditRecorder = ($this->auditRecorder)($ex);
 
                 $reconciliations->reverseById($input->reconciliationId, $now, $input->reversalReason);
                 $transactions->updateStatusById($input->organizationId, $reconciliation->bankTransactionId, BankTransactionStatus::Unmatched);
                 $clientCredits->voidByReconciliation($input->reconciliationId);
 
-                $auditEvents->record(new AuditEvent(
-                    organizationId: $input->organizationId,
-                    eventType: 'reconciliation_reversed',
-                    actorUserId: $input->actorUserId,
-                    occurredAt: $now,
-                    payload: [
+                $auditRecorder->record(
+                    $input->organizationId,
+                    $input->actorUserId,
+                    $now,
+                    'reconciliation_reversed',
+                    'payment_reconciliation',
+                    $input->reconciliationId,
+                    [
                         'payment_reconciliation_id' => $input->reconciliationId,
                         'before' => [
                             'status' => 'confirmed',
@@ -102,7 +103,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                             'reversal_reason' => $input->reversalReason,
                         ],
                     ],
-                ));
+                );
 
                 return new ReverseReconciliationOutput(reconciliationId: $input->reconciliationId);
             },

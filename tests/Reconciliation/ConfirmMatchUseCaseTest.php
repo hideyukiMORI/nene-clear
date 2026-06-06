@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Reconciliation;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionStatus;
@@ -46,7 +47,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
             fn () => $this->reconciliations,
             fn () => $this->clientCredits,
             $this->invoiceClient,
-            fn () => $this->audit,
+            fn () => new AuditRecorder($this->audit),
             new FixedClock(),
         );
     }

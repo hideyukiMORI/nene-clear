@@ -10,7 +10,8 @@ use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\AuditRecorder;
+use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\BankImport\BankAccountRepositoryInterface;
 use NeneClear\BankImport\PdoBankAccountRepository;
@@ -40,7 +41,7 @@ final readonly class ClearSettingsServiceProvider implements ServiceProviderInte
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx)),
                     static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

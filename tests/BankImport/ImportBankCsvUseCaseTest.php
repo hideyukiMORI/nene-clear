@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\BankImport;
 
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
 use NeneClear\BankImport\BankAccountNotFoundException;
@@ -52,7 +53,7 @@ final class ImportBankCsvUseCaseTest extends TestCase
             fn () => $this->accounts,
             fn () => $this->batches,
             fn () => $this->transactions,
-            fn () => $this->audit,
+            fn () => new AuditRecorder($this->audit),
             new BankCsvParser(),
             new FixedClock(),
         );
