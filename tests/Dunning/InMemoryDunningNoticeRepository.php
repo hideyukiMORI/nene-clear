@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Tests\Dunning;
 
 use NeneClear\Dunning\DunningNotice;
+use NeneClear\Dunning\DunningNoticeFilter;
 use NeneClear\Dunning\DunningNoticeRepositoryInterface;
 
 final class InMemoryDunningNoticeRepository implements DunningNoticeRepositoryInterface
@@ -42,7 +43,7 @@ final class InMemoryDunningNoticeRepository implements DunningNoticeRepositoryIn
         return ($n !== null && $n->organizationId === $organizationId) ? $n : null;
     }
 
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, DunningNoticeFilter $filter, int $limit, int $offset): array
     {
         $matches = array_values(array_filter(
             $this->byId,
@@ -52,7 +53,7 @@ final class InMemoryDunningNoticeRepository implements DunningNoticeRepositoryIn
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countByOrganization(int $organizationId): int
+    public function countByOrganization(int $organizationId, DunningNoticeFilter $filter): int
     {
         return count(array_filter(
             $this->byId,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Tests\BankImport;
 
 use NeneClear\BankImport\BankImportBatch;
+use NeneClear\BankImport\BankImportBatchFilter;
 use NeneClear\BankImport\BankImportBatchRepositoryInterface;
 use NeneClear\BankImport\BankImportBatchStatus;
 
@@ -31,7 +32,7 @@ final class InMemoryBankImportBatchRepository implements BankImportBatchReposito
         return false;
     }
 
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, BankImportBatchFilter $filter, int $limit, int $offset): array
     {
         $matches = array_values(array_filter(
             $this->byId,
@@ -41,7 +42,7 @@ final class InMemoryBankImportBatchRepository implements BankImportBatchReposito
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countByOrganization(int $organizationId): int
+    public function countByOrganization(int $organizationId, BankImportBatchFilter $filter): int
     {
         return count(array_filter(
             $this->byId,

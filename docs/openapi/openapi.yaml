@@ -413,6 +413,14 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
+        - { name: source_filename, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/BankImportBatchStatus' } }
+        - { name: row_count_min, in: query, schema: { type: integer } }
+        - { name: row_count_max, in: query, schema: { type: integer } }
+        - { name: imported_from, in: query, schema: { type: string, format: date } }
+        - { name: imported_to, in: query, schema: { type: string, format: date } }
+        - { name: sort_by, in: query, description: "id | source_filename | row_count | status | imported_at", schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: A page of import batches.
@@ -695,6 +703,12 @@ paths:
           in: query
           schema:
             $ref: '#/components/schemas/ReconciliationStatus'
+        - { name: bank_transaction_id, in: query, schema: { type: integer, format: int64 } }
+        - { name: invoice_id, in: query, description: Match reconciliations allocated to this invoice., schema: { type: integer, format: int64 } }
+        - { name: confirmed_from, in: query, schema: { type: string, format: date } }
+        - { name: confirmed_to, in: query, schema: { type: string, format: date } }
+        - { name: sort_by, in: query, description: "id | bank_transaction_id | status | confirmed_at", schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: A page of reconciliations.
@@ -934,6 +948,15 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
+        - { name: invoice_number, in: query, schema: { type: string } }
+        - { name: recipient_email, in: query, schema: { type: string } }
+        - { name: outstanding_min_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: outstanding_max_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: sent_from, in: query, schema: { type: string, format: date } }
+        - { name: sent_to, in: query, schema: { type: string, format: date } }
+        - { name: sent_by, in: query, schema: { type: integer, format: int64 } }
+        - { name: sort_by, in: query, description: "invoice_number | recipient_email | outstanding_cents | sent_at | sent_by", schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: Paginated dunning notice list.

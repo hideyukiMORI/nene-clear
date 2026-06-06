@@ -54,7 +54,7 @@ test('scenario: import → reconcile → reverse → logout keeps state consiste
   // ── 2. Import a bank CSV ────────────────────────────────────────────────
   await navTo(page, '銀行CSV取込', /\/admin\/bank-import/)
   await expect(page.getByText('データがありません。')).toBeVisible() // empty batch list
-  await page.locator('select').selectOption('1')
+  await page.locator('form select').selectOption('1')
   await page.locator('input[type="file"]').setInputFiles({
     name: 'april.csv',
     mimeType: 'text/csv',
@@ -84,14 +84,14 @@ test('scenario: import → reconcile → reverse → logout keeps state consiste
 
   // ── 5. History shows the confirmed reconciliation ───────────────────────
   await page.getByRole('button', { name: '消込一覧' }).click()
-  await expect(page.getByText('確定済')).toBeVisible()
+  await expect(page.getByRole('table').getByText('確定済')).toBeVisible()
 
   // ── 6. Reverse it ───────────────────────────────────────────────────────
   await page.getByRole('button', { name: '消込を取消' }).first().click()
   await page.getByRole('dialog').getByRole('textbox').fill('誤った消込のため')
   await page.getByRole('dialog').getByRole('button', { name: '消込を取消' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByText('取消済')).toBeVisible()
+  await expect(page.getByRole('table').getByText('取消済')).toBeVisible()
 
   // Back on the unmatched tab, the deposit is available again.
   await page.getByRole('button', { name: '未消込' }).click()

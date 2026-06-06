@@ -51,26 +51,83 @@ final readonly class PdoBankImportBatchRepository implements BankImportBatchRepo
         return $this->query->lastInsertId();
     }
 
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, BankImportBatchFilter $filter, int $limit, int $offset): array
     {
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $params[] = $limit;
+        $params[] = $offset;
+
         $rows = $this->query->fetchAll(
-            'SELECT ' . self::COLUMNS . ' FROM bank_import_batches WHERE organization_id = ? '
-            . 'ORDER BY id DESC LIMIT ? OFFSET ?',
-            [$organizationId, $limit, $offset],
+            'SELECT ' . self::COLUMNS . ' FROM bank_import_batches WHERE ' . $where
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
+            $params,
         );
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function countByOrganization(int $organizationId): int
+    public function countByOrganization(int $organizationId, BankImportBatchFilter $filter): int
     {
-        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_import_batches WHERE organization_id = ?', [$organizationId]);
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM bank_import_batches WHERE ' . $where, $params);
 
         if ($row === null) {
             return 0;
         }
 
         return (int) ($row['c'] ?? 0);
+    }
+
+    /**
+     * @return array{0: string, 1: list<string|int>}
+     */
+    private function whereClause(int $organizationId, BankImportBatchFilter $filter): array
+    {
+        $clauses = ['organization_id = ?'];
+        /** @var list<string|int> $params */
+        $params = [$organizationId];
+
+        if ($filter->sourceFilename !== null) {
+            $clauses[] = 'source_filename LIKE ?';
+            $params[] = '%' . $filter->sourceFilename . '%';
+        }
+        if ($filter->status !== null) {
+            $clauses[] = 'status = ?';
+            $params[] = $filter->status->value;
+        }
+        if ($filter->rowCountMin !== null) {
+            $clauses[] = 'row_count >= ?';
+            $params[] = $filter->rowCountMin;
+        }
+        if ($filter->rowCountMax !== null) {
+            $clauses[] = 'row_count <= ?';
+            $params[] = $filter->rowCountMax;
+        }
+        if ($filter->importedFrom !== null) {
+            $clauses[] = 'DATE(imported_at) >= ?';
+            $params[] = $filter->importedFrom;
+        }
+        if ($filter->importedTo !== null) {
+            $clauses[] = 'DATE(imported_at) <= ?';
+            $params[] = $filter->importedTo;
+        }
+
+        return [implode(' AND ', $clauses), $params];
+    }
+
+    /** Whitelisted ORDER BY — column/direction mapped from a closed set. */
+    private static function orderBy(BankImportBatchFilter $filter): string
+    {
+        $column = match ($filter->sortColumn) {
+            'source_filename' => 'source_filename',
+            'row_count' => 'row_count',
+            'status' => 'status',
+            'imported_at' => 'imported_at',
+            default => 'id',
+        };
+        $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
+
+        return $column . ' ' . $direction . ', id DESC';
     }
 
     public function reverseById(int $id, string $reversedAt, string $reversalReason): void

@@ -99,7 +99,7 @@ test.describe('Reconciliation — confirm + reverse boundaries', () => {
     await page.goto('/admin/reconciliation')
     await page.getByRole('button', { name: '消込一覧' }).click()
 
-    await expect(page.getByText('取消済')).toBeVisible()
+    await expect(page.getByRole('table').getByText('取消済')).toBeVisible()
     await expect(page.getByRole('button', { name: '消込を取消' })).toHaveCount(0)
   })
 })

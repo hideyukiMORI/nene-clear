@@ -2,8 +2,8 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/api/endpoints'
 import type { BankImportBatch } from '@/types'
-import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead } from '@/components/ui'
-import type { StatusMeta } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
+import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { formatDate } from '@/utils/format'
 
@@ -54,8 +54,33 @@ export default function BankImportPage() {
   const [reverseTarget, setReverseTarget] = useState<BankImportBatch | null>(null)
   const [uploadMsg, setUploadMsg] = useState<{ ok: boolean; text: string } | null>(null)
 
+  const PAGE = 50
+  const [fileName, setFileName] = useState('')
+  const [bStatus, setBStatus] = useState('')
+  const [rowMin, setRowMin] = useState('')
+  const [rowMax, setRowMax] = useState('')
+  const [impFrom, setImpFrom] = useState('')
+  const [impTo, setImpTo] = useState('')
+  const [applied, setApplied] = useState({ fileName: '', status: '', rowMin: '', rowMax: '', impFrom: '', impTo: '', offset: 0 })
+  const [sort, setSort] = useState<SortState>({ by: 'id', dir: 'desc' })
+
   const settingsQ = useQuery({ queryKey: ['clear-settings'], queryFn: ({ signal }) => getClearSettings(signal) })
-  const batchQ = useQuery({ queryKey: ['bank-import-batches'], queryFn: ({ signal }) => listBankImportBatches({ limit: 50 }, signal) })
+  const batchQ = useQuery({
+    queryKey: ['bank-import-batches', applied, sort],
+    queryFn: ({ signal }) => listBankImportBatches({
+      sourceFilename: applied.fileName || undefined,
+      status: applied.status || undefined,
+      rowCountMin: applied.rowMin ? Number(applied.rowMin) : undefined,
+      rowCountMax: applied.rowMax ? Number(applied.rowMax) : undefined,
+      importedFrom: applied.impFrom ? applied.impFrom.replace(/\//g, '-') : undefined,
+      importedTo: applied.impTo ? applied.impTo.replace(/\//g, '-') : undefined,
+      sortBy: sort.by, sortDir: sort.dir, limit: PAGE, offset: applied.offset,
+    }, signal),
+  })
+  function searchBatches() { setApplied({ fileName, status: bStatus, rowMin, rowMax, impFrom, impTo, offset: 0 }) }
+  function clearBatches() { setFileName(''); setBStatus(''); setRowMin(''); setRowMax(''); setImpFrom(''); setImpTo(''); setApplied({ fileName: '', status: '', rowMin: '', rowMax: '', impFrom: '', impTo: '', offset: 0 }) }
+  function onSortBatches(col: string) { setSort(s => nextSort(s, col)); setApplied(p => ({ ...p, offset: 0 })) }
+  const batchTotal = batchQ.data?.total ?? 0
 
   const uploadMut = useMutation({
     mutationFn: ({ id, file }: { id: number; file: File }) => importBankCsv(id, file),
@@ -120,11 +145,53 @@ export default function BankImportPage() {
         </CardBody>
       </Card>
 
+      <FilterBar>
+        <FilterField label={t('table.fileName')}>
+          <div className="inp-icon">
+            <Icon name="search" />
+            <input className="inp" style={{ paddingLeft: 32, width: 160 }} placeholder={t('common.search')} value={fileName} onChange={e => setFileName(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.status')}>
+          <select className="inp" value={bStatus} onChange={e => setBStatus(e.target.value)}>
+            <option value="">{t('filter.all')}</option>
+            <option value="imported">{t('bankImport.status.imported')}</option>
+            <option value="reversed">{t('bankImport.status.reversed')}</option>
+          </select>
+        </FilterField>
+        <FilterField label={t('table.rowCount')}>
+          <div className="range-pair">
+            <input className="inp tnum" type="number" value={rowMin} onChange={e => setRowMin(e.target.value)} />
+            <span className="tilde">〜</span>
+            <input className="inp tnum" type="number" value={rowMax} onChange={e => setRowMax(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.importedAt')}>
+          <div className="range-pair">
+            <DatePicker value={impFrom} onChange={setImpFrom} />
+            <span className="tilde">〜</span>
+            <DatePicker value={impTo} onChange={setImpTo} />
+          </div>
+        </FilterField>
+        <div className="filter-actions">
+          <span className="filter-count">{t('filter.count', { n: batchTotal })}</span>
+          <Button variant="ghost" size="sm" onClick={clearBatches}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={searchBatches}><Icon name="search" size="sm" />{t('common.search')}</Button>
+        </div>
+      </FilterBar>
+
       <Card>
         <CardHead><h2><Icon name="clock" />{t('bankImport.batches')}</h2></CardHead>
         <DataTable>
           <thead>
-            <tr><th>{t('table.id')}</th><th>{t('table.fileName')}</th><th>{t('table.rowCount')}</th><th>{t('table.status')}</th><th>{t('table.importedAt')}</th><th /></tr>
+            <tr>
+              <SortableTh column="id" sort={sort} onSort={onSortBatches}>{t('table.id')}</SortableTh>
+              <SortableTh column="source_filename" sort={sort} onSort={onSortBatches}>{t('table.fileName')}</SortableTh>
+              <SortableTh column="row_count" sort={sort} onSort={onSortBatches}>{t('table.rowCount')}</SortableTh>
+              <SortableTh column="status" sort={sort} onSort={onSortBatches}>{t('table.status')}</SortableTh>
+              <SortableTh column="imported_at" sort={sort} onSort={onSortBatches}>{t('table.importedAt')}</SortableTh>
+              <th />
+            </tr>
           </thead>
           <tbody>
             <TableStateRow colSpan={6} loading={batchQ.isLoading} empty={batchQ.data?.items.length === 0} />
@@ -146,6 +213,7 @@ export default function BankImportPage() {
             ))}
           </tbody>
         </DataTable>
+        <Pager offset={applied.offset} pageSize={PAGE} total={batchTotal} onOffsetChange={off => setApplied(p => ({ ...p, offset: off }))} />
       </Card>
 
       {reverseTarget && <ReverseModal batch={reverseTarget} onClose={() => setReverseTarget(null)} />}

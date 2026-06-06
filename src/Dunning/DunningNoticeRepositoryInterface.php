@@ -13,9 +13,9 @@ interface DunningNoticeRepositoryInterface
     /**
      * @return list<DunningNotice>
      */
-    public function findByOrganization(int $organizationId, int $limit, int $offset): array;
+    public function findByOrganization(int $organizationId, DunningNoticeFilter $filter, int $limit, int $offset): array;
 
-    public function countByOrganization(int $organizationId): int;
+    public function countByOrganization(int $organizationId, DunningNoticeFilter $filter): int;
 
     public function findLastByInvoice(int $organizationId, int $invoiceId): ?DunningNotice;
 }
