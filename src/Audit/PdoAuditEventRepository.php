@@ -34,34 +34,24 @@ final readonly class PdoAuditEventRepository implements AuditEventRepositoryInte
         return $this->query->lastInsertId();
     }
 
-    public function findByOrganization(
-        int $organizationId,
-        ?string $eventType,
-        ?string $entityType,
-        ?int $entityId,
-        int $limit,
-        int $offset,
-    ): array {
-        [$where, $params] = $this->filter($organizationId, $eventType, $entityType, $entityId);
+    public function findByOrganization(int $organizationId, AuditEventFilter $filter, int $limit, int $offset): array
+    {
+        [$where, $params] = $this->filter($organizationId, $filter);
         $params[] = $limit;
         $params[] = $offset;
 
         $rows = $this->query->fetchAll(
             'SELECT ' . self::COLUMNS . ' FROM audit_events WHERE ' . $where
-            . ' ORDER BY id DESC LIMIT ? OFFSET ?',
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
             $params,
         );
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function countByOrganization(
-        int $organizationId,
-        ?string $eventType,
-        ?string $entityType,
-        ?int $entityId,
-    ): int {
-        [$where, $params] = $this->filter($organizationId, $eventType, $entityType, $entityId);
+    public function countByOrganization(int $organizationId, AuditEventFilter $filter): int
+    {
+        [$where, $params] = $this->filter($organizationId, $filter);
 
         $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM audit_events WHERE ' . $where, $params);
 
@@ -71,26 +61,52 @@ final readonly class PdoAuditEventRepository implements AuditEventRepositoryInte
     /**
      * @return array{0: string, 1: list<string|int>}
      */
-    private function filter(int $organizationId, ?string $eventType, ?string $entityType, ?int $entityId): array
+    private function filter(int $organizationId, AuditEventFilter $filter): array
     {
         $clauses = ['organization_id = ?'];
         /** @var list<string|int> $params */
         $params = [$organizationId];
 
-        if ($eventType !== null) {
+        if ($filter->eventType !== null) {
             $clauses[] = 'event_type = ?';
-            $params[] = $eventType;
+            $params[] = $filter->eventType;
         }
-        if ($entityType !== null) {
+        if ($filter->entityType !== null) {
             $clauses[] = 'entity_type = ?';
-            $params[] = $entityType;
+            $params[] = $filter->entityType;
         }
-        if ($entityId !== null) {
+        if ($filter->entityId !== null) {
             $clauses[] = 'entity_id = ?';
-            $params[] = $entityId;
+            $params[] = $filter->entityId;
+        }
+        if ($filter->actorUserId !== null) {
+            $clauses[] = 'actor_user_id = ?';
+            $params[] = $filter->actorUserId;
+        }
+        if ($filter->occurredFrom !== null) {
+            $clauses[] = 'DATE(occurred_at) >= ?';
+            $params[] = $filter->occurredFrom;
+        }
+        if ($filter->occurredTo !== null) {
+            $clauses[] = 'DATE(occurred_at) <= ?';
+            $params[] = $filter->occurredTo;
         }
 
         return [implode(' AND ', $clauses), $params];
+    }
+
+    /** Whitelisted ORDER BY — column/direction mapped from a closed set. */
+    private static function orderBy(AuditEventFilter $filter): string
+    {
+        $column = match ($filter->sortColumn) {
+            'event_type' => 'event_type',
+            'entity_type' => 'entity_type',
+            'actor_user_id' => 'actor_user_id',
+            default => 'occurred_at',
+        };
+        $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
+
+        return $column . ' ' . $direction . ', id DESC';
     }
 
     /**

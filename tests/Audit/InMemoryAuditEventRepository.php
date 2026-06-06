@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Tests\Audit;
 
 use NeneClear\Audit\AuditEvent;
+use NeneClear\Audit\AuditEventFilter;
 use NeneClear\Audit\AuditEventRepositoryInterface;
 
 final class InMemoryAuditEventRepository implements AuditEventRepositoryInterface
@@ -29,40 +30,66 @@ final class InMemoryAuditEventRepository implements AuditEventRepositoryInterfac
         return $id;
     }
 
-    public function findByOrganization(
-        int $organizationId,
-        ?string $eventType,
-        ?string $entityType,
-        ?int $entityId,
-        int $limit,
-        int $offset,
-    ): array {
+    public function findByOrganization(int $organizationId, AuditEventFilter $filter, int $limit, int $offset): array
+    {
         $matches = array_values(array_filter(
             $this->events,
-            static fn (AuditEvent $e): bool => $e->organizationId === $organizationId
-                && ($eventType === null || $e->eventType === $eventType)
-                && ($entityType === null || $e->entityType === $entityType)
-                && ($entityId === null || $e->entityId === $entityId),
+            fn (AuditEvent $e): bool => $this->matches($e, $organizationId, $filter),
         ));
 
-        // Newest first, mirroring the SQL `ORDER BY id DESC`.
-        usort($matches, static fn (AuditEvent $a, AuditEvent $b): int => ($b->id ?? 0) <=> ($a->id ?? 0));
+        $asc = strtolower($filter->sortDirection) === 'asc';
+        usort($matches, function (AuditEvent $a, AuditEvent $b) use ($filter, $asc): int {
+            $r = $this->sortKey($a, $filter->sortColumn) <=> $this->sortKey($b, $filter->sortColumn);
+            $r = $asc ? $r : -$r;
+            return $r !== 0 ? $r : (($b->id ?? 0) <=> ($a->id ?? 0));
+        });
 
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countByOrganization(
-        int $organizationId,
-        ?string $eventType,
-        ?string $entityType,
-        ?int $entityId,
-    ): int {
+    public function countByOrganization(int $organizationId, AuditEventFilter $filter): int
+    {
         return count(array_filter(
             $this->events,
-            static fn (AuditEvent $e): bool => $e->organizationId === $organizationId
-                && ($eventType === null || $e->eventType === $eventType)
-                && ($entityType === null || $e->entityType === $entityType)
-                && ($entityId === null || $e->entityId === $entityId),
+            fn (AuditEvent $e): bool => $this->matches($e, $organizationId, $filter),
         ));
+    }
+
+    private function matches(AuditEvent $e, int $organizationId, AuditEventFilter $f): bool
+    {
+        if ($e->organizationId !== $organizationId) {
+            return false;
+        }
+        if ($f->eventType !== null && $e->eventType !== $f->eventType) {
+            return false;
+        }
+        if ($f->entityType !== null && $e->entityType !== $f->entityType) {
+            return false;
+        }
+        if ($f->entityId !== null && $e->entityId !== $f->entityId) {
+            return false;
+        }
+        if ($f->actorUserId !== null && $e->actorUserId !== $f->actorUserId) {
+            return false;
+        }
+        $date = substr($e->occurredAt, 0, 10);
+        if ($f->occurredFrom !== null && $date < $f->occurredFrom) {
+            return false;
+        }
+        if ($f->occurredTo !== null && $date > $f->occurredTo) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private function sortKey(AuditEvent $e, string $column): int|string
+    {
+        return match ($column) {
+            'event_type' => $e->eventType,
+            'entity_type' => $e->entityType,
+            'actor_user_id' => $e->actorUserId,
+            default => $e->occurredAt,
+        };
     }
 }

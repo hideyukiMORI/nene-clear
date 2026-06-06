@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listBankTransactions, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
-import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead, SortableTh, nextSort } from '@/components/ui'
+import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { yen } from '@/utils/format'
@@ -27,9 +28,10 @@ export default function BankTransactionsPage() {
   const [amountMax, setAmountMax] = useState('')
   const [counterparty, setCounterparty] = useState('')
   const [applied, setApplied] = useState<AppliedFilter>({ status: '', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', counterparty: '', offset: 0 })
+  const [sort, setSort] = useState<SortState>({ by: 'value_date', dir: 'desc' })
 
   const txQ = useQuery({
-    queryKey: ['bank-transactions', applied],
+    queryKey: ['bank-transactions', applied, sort],
     queryFn: ({ signal }) => listBankTransactions({
       status: applied.status || undefined,
       value_date_from: applied.dateFrom || undefined,
@@ -37,12 +39,14 @@ export default function BankTransactionsPage() {
       amount_min_cents: applied.amountMin ? Math.round(Number(applied.amountMin) * 100) : undefined,
       amount_max_cents: applied.amountMax ? Math.round(Number(applied.amountMax) * 100) : undefined,
       counterparty: applied.counterparty || undefined,
+      sortBy: sort.by, sortDir: sort.dir,
       limit: PAGE, offset: applied.offset,
     }, signal),
   })
 
   function search() { setApplied({ status, dateFrom, dateTo, amountMin, amountMax, counterparty, offset: 0 }) }
   function goPage(off: number) { setApplied(p => ({ ...p, offset: off })) }
+  function onSort(col: string) { setSort(s => nextSort(s, col)); setApplied(p => ({ ...p, offset: 0 })) }
 
   const total = txQ.data?.total ?? 0
 
@@ -92,7 +96,12 @@ export default function BankTransactionsPage() {
       <Card>
         <DataTable>
           <thead>
-            <tr><th>{t('table.valueDate')}</th><th>{t('table.amount')}</th><th>{t('table.counterparty')}</th><th>{t('table.status')}</th></tr>
+            <tr>
+              <SortableTh column="value_date" sort={sort} onSort={onSort}>{t('table.valueDate')}</SortableTh>
+              <SortableTh column="amount_cents" sort={sort} onSort={onSort}>{t('table.amount')}</SortableTh>
+              <SortableTh column="counterparty_text" sort={sort} onSort={onSort}>{t('table.counterparty')}</SortableTh>
+              <SortableTh column="status" sort={sort} onSort={onSort}>{t('table.status')}</SortableTh>
+            </tr>
           </thead>
           <tbody>
             <TableStateRow colSpan={4} loading={txQ.isLoading} empty={txQ.data?.items.length === 0} />

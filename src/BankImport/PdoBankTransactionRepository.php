@@ -75,11 +75,25 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         [$where, $params] = $this->buildWhere($organizationId, $filter);
         $rows = $this->query->fetchAll(
             'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE ' . $where
-            . ' ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
             [...$params, $limit, $offset],
         );
 
         return array_map($this->hydrate(...), $rows);
+    }
+
+    /** Whitelisted ORDER BY — column/direction mapped from a closed set. */
+    private static function orderBy(BankTransactionFilter $filter): string
+    {
+        $column = match ($filter->sortColumn) {
+            'amount_cents' => 'amount_cents',
+            'counterparty_text' => 'counterparty_text',
+            'status' => 'status',
+            default => 'value_date',
+        };
+        $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
+
+        return $column . ' ' . $direction . ', id DESC';
     }
 
     public function countByOrganization(int $organizationId, BankTransactionFilter $filter): int

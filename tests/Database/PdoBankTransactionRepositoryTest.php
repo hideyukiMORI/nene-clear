@@ -159,4 +159,18 @@ final class PdoBankTransactionRepositoryTest extends TestCase
         $matched = $this->repo->findById(7, $matchedId);
         self::assertSame(BankTransactionStatus::Matched, $matched?->status);
     }
+
+    public function test_sort_by_amount_ascending(): void
+    {
+        $this->tx(amountCents: 30000);
+        $this->tx(amountCents: 10000);
+        $this->tx(amountCents: 20000);
+
+        $filter = new BankTransactionFilter(sortColumn: 'amount_cents', sortDirection: 'asc');
+        $amounts = array_map(
+            static fn ($t): int => $t->amountCents,
+            $this->repo->findByOrganization(7, $filter, 50, 0),
+        );
+        self::assertSame([10000, 20000, 30000], $amounts);
+    }
 }

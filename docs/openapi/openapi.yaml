@@ -553,6 +553,13 @@ paths:
           in: query
           schema:
             type: string
+        - name: sort_by
+          in: query
+          description: "Sort column: value_date | amount_cents | counterparty_text | status."
+          schema: { type: string }
+        - name: sort_dir
+          in: query
+          schema: { type: string, enum: [asc, desc] }
       responses:
         '200':
           description: A page of bank transactions.
@@ -1192,6 +1199,24 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: actor_user_id
+          in: query
+          schema: { type: integer, format: int64 }
+        - name: occurred_from
+          in: query
+          description: Inclusive lower bound on occurred_at (YYYY-MM-DD).
+          schema: { type: string, format: date }
+        - name: occurred_to
+          in: query
+          description: Inclusive upper bound on occurred_at (YYYY-MM-DD).
+          schema: { type: string, format: date }
+        - name: sort_by
+          in: query
+          description: "Sort column: occurred_at | event_type | entity_type | actor_user_id."
+          schema: { type: string }
+        - name: sort_dir
+          in: query
+          schema: { type: string, enum: [asc, desc] }
       responses:
         '200':
           description: A page of audit events.
