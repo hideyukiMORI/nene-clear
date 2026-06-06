@@ -12,6 +12,7 @@ use NeneClear\Reconciliation\PdoClientCreditRepository;
 use NeneClear\Reconciliation\PdoReconciliationRepository;
 use NeneClear\Reconciliation\Reconciliation;
 use NeneClear\Reconciliation\ReconciliationAllocation;
+use NeneClear\Reconciliation\ReconciliationFilter;
 use NeneClear\Reconciliation\ReconciliationStatus;
 use NeneClear\Tests\Support\SchemaFixture;
 use PHPUnit\Framework\TestCase;
@@ -128,11 +129,11 @@ final class PdoReconciliationRepositoryTest extends TestCase
         $id2 = $this->reconRepo->save($this->makeReconciliation(bankTxId: 2));
         $this->reconRepo->reverseById($id2, '2026-06-01 10:00:00', 'reason');
 
-        $confirmed = $this->reconRepo->findByOrganization(7, ReconciliationStatus::Confirmed, 50, 0);
+        $confirmed = $this->reconRepo->findByOrganization(7, new ReconciliationFilter(status: ReconciliationStatus::Confirmed), 50, 0);
         self::assertCount(1, $confirmed);
         self::assertSame($id1, $confirmed[0]->id);
 
-        self::assertSame(2, $this->reconRepo->countByOrganization(7, null));
+        self::assertSame(2, $this->reconRepo->countByOrganization(7, new ReconciliationFilter()));
     }
 
     public function test_client_credit_save_and_void(): void

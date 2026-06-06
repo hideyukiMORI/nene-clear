@@ -29,7 +29,7 @@ test.describe('Bank import — upload + reverse boundaries', () => {
     await apiRoute(page, '**/admin/bank-import-batches?**', (route) => json(route, 200, list([])))
 
     await page.goto('/admin/bank-import')
-    await page.locator('select').selectOption('1')
+    await page.locator('form select').selectOption('1')
     await page.locator('input[type="file"]').setInputFiles({
       name: 'dup.csv',
       mimeType: 'text/csv',
@@ -79,7 +79,7 @@ test.describe('Bank import — upload + reverse boundaries', () => {
 
     await page.goto('/admin/bank-import')
 
-    await expect(page.getByText('取消済')).toBeVisible()
+    await expect(page.getByRole('table').getByText('取消済')).toBeVisible()
     await expect(page.getByRole('button', { name: '取消' })).toHaveCount(0)
   })
 })

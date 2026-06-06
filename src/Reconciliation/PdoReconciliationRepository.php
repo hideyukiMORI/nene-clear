@@ -29,32 +29,75 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
         return $row !== null ? $this->hydrateReconciliation($row) : null;
     }
 
-    public function findByOrganization(int $organizationId, ?ReconciliationStatus $status, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, ReconciliationFilter $filter, int $limit, int $offset): array
     {
-        if ($status === null) {
-            $rows = $this->query->fetchAll(
-                'SELECT ' . self::RECON_COLUMNS . ' FROM payment_reconciliations WHERE organization_id = ? '
-                . 'ORDER BY id DESC LIMIT ? OFFSET ?',
-                [$organizationId, $limit, $offset],
-            );
-        } else {
-            $rows = $this->query->fetchAll(
-                'SELECT ' . self::RECON_COLUMNS . ' FROM payment_reconciliations WHERE organization_id = ? AND status = ? '
-                . 'ORDER BY id DESC LIMIT ? OFFSET ?',
-                [$organizationId, $status->value, $limit, $offset],
-            );
-        }
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $rows = $this->query->fetchAll(
+            'SELECT ' . self::RECON_COLUMNS . ' FROM payment_reconciliations WHERE ' . $where
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
+            $params,
+        );
 
         return array_map($this->hydrateReconciliation(...), $rows);
     }
 
-    public function countByOrganization(int $organizationId, ?ReconciliationStatus $status): int
+    public function countByOrganization(int $organizationId, ReconciliationFilter $filter): int
     {
-        $row = $status === null
-            ? $this->query->fetchOne('SELECT COUNT(*) AS c FROM payment_reconciliations WHERE organization_id = ?', [$organizationId])
-            : $this->query->fetchOne('SELECT COUNT(*) AS c FROM payment_reconciliations WHERE organization_id = ? AND status = ?', [$organizationId, $status->value]);
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM payment_reconciliations WHERE ' . $where, $params);
 
         return (int) ($row['c'] ?? 0);
+    }
+
+    /**
+     * @return array{0: string, 1: list<string|int>}
+     */
+    private function whereClause(int $organizationId, ReconciliationFilter $filter): array
+    {
+        $clauses = ['organization_id = ?'];
+        /** @var list<string|int> $params */
+        $params = [$organizationId];
+
+        if ($filter->status !== null) {
+            $clauses[] = 'status = ?';
+            $params[] = $filter->status->value;
+        }
+        if ($filter->bankTransactionId !== null) {
+            $clauses[] = 'bank_transaction_id = ?';
+            $params[] = $filter->bankTransactionId;
+        }
+        if ($filter->invoiceId !== null) {
+            $clauses[] = 'EXISTS (SELECT 1 FROM reconciliation_allocations a '
+                . 'WHERE a.payment_reconciliation_id = payment_reconciliations.id AND a.invoice_id = ?)';
+            $params[] = $filter->invoiceId;
+        }
+        if ($filter->confirmedFrom !== null) {
+            $clauses[] = 'DATE(confirmed_at) >= ?';
+            $params[] = $filter->confirmedFrom;
+        }
+        if ($filter->confirmedTo !== null) {
+            $clauses[] = 'DATE(confirmed_at) <= ?';
+            $params[] = $filter->confirmedTo;
+        }
+
+        return [implode(' AND ', $clauses), $params];
+    }
+
+    /** Whitelisted ORDER BY — column/direction mapped from a closed set. */
+    private static function orderBy(ReconciliationFilter $filter): string
+    {
+        $column = match ($filter->sortColumn) {
+            'bank_transaction_id' => 'bank_transaction_id',
+            'status' => 'status',
+            'confirmed_at' => 'confirmed_at',
+            default => 'id',
+        };
+        $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
+
+        return $column . ' ' . $direction . ', id DESC';
     }
 
     public function findByIdempotencyKey(int $organizationId, string $key): ?Reconciliation

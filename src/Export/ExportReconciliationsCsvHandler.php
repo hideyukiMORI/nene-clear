@@ -6,6 +6,7 @@ namespace NeneClear\Export;
 
 use NeneClear\Auth\AuthContext;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
+use NeneClear\Reconciliation\ReconciliationFilter;
 use NeneClear\Reconciliation\ReconciliationRepositoryInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -31,7 +32,7 @@ final readonly class ExportReconciliationsCsvHandler
         $rows = [];
         $offset = 0;
         do {
-            $batch = $this->reconciliations->findByOrganization($organizationId, null, self::BATCH, $offset);
+            $batch = $this->reconciliations->findByOrganization($organizationId, new ReconciliationFilter(), self::BATCH, $offset);
             foreach ($batch as $recon) {
                 $tx = $this->transactions->findById($organizationId, $recon->bankTransactionId);
 

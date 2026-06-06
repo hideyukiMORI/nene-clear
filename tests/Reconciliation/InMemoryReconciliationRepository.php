@@ -6,6 +6,7 @@ namespace NeneClear\Tests\Reconciliation;
 
 use NeneClear\Reconciliation\Reconciliation;
 use NeneClear\Reconciliation\ReconciliationAllocation;
+use NeneClear\Reconciliation\ReconciliationFilter;
 use NeneClear\Reconciliation\ReconciliationRepositoryInterface;
 use NeneClear\Reconciliation\ReconciliationStatus;
 
@@ -38,23 +39,23 @@ final class InMemoryReconciliationRepository implements ReconciliationRepository
         return null;
     }
 
-    public function findByOrganization(int $organizationId, ?ReconciliationStatus $status, int $limit, int $offset): array
+    public function findByOrganization(int $organizationId, ReconciliationFilter $filter, int $limit, int $offset): array
     {
         $matches = array_values(array_filter(
             $this->byId,
             static fn (Reconciliation $r): bool => $r->organizationId === $organizationId
-                && ($status === null || $r->status === $status),
+                && ($filter->status === null || $r->status === $filter->status),
         ));
 
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countByOrganization(int $organizationId, ?ReconciliationStatus $status): int
+    public function countByOrganization(int $organizationId, ReconciliationFilter $filter): int
     {
         return count(array_filter(
             $this->byId,
             static fn (Reconciliation $r): bool => $r->organizationId === $organizationId
-                && ($status === null || $r->status === $status),
+                && ($filter->status === null || $r->status === $filter->status),
         ));
     }
 

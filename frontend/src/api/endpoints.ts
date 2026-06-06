@@ -32,8 +32,29 @@ export function getCurrentUser(signal?: AbortSignal) {
 }
 
 // --- Bank import ---
-export function listBankImportBatches(params: { limit?: number; offset?: number }, signal?: AbortSignal) {
+export interface BankImportBatchQuery {
+  sourceFilename?: string
+  status?: string
+  rowCountMin?: number
+  rowCountMax?: number
+  importedFrom?: string
+  importedTo?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listBankImportBatches(params: BankImportBatchQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+  if (params.sourceFilename) q.set('source_filename', params.sourceFilename)
+  if (params.status) q.set('status', params.status)
+  if (params.rowCountMin != null) q.set('row_count_min', String(params.rowCountMin))
+  if (params.rowCountMax != null) q.set('row_count_max', String(params.rowCountMax))
+  if (params.importedFrom) q.set('imported_from', params.importedFrom)
+  if (params.importedTo) q.set('imported_to', params.importedTo)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
   return api.get<ListEnvelope<BankImportBatch>>(`${BASE}/bank-import-batches?${q}`, signal)
 }
 
@@ -106,9 +127,27 @@ export function listUnmatchedTransactions(params: { limit?: number; offset?: num
 }
 
 // --- Reconciliation ---
-export function listReconciliations(params: { status?: string; limit?: number; offset?: number }, signal?: AbortSignal) {
+export interface ReconciliationQuery {
+  status?: string
+  bankTransactionId?: string
+  invoiceId?: string
+  confirmedFrom?: string
+  confirmedTo?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listReconciliations(params: ReconciliationQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
   if (params.status) q.set('status', params.status)
+  if (params.bankTransactionId) q.set('bank_transaction_id', params.bankTransactionId)
+  if (params.invoiceId) q.set('invoice_id', params.invoiceId)
+  if (params.confirmedFrom) q.set('confirmed_from', params.confirmedFrom)
+  if (params.confirmedTo) q.set('confirmed_to', params.confirmedTo)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
   return api.get<ListEnvelope<Reconciliation>>(`${BASE}/reconciliations?${q}`, signal)
 }
 
@@ -186,8 +225,29 @@ export function listUpstreamInvoices(params: { status?: string }, signal?: Abort
 }
 
 // --- Dunning ---
-export function listDunningNotices(params: { limit?: number; offset?: number }, signal?: AbortSignal) {
+export interface DunningNoticeQuery {
+  invoiceNumber?: string
+  recipientEmail?: string
+  outstandingMinCents?: number
+  outstandingMaxCents?: number
+  sentFrom?: string
+  sentTo?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listDunningNotices(params: DunningNoticeQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+  if (params.invoiceNumber) q.set('invoice_number', params.invoiceNumber)
+  if (params.recipientEmail) q.set('recipient_email', params.recipientEmail)
+  if (params.outstandingMinCents != null) q.set('outstanding_min_cents', String(params.outstandingMinCents))
+  if (params.outstandingMaxCents != null) q.set('outstanding_max_cents', String(params.outstandingMaxCents))
+  if (params.sentFrom) q.set('sent_from', params.sentFrom)
+  if (params.sentTo) q.set('sent_to', params.sentTo)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
   return api.get<ListEnvelope<DunningNotice>>(`${BASE}/dunning-notices?${q}`, signal)
 }
 

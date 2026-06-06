@@ -5,7 +5,8 @@ import {
   listDunningPauses, pauseDunningNotice, resumeDunningNotice,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
-import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
+import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
+import type { SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { yen, formatDateTime, daysOverdue } from '@/utils/format'
 
@@ -61,7 +62,27 @@ export default function DunningPage() {
     queryKey: ['upstream-invoices', { status: 'issued,partially_paid,overdue' }],
     queryFn: ({ signal }) => listUpstreamInvoices({ status: 'issued,partially_paid,overdue' }, signal),
   })
-  const noticesQ = useQuery({ queryKey: ['dunning-notices'], queryFn: ({ signal }) => listDunningNotices({ limit: 50 }, signal) })
+  const HPAGE = 50
+  const [hInvoice, setHInvoice] = useState('')
+  const [hEmail, setHEmail] = useState('')
+  const [hFrom, setHFrom] = useState('')
+  const [hTo, setHTo] = useState('')
+  const [hApplied, setHApplied] = useState({ invoice: '', email: '', from: '', to: '', offset: 0 })
+  const [hSort, setHSort] = useState<SortState>({ by: 'sent_at', dir: 'desc' })
+  const noticesQ = useQuery({
+    queryKey: ['dunning-notices', hApplied, hSort],
+    queryFn: ({ signal }) => listDunningNotices({
+      invoiceNumber: hApplied.invoice || undefined,
+      recipientEmail: hApplied.email || undefined,
+      sentFrom: hApplied.from ? hApplied.from.replace(/\//g, '-') : undefined,
+      sentTo: hApplied.to ? hApplied.to.replace(/\//g, '-') : undefined,
+      sortBy: hSort.by, sortDir: hSort.dir, limit: HPAGE, offset: hApplied.offset,
+    }, signal),
+  })
+  function hSearch() { setHApplied({ invoice: hInvoice, email: hEmail, from: hFrom, to: hTo, offset: 0 }) }
+  function hClear() { setHInvoice(''); setHEmail(''); setHFrom(''); setHTo(''); setHApplied({ invoice: '', email: '', from: '', to: '', offset: 0 }) }
+  function hOnSort(col: string) { setHSort(s => nextSort(s, col)); setHApplied(p => ({ ...p, offset: 0 })) }
+  const hTotal = noticesQ.data?.total ?? 0
   const pausesQ = useQuery({ queryKey: ['dunning-pauses', { active_only: true }], queryFn: ({ signal }) => listDunningPauses({ active_only: true, limit: 100 }, signal) })
 
   const resumeMut = useMutation({
@@ -141,11 +162,44 @@ export default function DunningPage() {
       </Card>
 
       {/* History */}
+      <FilterBar>
+        <FilterField label={t('table.invoiceNumber')}>
+          <div className="inp-icon">
+            <Icon name="search" />
+            <input className="inp" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.recipient')}>
+          <div className="inp-icon">
+            <Icon name="search" />
+            <input className="inp" style={{ paddingLeft: 32, width: 170 }} placeholder={t('common.search')} value={hEmail} onChange={e => setHEmail(e.target.value)} />
+          </div>
+        </FilterField>
+        <FilterField label={t('table.sentAt')}>
+          <div className="range-pair">
+            <DatePicker value={hFrom} onChange={setHFrom} />
+            <span className="tilde">〜</span>
+            <DatePicker value={hTo} onChange={setHTo} />
+          </div>
+        </FilterField>
+        <div className="filter-actions">
+          <span className="filter-count">{t('filter.count', { n: hTotal })}</span>
+          <Button variant="ghost" size="sm" onClick={hClear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={hSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
+        </div>
+      </FilterBar>
+
       <Card>
         <CardHead><h2><Icon name="clock" />{t('dunning.history')}</h2></CardHead>
         <DataTable>
           <thead>
-            <tr><th>{t('table.invoiceNumber')}</th><th>{t('table.recipient')}</th><th>{t('table.outstanding')}</th><th>{t('table.sentAt')}</th><th>{t('table.sender')}</th></tr>
+            <tr>
+              <SortableTh column="invoice_number" sort={hSort} onSort={hOnSort}>{t('table.invoiceNumber')}</SortableTh>
+              <SortableTh column="recipient_email" sort={hSort} onSort={hOnSort}>{t('table.recipient')}</SortableTh>
+              <SortableTh column="outstanding_cents" sort={hSort} onSort={hOnSort}>{t('table.outstanding')}</SortableTh>
+              <SortableTh column="sent_at" sort={hSort} onSort={hOnSort}>{t('table.sentAt')}</SortableTh>
+              <SortableTh column="sent_by" sort={hSort} onSort={hOnSort}>{t('table.sender')}</SortableTh>
+            </tr>
           </thead>
           <tbody>
             <TableStateRow colSpan={5} loading={noticesQ.isLoading} empty={noticesQ.data?.items.length === 0} />
@@ -160,6 +214,7 @@ export default function DunningPage() {
             ))}
           </tbody>
         </DataTable>
+        <Pager offset={hApplied.offset} pageSize={HPAGE} total={hTotal} onOffsetChange={off => setHApplied(p => ({ ...p, offset: off }))} />
       </Card>
 
       {sendTarget && <SendModal invoice={sendTarget} onClose={() => setSendTarget(null)} />}

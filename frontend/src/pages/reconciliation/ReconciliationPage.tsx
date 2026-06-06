@@ -6,7 +6,8 @@ import {
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
-import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead } from '@/components/ui'
+import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
+import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { yen, formatDate } from '@/utils/format'
@@ -148,11 +149,28 @@ export default function ReconciliationPage() {
     queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 50 }, signal),
     enabled: tab === 'unmatched',
   })
+  const HPAGE = 50
+  const [hStatus, setHStatus] = useState('')
+  const [hInvoice, setHInvoice] = useState('')
+  const [hFrom, setHFrom] = useState('')
+  const [hTo, setHTo] = useState('')
+  const [hApplied, setHApplied] = useState({ status: '', invoice: '', from: '', to: '', offset: 0 })
+  const [hSort, setHSort] = useState<SortState>({ by: 'id', dir: 'desc' })
   const reconciliationsQ = useQuery({
-    queryKey: ['reconciliations'],
-    queryFn: ({ signal }) => listReconciliations({ limit: 50 }, signal),
+    queryKey: ['reconciliations', hApplied, hSort],
+    queryFn: ({ signal }) => listReconciliations({
+      status: hApplied.status || undefined,
+      invoiceId: hApplied.invoice || undefined,
+      confirmedFrom: hApplied.from ? hApplied.from.replace(/\//g, '-') : undefined,
+      confirmedTo: hApplied.to ? hApplied.to.replace(/\//g, '-') : undefined,
+      sortBy: hSort.by, sortDir: hSort.dir, limit: HPAGE, offset: hApplied.offset,
+    }, signal),
     enabled: tab === 'history',
   })
+  function hSearch() { setHApplied({ status: hStatus, invoice: hInvoice, from: hFrom, to: hTo, offset: 0 }) }
+  function hClear() { setHStatus(''); setHInvoice(''); setHFrom(''); setHTo(''); setHApplied({ status: '', invoice: '', from: '', to: '', offset: 0 }) }
+  function hOnSort(col: string) { setHSort(s => nextSort(s, col)); setHApplied(p => ({ ...p, offset: 0 })) }
+  const hTotal = reconciliationsQ.data?.total ?? 0
 
   return (
     <>
@@ -202,10 +220,41 @@ export default function ReconciliationPage() {
       )}
 
       {tab === 'history' && (
+        <>
+        <FilterBar>
+          <FilterField label={t('table.status')}>
+            <select className="inp" value={hStatus} onChange={e => setHStatus(e.target.value)}>
+              <option value="">{t('filter.all')}</option>
+              <option value="confirmed">{t('reconciliation.status.confirmed')}</option>
+              <option value="reversed">{t('reconciliation.status.reversed')}</option>
+            </select>
+          </FilterField>
+          <FilterField label={t('table.invoiceId')}>
+            <input className="inp tnum" type="number" placeholder="#" style={{ width: 110 }} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
+          </FilterField>
+          <FilterField label={t('table.confirmedAt')}>
+            <div className="range-pair">
+              <DatePicker value={hFrom} onChange={setHFrom} />
+              <span className="tilde">〜</span>
+              <DatePicker value={hTo} onChange={setHTo} />
+            </div>
+          </FilterField>
+          <div className="filter-actions">
+            <span className="filter-count">{t('filter.count', { n: hTotal })}</span>
+            <Button variant="ghost" size="sm" onClick={hClear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
+            <Button variant="primary" size="sm" onClick={hSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
+          </div>
+        </FilterBar>
         <Card>
           <DataTable>
             <thead>
-              <tr><th>{t('table.id')}</th><th>{t('table.bankTxnId')}</th><th>{t('table.status')}</th><th>{t('table.confirmedAt')}</th><th /></tr>
+              <tr>
+                <SortableTh column="id" sort={hSort} onSort={hOnSort}>{t('table.id')}</SortableTh>
+                <SortableTh column="bank_transaction_id" sort={hSort} onSort={hOnSort}>{t('table.bankTxnId')}</SortableTh>
+                <SortableTh column="status" sort={hSort} onSort={hOnSort}>{t('table.status')}</SortableTh>
+                <SortableTh column="confirmed_at" sort={hSort} onSort={hOnSort}>{t('table.confirmedAt')}</SortableTh>
+                <th />
+              </tr>
             </thead>
             <tbody>
               <TableStateRow colSpan={5} loading={reconciliationsQ.isLoading} empty={reconciliationsQ.data?.items.length === 0} />
@@ -226,7 +275,9 @@ export default function ReconciliationPage() {
               ))}
             </tbody>
           </DataTable>
+          <Pager offset={hApplied.offset} pageSize={HPAGE} total={hTotal} onOffsetChange={off => setHApplied(p => ({ ...p, offset: off }))} />
         </Card>
+        </>
       )}
 
       {matchTarget && <ConfirmModal tx={matchTarget} onClose={() => setMatchTarget(null)} />}

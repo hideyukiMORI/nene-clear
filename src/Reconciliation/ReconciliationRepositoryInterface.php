@@ -13,9 +13,9 @@ interface ReconciliationRepositoryInterface
     /**
      * @return list<Reconciliation>
      */
-    public function findByOrganization(int $organizationId, ?ReconciliationStatus $status, int $limit, int $offset): array;
+    public function findByOrganization(int $organizationId, ReconciliationFilter $filter, int $limit, int $offset): array;
 
-    public function countByOrganization(int $organizationId, ?ReconciliationStatus $status): int;
+    public function countByOrganization(int $organizationId, ReconciliationFilter $filter): int;
 
     public function save(Reconciliation $reconciliation): int;
 
