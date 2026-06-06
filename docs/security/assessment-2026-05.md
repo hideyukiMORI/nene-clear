@@ -104,10 +104,10 @@ deploy could not migrate past this point. **Fix:** added `'null' => false`.
 ## Reproduce
 
 ```bash
-docker compose up -d                       # MySQL on :3310
-DB_ADAPTER=mysql DB_HOST=127.0.0.1 DB_PORT=3310 DB_NAME=nene_clear \
+docker compose up -d                       # MySQL on :3383
+DB_ADAPTER=mysql DB_HOST=127.0.0.1 DB_PORT=3383 DB_NAME=nene_clear \
   DB_USER=nene_clear DB_PASSWORD=nene_clear composer migrations:migrate -- --no-interaction
-DB_HOST=127.0.0.1 DB_PORT=3310 php tests/security/seed.php
+DB_HOST=127.0.0.1 DB_PORT=3383 php tests/security/seed.php
 php -S localhost:8082 sec-router.php &     # MySQL-backed instance
 bash tests/security/probe.sh               # round 1
 bash tests/security/probe2.sh              # round 2 (deeper vectors)

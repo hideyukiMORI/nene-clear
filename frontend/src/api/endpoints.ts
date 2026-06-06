@@ -153,7 +153,7 @@ export function applyClientCredit(creditId: number, invoiceId: number, amountCen
 export function listUpstreamInvoices(params: { status?: string }, signal?: AbortSignal) {
   const q = new URLSearchParams()
   if (params.status) q.set('status', params.status)
-  return api.get<{ items: UpstreamInvoice[]; total: number }>(`${BASE}/invoices?${q}`, signal)
+  return api.get<{ items: UpstreamInvoice[]; total: number }>(`${BASE}/upstream/invoices?${q}`, signal)
 }
 
 // --- Dunning ---

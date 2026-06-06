@@ -81,20 +81,6 @@
       "responseSchemaRef": "#/components/schemas/BankImportBatchListResponse"
     },
     {
-      "name": "getBankImportBatchById",
-      "title": "Get Bank Import Batch",
-      "description": "Read a single bank CSV import batch by id.",
-      "safety": "read",
-      "source": { "type": "openapi", "operationId": "getBankImportBatchById", "method": "GET", "path": "/admin/bank-import-batches/{id}" },
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id"],
-        "properties": { "id": { "type": "integer", "format": "int64" } }
-      },
-      "responseSchemaRef": "#/components/schemas/BankImportBatch"
-    },
-    {
       "name": "listUpstreamInvoices",
       "title": "List Upstream Invoices",
       "description": "List open/overdue invoices with outstanding balances from the NeNe Invoice upstream (read-only proxy).",
@@ -104,29 +90,10 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "status": { "type": "string", "enum": ["issued", "partially_paid", "paid"] },
-          "overdue": { "type": "boolean" },
-          "client_id": { "type": "integer", "format": "int64" },
-          "outstanding_gt": { "type": "integer", "format": "int64" },
-          "limit": { "type": "integer", "minimum": 1, "maximum": 200 },
-          "offset": { "type": "integer", "minimum": 0 }
+          "status": { "type": "string", "description": "Comma-separated statuses, e.g. issued,partially_paid,overdue" }
         }
       },
       "responseSchemaRef": "#/components/schemas/UpstreamInvoiceListResponse"
-    },
-    {
-      "name": "getUpstreamInvoiceById",
-      "title": "Get Upstream Invoice",
-      "description": "Read a single upstream invoice by id (read-only proxy).",
-      "safety": "read",
-      "source": { "type": "openapi", "operationId": "getUpstreamInvoiceById", "method": "GET", "path": "/admin/upstream/invoices/{id}" },
-      "inputSchema": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["id"],
-        "properties": { "id": { "type": "integer", "format": "int64" } }
-      },
-      "responseSchemaRef": "#/components/schemas/UpstreamInvoice"
     },
     {
       "name": "proposeMatch",

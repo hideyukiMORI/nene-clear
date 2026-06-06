@@ -20,7 +20,7 @@ test('scenario: locale switch + dunning send + too-frequent + logout', async ({ 
   await apiRoute(page, '**/admin/bank-transactions/unmatched**', (route) =>
     json(route, 200, { items: [], total: 3, limit: 1, offset: 0 }),
   )
-  await apiRoute(page, '**/admin/invoices?**', (route) =>
+  await apiRoute(page, '**/admin/upstream/invoices?**', (route) =>
     json(route, 200, { items: [upstreamInvoice({ invoice_id: 123, invoice_number: 'INV-2026-123' })], total: 1 }),
   )
   await apiRoute(page, '**/admin/dunning-pauses?**', (route) => json(route, 200, list([])))
