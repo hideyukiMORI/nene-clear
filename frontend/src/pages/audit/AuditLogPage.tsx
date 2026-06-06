@@ -125,7 +125,7 @@ export default function AuditLogPage() {
           </select>
         </FilterField>
         <FilterField label={t('audit.table.actor')}>
-          <input className="inp tnum" type="number" placeholder="#" style={{ width: 110 }} value={actor} onChange={e => setActor(e.target.value)} />
+          <input className="inp tnum" data-kbd="search" type="number" placeholder="#" style={{ width: 110 }} value={actor} onChange={e => setActor(e.target.value)} />
         </FilterField>
         <FilterField label={t('audit.table.time')}>
           <div className="range-pair">

@@ -100,7 +100,7 @@ export default function ClientCreditsPage() {
         <FilterField label={t('table.client')}>
           <div className="inp-icon">
             <Icon name="search" />
-            <input className="inp" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={f.clientId} onChange={e => set('clientId')(e.target.value)} />
+            <input className="inp" data-kbd="search" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={f.clientId} onChange={e => set('clientId')(e.target.value)} />
           </div>
         </FilterField>
         <FilterField label={t('table.status')}>
