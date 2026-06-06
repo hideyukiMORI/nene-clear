@@ -217,9 +217,9 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `listOrganizations`, `getOrganizationById`, `createOrganization`, `deleteOrganization` | Organization (superadmin) |
 | `listUsers`, `getUserById`, `createUser`, `updateUser`, `deleteUser` | User (admin) |
 | `getClearSettings`, `updateClearSettings`, `testUpstreamConnection` | Clear settings (admin) |
-| `importBankCsv`, `listBankImportBatches`, `getBankImportBatchById`, `reverseBankImportBatch` | Bank import |
+| `importBankCsv`, `listBankImportBatches`, `reverseBankImportBatch` | Bank import |
 | `listBankTransactions`, `listUnmatchedTransactions`, `getBankTransactionById` | Bank transaction |
-| `listUpstreamInvoices`, `getUpstreamInvoiceById` | Invoice upstream (read-only) |
+| `listUpstreamInvoices` | Invoice upstream (read-only) |
 | `proposeMatch`, `confirmMatch`, `reverseReconciliation`, `listReconciliations`, `getReconciliationById` | Reconciliation |
 | `listClientCredits`, `applyClientCredit` | Client credit |
 | `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice` | Dunning |

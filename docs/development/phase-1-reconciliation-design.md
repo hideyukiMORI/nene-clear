@@ -215,13 +215,13 @@ enforced by `CapabilityMiddleware`.
 | `testUpstreamConnection` | POST `/admin/clear-settings/test-upstream` | `manage_clear_settings` | pings Invoice API |
 | `importBankCsv` | POST `/admin/bank-import-batches` | `manage_reconciliation` | multipart CSV + `bank_account_id` |
 | `listBankImportBatches` | GET `/admin/bank-import-batches` | `view_reconciliation` | |
-| `getBankImportBatchById` | GET `/admin/bank-import-batches/{id}` | `view_reconciliation` | |
+| ~~`getBankImportBatchById`~~ | ~~GET `/admin/bank-import-batches/{id}`~~ | — | dropped (YAGNI; never implemented, removed from registry/OpenAPI) |
 | `reverseBankImportBatch` | POST `/admin/bank-import-batches/{id}/reverse` | `manage_reconciliation` | voids lines, audited |
 | `listBankTransactions` | GET `/admin/bank-transactions` | `view_reconciliation` | filter by status/date/amount/counterparty (search req.) |
 | `listUnmatchedTransactions` | GET `/admin/bank-transactions/unmatched` | `view_reconciliation` | |
 | `getBankTransactionById` | GET `/admin/bank-transactions/{id}` | `view_reconciliation` | |
 | `listUpstreamInvoices` | GET `/admin/upstream/invoices` | `view_reconciliation` | read proxy to Invoice |
-| `getUpstreamInvoiceById` | GET `/admin/upstream/invoices/{id}` | `view_reconciliation` | |
+| ~~`getUpstreamInvoiceById`~~ | ~~GET `/admin/upstream/invoices/{id}`~~ | — | dropped (YAGNI; never implemented, removed from registry/OpenAPI) |
 | `proposeMatch` | POST `/admin/reconciliations/propose` | `view_reconciliation` | returns suggestions; **no write** |
 | `confirmMatch` | POST `/admin/reconciliations` | `manage_reconciliation` | human confirm → upstream write |
 | `reverseReconciliation` | POST `/admin/reconciliations/{id}/reverse` | `manage_reconciliation` | |

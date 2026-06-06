@@ -19,6 +19,6 @@ final readonly class InvoiceUpstreamRouteRegistrar
     {
         $listHandler = $this->listHandler;
 
-        $router->get('/admin/invoices', static fn (ServerRequestInterface $r): ResponseInterface => $listHandler->handle($r));
+        $router->get('/admin/upstream/invoices', static fn (ServerRequestInterface $r): ResponseInterface => $listHandler->handle($r));
     }
 }

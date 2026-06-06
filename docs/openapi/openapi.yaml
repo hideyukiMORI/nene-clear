@@ -5,9 +5,9 @@ info:
   description: >
     NeNe Clear — payment reconciliation and dunning (入金消込・督促管理).
     This file is the source of truth for Clear's public JSON API contract.
-    Phase 1 scope: multi-tenant auth/RBAC, clear settings, bank CSV import,
+    Covered: multi-tenant auth/RBAC, clear settings, bank CSV import,
     read-only Invoice upstream proxy, reconciliation (propose/confirm/reverse),
-    and client credit. Dunning is Phase 2 and is not in this file yet.
+    client credit, dunning (notices + per-invoice pause/resume), and CSV export.
     NeNe Clear does NOT issue invoices or compute tax — invoice figures are read
     from the NeNe Invoice upstream (see docs/integrations/invoice-upstream-contract.md).
     Conventions follow NENE2 (docs/development/nene2-compliance.md): RFC 9457
@@ -15,8 +15,8 @@ info:
     items/limit/offset list envelope. Identifiers are governed by
     docs/explanation/terminology.md.
 servers:
-  - url: http://localhost:8080
-    description: Local Docker development server
+  - url: http://localhost:8384
+    description: Local development server (NENE_CLEAR_PORT=8384)
 security:
   - bearerAuth: []
 tags:
@@ -44,6 +44,8 @@ tags:
     description: Overdue reminders — send, history, pause/resume per invoice.
   - name: Export
     description: CSV export for accounting software handoff (税理士 review gate applies).
+  - name: Audit
+    description: Immutable audit trail (admin, read-only).
 
 paths:
   /health:
@@ -478,29 +480,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /admin/bank-import-batches/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdPath'
-    get:
-      tags: [BankImport]
-      summary: Get import batch by id
-      operationId: getBankImportBatchById
-      responses:
-        '200':
-          description: The import batch.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BankImportBatch'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   /admin/bank-import-batches/{id}/reverse:
     parameters:
       - $ref: '#/components/parameters/IdPath'
@@ -644,29 +623,14 @@ paths:
         recomputes these figures.
       operationId: listUpstreamInvoices
       parameters:
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Offset'
         - name: status
           in: query
+          description: "Comma-separated statuses, e.g. `issued,partially_paid,overdue`. Omitted = all open statuses."
           schema:
-            $ref: '#/components/schemas/UpstreamInvoiceStatus'
-        - name: overdue
-          in: query
-          schema:
-            type: boolean
-        - name: client_id
-          in: query
-          schema:
-            type: integer
-            format: int64
-        - name: outstanding_gt
-          in: query
-          schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         '200':
-          description: A page of upstream invoices.
+          description: List of upstream invoices (read proxy; not paginated).
           content:
             application/json:
               schema:
@@ -675,42 +639,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '503':
-          $ref: '#/components/responses/UpstreamUnavailable'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /admin/upstream/invoices/{id}:
-    parameters:
-      - $ref: '#/components/parameters/IdPath'
-    get:
-      tags: [UpstreamInvoice]
-      summary: Get upstream invoice by id (read proxy)
-      operationId: getUpstreamInvoiceById
-      responses:
-        '200':
-          description: The upstream invoice.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UpstreamInvoice'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Invoice not found upstream.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-              examples:
-                notFound:
-                  value:
-                    type: https://nene-clear.dev/problems/upstream-invoice-not-found
-                    title: Upstream Invoice Not Found
-                    status: 404
-                    detail: The referenced invoice was not found upstream.
         '503':
           $ref: '#/components/responses/UpstreamUnavailable'
         '500':
@@ -963,42 +891,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /admin/invoices:
-    get:
-      tags: [UpstreamInvoice]
-      summary: List upstream invoices
-      description: >
-        Proxy to NeNe Invoice — returns open/overdue invoices for the operator's
-        organization. Used by the reconciliation and dunning UIs. Requires
-        `view_reconciliation`.
-      operationId: listInvoices
-      parameters:
-        - name: status
-          in: query
-          description: "Comma-separated statuses, e.g. `issued,partially_paid,overdue`"
-          schema:
-            type: string
-      responses:
-        '200':
-          description: List of upstream invoices.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/UpstreamInvoice'
-                  total:
-                    type: integer
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '503':
-          $ref: '#/components/responses/UpstreamUnavailable'
-
   /admin/dunning-notices:
     get:
       tags: [Dunning]
@@ -1244,6 +1136,37 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /admin/audit-events:
+    get:
+      tags: [Audit]
+      summary: List audit events
+      description: >
+        Immutable audit trail for the operator's organization, newest first.
+        Records every state change (reconciliation, dunning, settings, user/role)
+        with before/after snapshots. Read-only. Requires `manage_users`.
+      operationId: listAuditEvents
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: event_type
+          in: query
+          description: Filter by exact event type (see terminology registry §audit event types).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of audit events.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
 components:
   securitySchemes:
@@ -1773,16 +1696,12 @@ components:
           enum: [JPY]
     UpstreamInvoiceListResponse:
       type: object
-      required: [items, limit, offset, total]
+      required: [items, total]
       properties:
         items:
           type: array
           items:
             $ref: '#/components/schemas/UpstreamInvoice'
-        limit:
-          type: integer
-        offset:
-          type: integer
         total:
           type: integer
 
@@ -2033,6 +1952,46 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DunningNotice'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+
+    AuditEvent:
+      type: object
+      required: [audit_event_id, organization_id, event_type, occurred_at, payload]
+      properties:
+        audit_event_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        event_type:
+          type: string
+          description: Exact event type string (see terminology registry §audit event types).
+        actor_user_id:
+          type: integer
+          format: int64
+          nullable: true
+        occurred_at:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          description: Event detail, including before/after snapshots for state changes.
+          additionalProperties: true
+
+    AuditEventListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
         limit:
           type: integer
         offset:

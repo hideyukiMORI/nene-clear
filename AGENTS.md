@@ -35,4 +35,6 @@ Entry point for AI agents working on **NeNe Clear** (private repo `nene-clear`).
 
 ## Framework
 
-[NENE2](https://github.com/hideyukiMORI/NENE2) via Composer when runtime lands.
+[NENE2](https://github.com/hideyukiMORI/NENE2) — wired via Composer as a local
+path dependency (`../NENE2`, `hideyukimori/nene2: @dev`). Runtime is live: PSR-15
+HTTP stack, DI via per-domain `ServiceProvider` + `ServiceResolver`, PHP 8.4.

@@ -32,8 +32,8 @@ and Clear's [`nene2-compliance.md`](../development/nene2-compliance.md) §12.
 ## Read tools (in the catalog)
 
 `getHealth`, `listUnmatchedTransactions`, `listBankTransactions`,
-`getBankTransactionById`, `listBankImportBatches`, `getBankImportBatchById`,
-`listUpstreamInvoices`, `getUpstreamInvoiceById`, `proposeMatch`,
+`getBankTransactionById`, `listBankImportBatches`,
+`listUpstreamInvoices`, `proposeMatch`,
 `listReconciliations`, `getReconciliationById`, `listClientCredits`.
 
 All except `getHealth` require the configured operator bearer credential and the

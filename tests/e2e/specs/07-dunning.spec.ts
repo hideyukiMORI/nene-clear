@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Dunning — send boundaries', () => {
   test('no eligible invoices shows the empty state', async ({ page }) => {
-    await apiRoute(page, '**/admin/invoices?**', (route) => json(route, 200, { items: [], total: 0 }))
+    await apiRoute(page, '**/admin/upstream/invoices?**', (route) => json(route, 200, { items: [], total: 0 }))
 
     await page.goto('/admin/dunning')
 
@@ -22,7 +22,7 @@ test.describe('Dunning — send boundaries', () => {
   })
 
   test('invoice not eligible (422) surfaces the upstream error', async ({ page }) => {
-    await apiRoute(page, '**/admin/invoices?**', (route) =>
+    await apiRoute(page, '**/admin/upstream/invoices?**', (route) =>
       json(route, 200, { items: [upstreamInvoice({ invoice_id: 123 })], total: 1 }),
     )
     await apiRoute(page, '**/admin/dunning-notices', (route) => {
@@ -40,7 +40,7 @@ test.describe('Dunning — send boundaries', () => {
   })
 
   test('too frequent (422) surfaces the interval error', async ({ page }) => {
-    await apiRoute(page, '**/admin/invoices?**', (route) =>
+    await apiRoute(page, '**/admin/upstream/invoices?**', (route) =>
       json(route, 200, { items: [upstreamInvoice({ invoice_id: 123 })], total: 1 }),
     )
     await apiRoute(page, '**/admin/dunning-notices', (route) => {
@@ -61,7 +61,7 @@ test.describe('Dunning — send boundaries', () => {
 
   test('successful send closes the dialog and lists the notice in history', async ({ page }) => {
     let sent = false
-    await apiRoute(page, '**/admin/invoices?**', (route) =>
+    await apiRoute(page, '**/admin/upstream/invoices?**', (route) =>
       json(route, 200, { items: [upstreamInvoice({ invoice_id: 123, invoice_number: 'INV-2026-009' })], total: 1 }),
     )
     // History reflects the send once the POST has happened (cache invalidation refetches).

@@ -52,7 +52,7 @@ Operators who need both install **two sibling apps** connected via HTTP.
 - React + TypeScript admin UI (`frontend/`), Japanese + English.
 - Invoice upstream HTTP client + contract tests (activate by setting
   `NENE_INVOICE_API_BASE_URL` / `NENE_INVOICE_BEARER_TOKEN`).
-- Tests: 208 backend (PHPUnit, PHPStan level 8), 27 frontend (Vitest),
+- Tests: 236 backend (PHPUnit, 6 skipped; PHPStan level 8), 27 frontend (Vitest),
   43 browser E2E (Playwright). CI runs all three on every push/PR.
 - Login throttling; security assessment in
   [`docs/security/assessment-2026-05.md`](./docs/security/assessment-2026-05.md).
@@ -65,18 +65,18 @@ Next: Phase 3 (Tier A shared-hosting installer / release ZIP) and Phase 4
 ## Quickstart (local development)
 
 ```bash
-# 1. Infrastructure (MySQL 8.4 on :3310, Mailpit on :1025 / web UI :8025)
+# 1. Infrastructure (MySQL 8.4 on :3383, Mailpit SMTP :1383 / web UI :8383)
 docker compose up -d
 cp .env.example .env            # adjust DB_*, NENE_CLEAR_JWT_SECRET as needed
 
 # 2. Backend (PHP 8.4). NENE2 is a local path dependency (../NENE2).
 composer install
 composer migrations:migrate     # apply schema
-php -S localhost:8080 -t public_html/    # or your preferred SAPI
+php -S localhost:8384 -t public_html/    # or your preferred SAPI (NENE_CLEAR_PORT=8384)
 
 # 3. Frontend admin UI (Node 22)
 npm --prefix frontend install
-npm --prefix frontend run dev   # Vite dev server on :5380, proxies /admin → backend
+npm --prefix frontend run dev   # Vite dev server on :5383, proxies /admin → backend
 
 # Quality gates
 composer check                  # PHPUnit + PHPStan level 8 + PHP-CS-Fixer
