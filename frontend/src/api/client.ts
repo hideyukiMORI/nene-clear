@@ -28,6 +28,35 @@ export function isAuthenticated(): boolean {
   return getToken() !== null
 }
 
+/**
+ * The current user's role, decoded from the stored JWT's `role` claim. This is
+ * for UI gating only — the backend capability checks remain the source of truth.
+ * Returns null when there is no token or it is not a decodable JWT (e.g. a test
+ * stub token).
+ */
+export function getUserRole(): string | null {
+  const token = getToken()
+  if (token === null) return null
+
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+
+  try {
+    let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    b64 += '='.repeat((4 - (b64.length % 4)) % 4)
+    const claims = JSON.parse(atob(b64)) as { role?: unknown }
+    return typeof claims.role === 'string' ? claims.role : null
+  } catch {
+    return null
+  }
+}
+
+/** Admin-tier roles (admin or the cross-tenant superadmin). */
+export function isAdmin(): boolean {
+  const role = getUserRole()
+  return role === 'admin' || role === 'superadmin'
+}
+
 async function request<T>(
   method: string,
   path: string,

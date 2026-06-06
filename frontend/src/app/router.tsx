@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { isAuthenticated } from '@/api/client'
+import { isAuthenticated, isAdmin } from '@/api/client'
 import AppShell from '@/components/AppShell'
 import LoginPage from '@/pages/login/LoginPage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
@@ -15,6 +15,14 @@ import AuditLogPage from '@/pages/audit/AuditLogPage'
 function RequireAuth({ children }: { children: React.ReactNode }) {
   if (!isAuthenticated()) {
     return <Navigate to="/login" replace />
+  }
+  return <>{children}</>
+}
+
+/** Administrators-only routes (e.g. the audit log). Non-admins are sent home. */
+function RequireAdmin({ children }: { children: React.ReactNode }) {
+  if (!isAdmin()) {
+    return <Navigate to="/admin" replace />
   }
   return <>{children}</>
 }
@@ -40,7 +48,7 @@ export const router = createBrowserRouter([
       { path: 'dunning', element: <DunningPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'users', element: <UsersPage /> },
-      { path: 'audit-log', element: <AuditLogPage /> },
+      { path: 'audit-log', element: <RequireAdmin><AuditLogPage /></RequireAdmin> },
     ],
   },
   {

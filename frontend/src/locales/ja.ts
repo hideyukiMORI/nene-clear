@@ -16,7 +16,7 @@ export const ja = {
   'nav.dunning': '督促',
   'nav.settings': '設定',
   'nav.users': 'ユーザー管理',
-  'nav.auditLog': '操作履歴',
+  'nav.auditLog': '監査ログ',
   'nav.logout': 'ログアウト',
 
   // ── Login ──
@@ -247,7 +247,7 @@ export const ja = {
   'users.status.invited': '招待中',
 
   // ── Audit log (operation history) ──
-  'audit.title': '操作履歴',
+  'audit.title': '監査ログ',
   'audit.subtitle': 'すべての操作について、誰が・いつ・何を・どう変えたか（変更前後）を追跡する監査ログです。',
   'audit.filter.event': 'イベント種別',
   'audit.filter.all': 'すべての操作',
