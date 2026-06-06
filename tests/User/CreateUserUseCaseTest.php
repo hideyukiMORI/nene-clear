@@ -6,6 +6,7 @@ namespace NeneClear\Tests\User;
 
 use NeneClear\Auth\Role;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\User\CreateUserInput;
 use NeneClear\User\CreateUserUseCase;
@@ -25,7 +26,7 @@ final class CreateUserUseCaseTest extends TestCase
 
     private function useCase(InMemoryUserRepository $repo): CreateUserUseCase
     {
-        return new CreateUserUseCase($repo, $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new CreateUserUseCase(new FakeTransactionManager(), fn () => $repo, fn () => $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     public function test_with_password_creates_active_user(): void

@@ -28,7 +28,8 @@ final class AuditHttpTest extends TestCase
     protected function setUp(): void
     {
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-audit-', true) . '.sqlite';
-        $query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
+        $kit = DatabaseTestKit::sqlite($this->dbPath);
+        $query = $kit->queryExecutor;
         SchemaFixture::createUsers($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createAuditEvents($query);
@@ -37,7 +38,7 @@ final class AuditHttpTest extends TestCase
         $users->save($this->user('admin@acme.example', Role::Admin, 7));
         $users->save($this->user('member@acme.example', Role::Member, 7));
 
-        $this->app = ApplicationFactory::create(query: $query, jwtSecret: self::SECRET);
+        $this->app = ApplicationFactory::create(query: $query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET);
         $this->psr17 = new Psr17Factory();
     }
 

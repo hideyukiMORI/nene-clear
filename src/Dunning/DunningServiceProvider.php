@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace NeneClear\Dunning;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
+use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
+use NeneClear\ClearSettings\PdoClearSettingsRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\I18n\MessageCatalog;
@@ -42,29 +46,33 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
             ->set(
                 SendDunningUseCaseInterface::class,
                 static fn (ContainerInterface $c): SendDunningUseCaseInterface => new SendDunningUseCase(
-                    ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
-                    ServiceResolver::get($c, ClearSettingsRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): DunningNoticeRepositoryInterface => new PdoDunningNoticeRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx)),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                     ServiceResolver::get($c, DunningMailerInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                     ServiceResolver::get($c, MessageCatalog::class),
-                    ServiceResolver::get($c, DunningPauseRepositoryInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
                 ),
             )
             ->set(
                 PauseDunningUseCase::class,
                 static fn (ContainerInterface $c): PauseDunningUseCase => new PauseDunningUseCase(
-                    ServiceResolver::get($c, DunningPauseRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
                 ResumeDunningUseCase::class,
                 static fn (ContainerInterface $c): ResumeDunningUseCase => new ResumeDunningUseCase(
-                    ServiceResolver::get($c, DunningPauseRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

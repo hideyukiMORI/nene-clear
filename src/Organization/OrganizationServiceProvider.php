@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace NeneClear\Organization;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditEventRepositoryInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Container\ContainerInterface;
@@ -44,16 +46,18 @@ final readonly class OrganizationServiceProvider implements ServiceProviderInter
             ->set(
                 CreateOrganizationUseCaseInterface::class,
                 static fn (ContainerInterface $c): CreateOrganizationUseCaseInterface => new CreateOrganizationUseCase(
-                    ServiceResolver::get($c, OrganizationRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): OrganizationRepositoryInterface => new PdoOrganizationRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
                 DeleteOrganizationUseCaseInterface::class,
                 static fn (ContainerInterface $c): DeleteOrganizationUseCaseInterface => new DeleteOrganizationUseCase(
-                    ServiceResolver::get($c, OrganizationRepositoryInterface::class),
-                    ServiceResolver::get($c, AuditEventRepositoryInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): OrganizationRepositoryInterface => new PdoOrganizationRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditEventRepositoryInterface => new PdoAuditEventRepository($tx),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

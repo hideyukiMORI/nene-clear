@@ -30,7 +30,8 @@ final class OrganizationCrudHttpTest extends TestCase
     protected function setUp(): void
     {
         $this->dbPath = sys_get_temp_dir() . '/' . uniqid('clear-orgcrud-', true) . '.sqlite';
-        $this->query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
+        $kit = DatabaseTestKit::sqlite($this->dbPath);
+        $this->query = $kit->queryExecutor;
         SchemaFixture::createOrganizations($this->query);
         SchemaFixture::createUsers($this->query);
         SchemaFixture::createLoginAttempts($this->query);
@@ -52,7 +53,7 @@ final class OrganizationCrudHttpTest extends TestCase
             organizationId: 1,
         ));
 
-        $this->app = ApplicationFactory::create(query: $this->query, jwtSecret: self::SECRET);
+        $this->app = ApplicationFactory::create(query: $this->query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET);
         $this->psr17 = new Psr17Factory();
     }
 

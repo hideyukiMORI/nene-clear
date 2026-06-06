@@ -13,6 +13,8 @@ use NeneClear\Reconciliation\ClientCreditNotFoundException;
 use NeneClear\Reconciliation\ClientCreditStatus;
 use NeneClear\Reconciliation\CreditExceedsRemainingException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
+use NeneClear\Tests\Support\NullQueryExecutor;
 use PHPUnit\Framework\TestCase;
 
 final class ApplyCreditUseCaseTest extends TestCase
@@ -28,9 +30,11 @@ final class ApplyCreditUseCaseTest extends TestCase
         $this->invoiceClient = new FakeInvoiceUpstreamClient();
         $this->audit = new InMemoryAuditEventRepository();
         $this->useCase = new ApplyCreditUseCase(
-            $this->clientCredits,
+            new FakeTransactionManager(),
+            new NullQueryExecutor(),
+            fn () => $this->clientCredits,
             $this->invoiceClient,
-            $this->audit,
+            fn () => $this->audit,
         );
     }
 

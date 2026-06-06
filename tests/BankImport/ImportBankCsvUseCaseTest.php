@@ -12,6 +12,7 @@ use NeneClear\BankImport\DuplicateBankImportException;
 use NeneClear\BankImport\ImportBankCsvInput;
 use NeneClear\BankImport\ImportBankCsvUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
@@ -47,10 +48,11 @@ final class ImportBankCsvUseCaseTest extends TestCase
         $this->audit = new InMemoryAuditEventRepository();
 
         $this->useCase = new ImportBankCsvUseCase(
-            $this->accounts,
-            $this->batches,
-            $this->transactions,
-            $this->audit,
+            new FakeTransactionManager(),
+            fn () => $this->accounts,
+            fn () => $this->batches,
+            fn () => $this->transactions,
+            fn () => $this->audit,
             new BankCsvParser(),
             new FixedClock(),
         );

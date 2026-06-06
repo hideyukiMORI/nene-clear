@@ -14,6 +14,7 @@ use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\BankImport\ReverseBankImportBatchInput;
 use NeneClear\BankImport\ReverseBankImportBatchUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
 
@@ -30,9 +31,10 @@ final class ReverseBankImportBatchUseCaseTest extends TestCase
         $this->transactions = new InMemoryBankTransactionRepository();
         $this->audit = new InMemoryAuditEventRepository();
         $this->useCase = new ReverseBankImportBatchUseCase(
-            $this->batches,
-            $this->transactions,
-            $this->audit,
+            new FakeTransactionManager(),
+            fn () => $this->batches,
+            fn () => $this->transactions,
+            fn () => $this->audit,
             new FixedClock(),
         );
     }

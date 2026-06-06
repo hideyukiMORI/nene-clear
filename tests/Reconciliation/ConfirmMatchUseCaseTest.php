@@ -18,7 +18,9 @@ use NeneClear\Reconciliation\ConfirmMatchUseCase;
 use NeneClear\Reconciliation\ReconciliationStatus;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
 use NeneClear\Tests\BankImport\InMemoryBankTransactionRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
+use NeneClear\Tests\Support\NullQueryExecutor;
 use PHPUnit\Framework\TestCase;
 
 final class ConfirmMatchUseCaseTest extends TestCase
@@ -38,11 +40,13 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $this->invoiceClient = new FakeInvoiceUpstreamClient();
         $this->audit = new InMemoryAuditEventRepository();
         $this->useCase = new ConfirmMatchUseCase(
-            $this->transactions,
-            $this->reconciliations,
-            $this->clientCredits,
+            new FakeTransactionManager(),
+            new NullQueryExecutor(),
+            fn () => $this->transactions,
+            fn () => $this->reconciliations,
+            fn () => $this->clientCredits,
             $this->invoiceClient,
-            $this->audit,
+            fn () => $this->audit,
             new FixedClock(),
         );
     }

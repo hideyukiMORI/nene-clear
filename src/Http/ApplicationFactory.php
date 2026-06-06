@@ -7,6 +7,7 @@ namespace NeneClear\Http;
 use LogicException;
 use Nene2\Auth\TokenVerifierInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\Error\DomainExceptionHandlerInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
@@ -57,6 +58,7 @@ final class ApplicationFactory
         bool $debug = false,
         array $allowedOrigins = [],
         ?DatabaseQueryExecutorInterface $query = null,
+        ?DatabaseTransactionManagerInterface $transactionManager = null,
         ?string $jwtSecret = null,
         ?InvoiceUpstreamClientInterface $invoiceClient = null,
         ?string $smtpHost = null,
@@ -80,8 +82,15 @@ final class ApplicationFactory
             ))->create();
         }
 
+        // Admin routes mutate state, so they require a transaction manager to keep
+        // each use case's business writes + audit record atomic (see Issue #122).
+        if ($transactionManager === null) {
+            throw new LogicException('A DatabaseTransactionManagerInterface is required when the database is configured.');
+        }
+
         $container = self::buildContainer(
             $query,
+            $transactionManager,
             $jwtSecret,
             $psr17,
             self::resolveInvoiceClient($invoiceClient, $invoiceApiBaseUrl, $invoiceBearerToken),
@@ -116,6 +125,7 @@ final class ApplicationFactory
      */
     private static function buildContainer(
         DatabaseQueryExecutorInterface $query,
+        DatabaseTransactionManagerInterface $transactionManager,
         string $jwtSecret,
         Psr17Factory $psr17,
         InvoiceUpstreamClientInterface $invoiceClient,
@@ -145,6 +155,7 @@ final class ApplicationFactory
                 ),
             )
             ->set(DatabaseQueryExecutorInterface::class, static fn (ContainerInterface $c): DatabaseQueryExecutorInterface => $query)
+            ->set(DatabaseTransactionManagerInterface::class, static fn (ContainerInterface $c): DatabaseTransactionManagerInterface => $transactionManager)
             ->set(ClockInterface::class, static fn (ContainerInterface $c): ClockInterface => new UtcClock())
             ->set(JwtTokenService::class, static fn (ContainerInterface $c): JwtTokenService => new JwtTokenService($jwtSecret))
             ->set(TokenIssuerInterface::class, static fn (ContainerInterface $c): TokenIssuerInterface => ServiceResolver::get($c, JwtTokenService::class))

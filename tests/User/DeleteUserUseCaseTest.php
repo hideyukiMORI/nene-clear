@@ -6,6 +6,7 @@ namespace NeneClear\Tests\User;
 
 use NeneClear\Auth\Role;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\User\DeleteUserUseCase;
 use NeneClear\User\User;
@@ -24,7 +25,7 @@ final class DeleteUserUseCaseTest extends TestCase
 
     private function useCase(InMemoryUserRepository $repo): DeleteUserUseCase
     {
-        return new DeleteUserUseCase($repo, $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new DeleteUserUseCase(new FakeTransactionManager(), fn () => $repo, fn () => $this->audit, new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     private function seedUser(int $orgId = 7): InMemoryUserRepository

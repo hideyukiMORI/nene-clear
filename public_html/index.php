@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 use Dotenv\Dotenv;
 use Nene2\Config\DatabaseConfig;
-use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseConnectionFactoryInterface;
 use Nene2\Database\PdoConnectionFactory;
 use Nene2\Database\PdoDatabaseQueryExecutor;
+use Nene2\Database\PdoDatabaseTransactionManager;
 use Nene2\Http\ResponseEmitter;
 use NeneClear\Http\ApplicationFactory;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -27,9 +28,11 @@ $debug = $env('APP_DEBUG', 'false') === 'true';
 $jwtSecret = $env('NENE_CLEAR_JWT_SECRET') ?: null;
 
 // Resilient DB wiring: if the database is unconfigured or unreachable, the app
-// still boots and serves /health. Authenticated routes activate only when both
-// the executor and a JWT secret are available (see ApplicationFactory).
-$query = (static function () use ($env): ?DatabaseQueryExecutorInterface {
+// still boots and serves /health. Authenticated routes activate only when the
+// executor, the transaction manager, and a JWT secret are all available (see
+// ApplicationFactory). The executor and the transaction manager share one
+// connection factory so transactional() can open its own connection (Issue #122).
+$connectionFactory = (static function () use ($env): ?DatabaseConnectionFactoryInterface {
     try {
         $adapter = $env('DB_ADAPTER', 'sqlite');
         $config = $adapter === 'mysql'
@@ -46,11 +49,14 @@ $query = (static function () use ($env): ?DatabaseQueryExecutorInterface {
             )
             : DatabaseConfig::sqlite($env('DB_NAME') ?: dirname(__DIR__) . '/database/nene_clear.sqlite3');
 
-        return new PdoDatabaseQueryExecutor(new PdoConnectionFactory($config));
+        return new PdoConnectionFactory($config);
     } catch (\Throwable) {
         return null;
     }
 })();
+
+$query = $connectionFactory !== null ? new PdoDatabaseQueryExecutor($connectionFactory) : null;
+$transactionManager = $connectionFactory !== null ? new PdoDatabaseTransactionManager($connectionFactory) : null;
 
 $smtpHost = $env('SMTP_HOST') ?: null;
 $invoiceApiBaseUrl = $env('NENE_INVOICE_API_BASE_URL') ?: null;
@@ -59,6 +65,7 @@ $application = ApplicationFactory::create(
     debug: $debug,
     allowedOrigins: [],
     query: $query,
+    transactionManager: $transactionManager,
     jwtSecret: $jwtSecret,
     smtpHost: $smtpHost,
     smtpPort: (int) $env('SMTP_PORT', '1025'),
