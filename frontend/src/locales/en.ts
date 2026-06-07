@@ -23,6 +23,7 @@ export const en: Record<MessageKey, string> = {
   'nav.users': 'Users',
   'nav.auditLog': 'Audit logs',
   'nav.help': 'Help',
+  'nav.disclaimer': 'Disclaimer',
   'nav.logout': 'Sign out',
 
   // ── Login ──
@@ -39,6 +40,7 @@ export const en: Record<MessageKey, string> = {
   'login.submit': 'Sign in',
   'login.error': 'Email or password is incorrect.',
   'login.copyright': '© 2026 NeNe Clear — Accounts Receivable Suite',
+  'login.disclaimer': 'Provided without warranty under the MIT License. Final reconciliation, dunning, and tax checks are your responsibility.',
 
   // ── Common ──
   'common.cancel': 'Cancel',

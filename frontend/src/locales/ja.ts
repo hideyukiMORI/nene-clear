@@ -19,6 +19,7 @@ export const ja = {
   'nav.users': 'ユーザー管理',
   'nav.auditLog': '監査ログ',
   'nav.help': 'ヘルプ',
+  'nav.disclaimer': '免責事項',
   'nav.logout': 'ログアウト',
 
   // ── Login ──
@@ -35,6 +36,7 @@ export const ja = {
   'login.submit': 'サインイン',
   'login.error': 'メールアドレスまたはパスワードが正しくありません。',
   'login.copyright': '© 2026 NeNe Clear — Accounts Receivable Suite',
+  'login.disclaimer': '本ソフトウェアは MIT ライセンスに基づき無保証で提供されます。消込・督促・税務上の最終確認はご利用者の責任で行ってください。',
 
   // ── Common ──
   'common.cancel': 'キャンセル',

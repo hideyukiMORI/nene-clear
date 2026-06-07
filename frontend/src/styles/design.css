@@ -707,6 +707,10 @@ tr.filter-empty:hover td{ background:var(--surface) !important; }
 /* ===== list row cursor (j/k highlight) ===== */
 tr.is-cursor, .is-cursor { background: var(--navy-100); box-shadow: inset 3px 0 0 var(--accent); }
 
+/* sidebar disclaimer link */
+.side-legal { display: inline-block; margin-top: 10px; font-size: 11px; color: var(--side-fg); opacity: .75; text-decoration: none; }
+.side-legal:hover { color: var(--side-fg-strong); opacity: 1; text-decoration: underline; }
+
 /* ===== Help page (ported from nene-invoice design 05, Clear tokens) ===== */
 .help-page { max-width: 1040px; margin: 0 auto; padding-bottom: 40px; }
 .help-hero { padding: 26px 0 22px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }

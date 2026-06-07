@@ -14,6 +14,13 @@ export default function HelpPage() {
   const pick = (b: Bi): string => (locale === 'en' ? b.en : b.ja)
   const activeId = useScrollSpy()
 
+  // Honour a deep link like /admin/help#disclaimer (the in-page ToC uses native
+  // anchors; this covers arriving from elsewhere). Scroll only — no state.
+  useEffect(() => {
+    const id = window.location.hash.slice(1)
+    if (id !== '') document.getElementById(id)?.scrollIntoView()
+  }, [])
+
   return (
     <div className="help-page" id="help-top">
       <header className="help-hero">

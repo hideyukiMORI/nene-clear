@@ -99,7 +99,10 @@ export default function LoginPage() {
             </Button>
             {error && <Notice variant="bad">{error}</Notice>}
           </form>
-          <p className="faint" style={{ textAlign: 'center', marginTop: 26, fontSize: '11.5px' }}>
+          <p className="faint" style={{ textAlign: 'center', marginTop: 22, fontSize: '11px', lineHeight: 1.7 }}>
+            {t('login.disclaimer')}
+          </p>
+          <p className="faint" style={{ textAlign: 'center', marginTop: 10, fontSize: '11.5px' }}>
             {t('login.copyright')}
           </p>
         </div>

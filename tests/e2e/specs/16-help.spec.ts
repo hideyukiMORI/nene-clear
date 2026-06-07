@@ -24,4 +24,18 @@ test.describe('Help page', () => {
     await page.goto('/admin/help')
     await expect(page.locator('.help-toc a.admin-only').first()).toBeVisible()
   })
+
+  test('sidebar disclaimer link opens the help disclaimer section', async ({ page }) => {
+    await bypassLogin(page)
+    await page.goto('/admin')
+    await page.getByRole('link', { name: '免責事項' }).click()
+    await expect(page).toHaveURL(/\/admin\/help#disclaimer$/)
+    await expect(page.getByRole('heading', { level: 2, name: /免責事項/ })).toBeVisible()
+  })
+
+  test('login screen shows the warranty disclaimer', async ({ page }) => {
+    await page.goto('/admin')
+    await expect(page.locator('input[name="email"]')).toBeVisible()
+    await expect(page.getByText(/MIT ライセンス/)).toBeVisible()
+  })
 })

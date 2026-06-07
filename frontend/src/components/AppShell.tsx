@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from '@/hooks/useTranslation'
 import { clearToken, isAdmin } from '@/api/client'
@@ -101,6 +101,7 @@ export default function AppShell() {
               <span>admin@example.com</span>
             </div>
           </div>
+          <Link to="/admin/help#disclaimer" className="side-legal">{t('nav.disclaimer')}</Link>
         </div>
       </aside>
 
