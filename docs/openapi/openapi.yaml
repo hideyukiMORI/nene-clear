@@ -126,11 +126,21 @@ paths:
       operationId: getCurrentUser
       responses:
         '200':
-          description: The authenticated user.
+          description: >
+            The authenticated user, plus the org's fiscal year-end month
+            (surfaced here so non-admins can default date-range filters).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                allOf:
+                  - $ref: '#/components/schemas/User'
+                  - type: object
+                    properties:
+                      fiscal_year_end_month:
+                        type: integer
+                        nullable: true
+                        minimum: 1
+                        maximum: 12
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':

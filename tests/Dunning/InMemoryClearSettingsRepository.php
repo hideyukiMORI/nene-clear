@@ -17,6 +17,11 @@ final class InMemoryClearSettingsRepository implements ClearSettingsRepositoryIn
         return $this->byOrg[$organizationId] ?? null;
     }
 
+    public function fiscalYearEndMonth(int $organizationId): ?int
+    {
+        return ($this->byOrg[$organizationId] ?? null)?->fiscalYearEndMonth;
+    }
+
     public function save(ClearSettings $settings): void
     {
         $this->byOrg[$settings->organizationId] = $settings;

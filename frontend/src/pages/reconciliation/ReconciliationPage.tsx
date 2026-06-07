@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listUnmatchedTransactions, listReconciliations,
@@ -11,6 +11,7 @@ import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/utils/format'
 
@@ -199,6 +200,25 @@ export default function ReconciliationPage() {
   const [hTo, setHTo] = useState('')
   const [hApplied, setHApplied] = useState({ status: '', invoice: '', from: '', to: '', offset: 0 })
   const [hSort, setHSort] = useState<SortState>({ by: 'id', dir: 'desc' })
+
+  // Default the confirmed-date range to the current fiscal year (org 決算月)
+  // once /me resolves; applied once, Clear resets to all. DatePicker uses
+  // YYYY/MM/DD, so convert the ISO range.
+  const { range: fyRange, settled: fySettled } = useFiscalYearDefault()
+  const fyApplied = useRef(false)
+  useEffect(() => {
+    if (!fySettled || fyApplied.current) return
+    fyApplied.current = true
+    if (!fyRange) return
+    const from = fyRange.fromIso.replace(/-/g, '/')
+    const to = fyRange.toIso.replace(/-/g, '/')
+    // One-time sync of the async org fiscal-year default into editable filter state.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setHFrom(from)
+    setHTo(to)
+    setHApplied(p => ({ ...p, from, to, offset: 0 }))
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [fySettled, fyRange])
   // Export mirrors the history list's current filter (same params, minus paging).
   const reconFilter = {
     status: hApplied.status || undefined,

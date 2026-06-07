@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Auth;
 
 use Nene2\Http\JsonResponseFactory;
+use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\User\UserRepositoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -16,6 +17,7 @@ final readonly class GetCurrentUserHandler
         private UserRepositoryInterface $users,
         private JsonResponseFactory $response,
         private LocalizedProblemDetailsFactory $problemDetails,
+        private ClearSettingsRepositoryInterface $settings,
     ) {
     }
 
@@ -31,12 +33,16 @@ final readonly class GetCurrentUserHandler
             return $this->problemDetails->create($request, 'unauthorized', 401);
         }
 
+        // Org-level fiscal year-end month is surfaced here so any authenticated
+        // user (not just admins, who alone can read full clear-settings) can
+        // default date-range filters to the current fiscal year.
         return $this->response->create([
             'user_id' => $user->id,
             'organization_id' => $user->organizationId,
             'email' => $user->email,
             'role' => $user->role->value,
             'status' => $user->status->value,
+            'fiscal_year_end_month' => $this->settings->fiscalYearEndMonth($user->organizationId ?? 0),
         ]);
     }
 }

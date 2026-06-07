@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listBankTransactions, bankTransactionsExportPath, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
@@ -6,6 +6,7 @@ import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, Filte
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
 import { yen } from '@/utils/format'
 
@@ -30,6 +31,23 @@ export default function BankTransactionsPage() {
   const [counterparty, setCounterparty] = useState('')
   const [applied, setApplied] = useState<AppliedFilter>({ status: '', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', counterparty: '', offset: 0 })
   const [sort, setSort] = useState<SortState>({ by: 'value_date', dir: 'desc' })
+
+  // Default the value-date range to the current fiscal year (decided by the
+  // org's 決算月) once /me resolves — applied once; the Clear button resets to all.
+  const { range: fyRange, settled: fySettled } = useFiscalYearDefault()
+  const fyApplied = useRef(false)
+  useEffect(() => {
+    if (!fySettled || fyApplied.current) return
+    fyApplied.current = true
+    if (!fyRange) return
+    // One-time sync of the async org fiscal-year default into editable filter
+    // state (kept editable afterwards); not derivable at first render.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setDateFrom(fyRange.fromIso)
+    setDateTo(fyRange.toIso)
+    setApplied(p => ({ ...p, dateFrom: fyRange.fromIso, dateTo: fyRange.toIso, offset: 0 }))
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [fySettled, fyRange])
 
   // Filter the export mirrors what the list shows (same params, minus paging).
   const txFilter = {

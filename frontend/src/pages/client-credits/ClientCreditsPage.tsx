@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit, downloadCsv, clientCreditsExportPath } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/utils/format'
 
@@ -68,6 +69,24 @@ export default function ClientCreditsPage() {
   const [sort, setSort] = useState<SortState>({ by: 'id', dir: 'desc' })
   const [offset, setOffset] = useState(0)
   const set = (k: keyof Filters) => (v: string) => setF(prev => ({ ...prev, [k]: v }))
+
+  // Default the created-date range to the current fiscal year (org 決算月) once
+  // /me resolves; applied once, Clear resets to all. DatePicker uses YYYY/MM/DD.
+  const { range: fyRange, settled: fySettled } = useFiscalYearDefault()
+  const fyApplied = useRef(false)
+  useEffect(() => {
+    if (!fySettled || fyApplied.current) return
+    fyApplied.current = true
+    if (!fyRange) return
+    const createdFrom = fyRange.fromIso.replace(/-/g, '/')
+    const createdTo = fyRange.toIso.replace(/-/g, '/')
+    // One-time sync of the async org fiscal-year default into editable filter state.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setF(prev => ({ ...prev, createdFrom, createdTo }))
+    setApplied(prev => ({ ...prev, createdFrom, createdTo }))
+    setOffset(0)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [fySettled, fyRange])
 
   // Export mirrors the list's current filter (same params, minus paging).
   const creditFilter = {

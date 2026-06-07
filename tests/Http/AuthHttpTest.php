@@ -35,6 +35,7 @@ final class AuthHttpTest extends TestCase
         SchemaFixture::createUsers($this->query);
         SchemaFixture::createLoginAttempts($this->query);
         SchemaFixture::createAuditEvents($this->query);
+        SchemaFixture::createClearSettings($this->query);
 
         (new PdoUserRepository($this->query))->save(new User(
             email: 'admin@acme.example',
@@ -146,6 +147,34 @@ final class AuthHttpTest extends TestCase
         self::assertSame('admin@acme.example', $data['email'] ?? null);
         self::assertSame('admin', $data['role'] ?? null);
         self::assertSame(7, $data['organization_id'] ?? null);
+        // Org fiscal year-end month is surfaced (null until configured).
+        self::assertArrayHasKey('fiscal_year_end_month', $data);
+        self::assertNull($data['fiscal_year_end_month']);
+    }
+
+    public function test_me_includes_configured_fiscal_year_end_month(): void
+    {
+        (new \NeneClear\ClearSettings\PdoClearSettingsRepository(
+            $this->query,
+            new \NeneClear\BankImport\PdoBankAccountRepository($this->query),
+        ))->save(new \NeneClear\ClearSettings\ClearSettings(
+            organizationId: 7,
+            upstreamBaseUrl: '',
+            upstreamTokenRef: '',
+            dunningMinIntervalDays: 7,
+            fiscalYearEndMonth: 3,
+        ));
+
+        $token = $this->decode($this->postJson('/admin/auth/login', [
+            'email' => 'admin@acme.example',
+            'password' => self::PASSWORD,
+        ]))['token'];
+        self::assertIsString($token);
+
+        $response = $this->app->handle(
+            $this->psr17->createServerRequest('GET', '/admin/auth/me')->withHeader('Authorization', 'Bearer ' . $token),
+        );
+        self::assertSame(3, $this->decode($response)['fiscal_year_end_month'] ?? null);
     }
 
     public function test_me_requires_a_token(): void
