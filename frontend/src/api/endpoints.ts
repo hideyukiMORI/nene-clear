@@ -31,6 +31,15 @@ export function getCurrentUser(signal?: AbortSignal) {
   return api.get<User>(`${BASE}/auth/me`, signal)
 }
 
+// --- Invitation onboarding (public; the invitee has no session yet) ---
+export function getInvitation(token: string, signal?: AbortSignal) {
+  return api.get<{ email: string }>(`${BASE}/auth/invitation?token=${encodeURIComponent(token)}`, signal)
+}
+
+export function acceptInvitation(token: string, password: string) {
+  return api.post<User>(`${BASE}/auth/invitation/accept`, { token, password })
+}
+
 // --- Bank import ---
 export interface BankImportBatchQuery {
   sourceFilename?: string

@@ -45,10 +45,37 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
                 ),
             )
             ->set(
+                UserInvitationRepositoryInterface::class,
+                static fn (ContainerInterface $c): UserInvitationRepositoryInterface => new PdoUserInvitationRepository(
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                ),
+            )
+            ->set(
                 CreateUserUseCaseInterface::class,
                 static fn (ContainerInterface $c): CreateUserUseCaseInterface => new CreateUserUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    static fn (DatabaseQueryExecutorInterface $tx): UserInvitationRepositoryInterface => new PdoUserInvitationRepository($tx),
+                    ServiceResolver::get($c, InvitationMailerInterface::class),
+                    ServiceResolver::get($c, InvitationLinkBuilder::class),
+                    ServiceResolver::get($c, ClockInterface::class),
+                ),
+            )
+            ->set(
+                GetInvitationUseCaseInterface::class,
+                static fn (ContainerInterface $c): GetInvitationUseCaseInterface => new GetInvitationUseCase(
+                    ServiceResolver::get($c, UserInvitationRepositoryInterface::class),
+                    ServiceResolver::get($c, UserRepositoryInterface::class),
+                    ServiceResolver::get($c, ClockInterface::class),
+                ),
+            )
+            ->set(
+                AcceptInvitationUseCaseInterface::class,
+                static fn (ContainerInterface $c): AcceptInvitationUseCaseInterface => new AcceptInvitationUseCase(
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): UserInvitationRepositoryInterface => new PdoUserInvitationRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
@@ -94,6 +121,31 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
                         ServiceResolver::get($c, DeleteUserUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
                     ),
+                ),
+            )
+            ->set(
+                InvitationRouteRegistrar::class,
+                static fn (ContainerInterface $c): InvitationRouteRegistrar => new InvitationRouteRegistrar(
+                    new GetInvitationHandler(
+                        ServiceResolver::get($c, GetInvitationUseCaseInterface::class),
+                        ServiceResolver::get($c, JsonResponseFactory::class),
+                    ),
+                    new AcceptInvitationHandler(
+                        ServiceResolver::get($c, AcceptInvitationUseCaseInterface::class),
+                        ServiceResolver::get($c, JsonResponseFactory::class),
+                    ),
+                ),
+            )
+            ->set(
+                InvitationInvalidExceptionHandler::class,
+                static fn (ContainerInterface $c): InvitationInvalidExceptionHandler => new InvitationInvalidExceptionHandler(
+                    ServiceResolver::get($c, LocalizedProblemDetailsFactory::class),
+                ),
+            )
+            ->set(
+                InvitationExpiredExceptionHandler::class,
+                static fn (ContainerInterface $c): InvitationExpiredExceptionHandler => new InvitationExpiredExceptionHandler(
+                    ServiceResolver::get($c, LocalizedProblemDetailsFactory::class),
                 ),
             )
             ->set(

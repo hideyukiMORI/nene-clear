@@ -75,6 +75,9 @@ $application = ApplicationFactory::create(
     smtpFromName: $env('SMTP_FROM_NAME', 'NeNe Clear'),
     invoiceApiBaseUrl: $invoiceApiBaseUrl,
     invoiceBearerToken: $env('NENE_INVOICE_BEARER_TOKEN'),
+    // Absolute base for invitation e-mail links. Same-origin in production; the
+    // dev frontend (Vite) runs on a separate port, so default to it locally.
+    appBaseUrl: $env('NENE_CLEAR_APP_URL', 'http://localhost:5383'),
 );
 
 $psr17 = new Psr17Factory();

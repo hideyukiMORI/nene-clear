@@ -48,6 +48,9 @@ use NeneClear\Reconciliation\ReconciliationAlreadyReversedExceptionHandler;
 use NeneClear\Reconciliation\ReconciliationNotFoundExceptionHandler;
 use NeneClear\Reconciliation\ReconciliationRouteRegistrar;
 use NeneClear\Reconciliation\ReconciliationServiceProvider;
+use NeneClear\User\InvitationExpiredExceptionHandler;
+use NeneClear\User\InvitationInvalidExceptionHandler;
+use NeneClear\User\InvitationRouteRegistrar;
 use NeneClear\User\RoleNotAssignableExceptionHandler;
 use NeneClear\User\UserAlreadyExistsExceptionHandler;
 use NeneClear\User\UserNotFoundExceptionHandler;
@@ -89,6 +92,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, AuthRouteRegistrar::class),
                     ServiceResolver::get($c, OrganizationRouteRegistrar::class),
                     ServiceResolver::get($c, UserRouteRegistrar::class),
+                    ServiceResolver::get($c, InvitationRouteRegistrar::class),
                     ServiceResolver::get($c, AuditRouteRegistrar::class),
                     ServiceResolver::get($c, BankImportRouteRegistrar::class),
                     ServiceResolver::get($c, ClearSettingsRouteRegistrar::class),
@@ -109,6 +113,8 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, OrganizationAlreadyExistsExceptionHandler::class),
                     ServiceResolver::get($c, UserNotFoundExceptionHandler::class),
                     ServiceResolver::get($c, UserAlreadyExistsExceptionHandler::class),
+                    ServiceResolver::get($c, InvitationInvalidExceptionHandler::class),
+                    ServiceResolver::get($c, InvitationExpiredExceptionHandler::class),
                     ServiceResolver::get($c, RoleNotAssignableExceptionHandler::class),
                     ServiceResolver::get($c, DuplicateBankImportExceptionHandler::class),
                     ServiceResolver::get($c, BankAccountNotFoundExceptionHandler::class),

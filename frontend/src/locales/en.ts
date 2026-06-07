@@ -253,6 +253,23 @@ export const en: Record<MessageKey, string> = {
   'users.status.active': 'Active',
   'users.status.invited': 'Invited',
 
+  // ── Accept invitation (onboarding) ──
+  'acceptInvite.pitchTitle': 'Activate your account',
+  'acceptInvite.pitchBody': 'Set a password to start signing in to NeNe Clear.',
+  'acceptInvite.title': 'Set your password',
+  'acceptInvite.subtitle': 'Set a password for {email}.',
+  'acceptInvite.password': 'Password (at least 8 characters)',
+  'acceptInvite.passwordConfirm': 'Confirm password',
+  'acceptInvite.submit': 'Set password and activate account',
+  'acceptInvite.loading': 'Checking your invitation…',
+  'acceptInvite.tooShort': 'Password must be at least 8 characters.',
+  'acceptInvite.mismatch': 'Passwords do not match.',
+  'acceptInvite.invalid': 'This invitation link is invalid or has already been used. Ask an administrator to send a new one.',
+  'acceptInvite.expired': 'This invitation link has expired. Ask an administrator to send a new one.',
+  'acceptInvite.failed': 'Could not set your password. Please try again later.',
+  'acceptInvite.success': 'Your account is now active. Please sign in.',
+  'acceptInvite.toLogin': 'Go to sign in',
+
   // ── Audit log (operation history) ──
   'audit.title': 'Audit logs',
   'audit.subtitle': 'An audit trail recording who changed what, when, and how (before/after) for every operation.',

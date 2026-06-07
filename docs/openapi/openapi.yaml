@@ -136,6 +136,67 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /admin/auth/invitation:
+    get:
+      tags: [Auth]
+      summary: Validate an invitation token
+      description: >
+        Public (no session). Validates the raw token from the invitation e-mail
+        link and returns the invitee's e-mail so the accept-invite page can show
+        who is being onboarded.
+      operationId: getInvitation
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The invitation is valid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email: { type: string, format: email }
+                required: [email]
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Invitation token expired (`invitation-expired`).
+
+  /admin/auth/invitation/accept:
+    post:
+      tags: [Auth]
+      summary: Accept an invitation and set a password
+      description: >
+        Public (no session). Consumes the invitation token, sets the invitee's
+        password and activates the account. The caller then logs in normally.
+      operationId: acceptInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+              required: [token, password]
+      responses:
+        '200':
+          description: The account is now active.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Invitation token expired (`invitation-expired`).
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
   /admin/organizations:
     get:
       tags: [Organization]

@@ -34,7 +34,11 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
      *
      * @var list<string>
      */
-    private const array PUBLIC_PATHS = ['/', '/health', '/machine/health', '/admin/auth/login'];
+    private const array PUBLIC_PATHS = [
+        '/', '/health', '/machine/health', '/admin/auth/login',
+        // Invitee has no session yet; the invitation token is the credential.
+        '/admin/auth/invitation', '/admin/auth/invitation/accept',
+    ];
 
     public function register(ContainerBuilder $builder): void
     {
