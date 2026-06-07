@@ -14,6 +14,7 @@ import DunningPage from '@/pages/dunning/DunningPage'
 import SettingsPage from '@/pages/settings/SettingsPage'
 import UsersPage from '@/pages/users/UsersPage'
 import AuditLogPage from '@/pages/audit/AuditLogPage'
+import HelpPage from '@/pages/help/HelpPage'
 
 /**
  * Auth shell. Subscribes to the reactive token store so an expired/cleared
@@ -57,6 +58,7 @@ export const router = createBrowserRouter([
       { path: 'settings', element: <RequireAdmin><SettingsPage /></RequireAdmin> },
       { path: 'users', element: <RequireAdmin><UsersPage /></RequireAdmin> },
       { path: 'audit-log', element: <RequireAdmin><AuditLogPage /></RequireAdmin> },
+      { path: 'help', element: <HelpPage /> },
     ],
   },
   {

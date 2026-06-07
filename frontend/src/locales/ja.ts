@@ -18,6 +18,7 @@ export const ja = {
   'nav.settings': '設定',
   'nav.users': 'ユーザー管理',
   'nav.auditLog': '監査ログ',
+  'nav.help': 'ヘルプ',
   'nav.logout': 'ログアウト',
 
   // ── Login ──
