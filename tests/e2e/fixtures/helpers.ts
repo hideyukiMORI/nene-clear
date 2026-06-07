@@ -13,7 +13,19 @@ import type { Page, Route } from '@playwright/test'
  */
 
 export const TOKEN_KEY = 'nene_clear_token'
-export const E2E_TOKEN = 'e2e-test-token'
+
+/**
+ * A decode-only stub JWT (header.payload.sig, not signed) carrying a `role`
+ * claim and a far-future `exp`. The SPA never verifies the signature — it only
+ * base64url-decodes the payload for isAuthenticated()/isAdmin() — so this is
+ * enough to drive role-gated nav and routes (e.g. admin-only Users/Settings).
+ */
+export function fakeJwt(role = 'admin'): string {
+  const payload = Buffer.from(JSON.stringify({ role, exp: 9999999999 })).toString('base64url')
+  return `e2e.${payload}.sig`
+}
+
+export const E2E_TOKEN = fakeJwt('admin')
 
 export async function bypassLogin(page: Page): Promise<void> {
   await page.addInitScript(
@@ -37,7 +49,7 @@ export async function loginViaForm(
   const email = opts.email ?? 'admin@nene-clear.dev'
   await apiRoute(page, '**/admin/auth/login', (route) =>
     json(route, 200, {
-      token: 'e2e-jwt',
+      token: fakeJwt(opts.role ?? 'admin'),
       user: { user_id: 1, email, role: opts.role ?? 'admin', organization_id: opts.orgId ?? 7 },
     }),
   )
