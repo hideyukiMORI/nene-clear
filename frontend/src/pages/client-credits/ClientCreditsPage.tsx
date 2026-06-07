@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listClientCredits, applyClientCredit, downloadCsv } from '@/api/endpoints'
+import { listClientCredits, applyClientCredit, downloadCsv, clientCreditsExportPath } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
@@ -69,22 +69,22 @@ export default function ClientCreditsPage() {
   const [offset, setOffset] = useState(0)
   const set = (k: keyof Filters) => (v: string) => setF(prev => ({ ...prev, [k]: v }))
 
+  // Export mirrors the list's current filter (same params, minus paging).
+  const creditFilter = {
+    clientId: applied.clientId || undefined,
+    status: applied.status || undefined,
+    amountMinCents: yenToCents(applied.amountMin),
+    amountMaxCents: yenToCents(applied.amountMax),
+    remainingMinCents: yenToCents(applied.remainingMin),
+    remainingMaxCents: yenToCents(applied.remainingMax),
+    createdFrom: isoDate(applied.createdFrom),
+    createdTo: isoDate(applied.createdTo),
+    sortBy: sort.by,
+    sortDir: sort.dir,
+  }
   const creditsQ = useQuery({
     queryKey: ['client-credits', applied, sort, offset],
-    queryFn: ({ signal }) => listClientCredits({
-      clientId: applied.clientId || undefined,
-      status: applied.status || undefined,
-      amountMinCents: yenToCents(applied.amountMin),
-      amountMaxCents: yenToCents(applied.amountMax),
-      remainingMinCents: yenToCents(applied.remainingMin),
-      remainingMaxCents: yenToCents(applied.remainingMax),
-      createdFrom: isoDate(applied.createdFrom),
-      createdTo: isoDate(applied.createdTo),
-      sortBy: sort.by,
-      sortDir: sort.dir,
-      limit: PAGE,
-      offset,
-    }, signal),
+    queryFn: ({ signal }) => listClientCredits({ ...creditFilter, limit: PAGE, offset }, signal),
   })
 
   function search() { setApplied(f); setOffset(0) }
@@ -106,7 +106,7 @@ export default function ClientCreditsPage() {
         title={t('clientCredit.title')}
         sub={t('clientCredit.subtitle')}
         actions={
-          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/client-credits', 'client-credits.csv')}>
+          <Button variant="ghost" onClick={() => void downloadCsv(clientCreditsExportPath(creditFilter), 'client-credits.csv')}>
             <Icon name="export" />{t('export.csv')}
           </Button>
         }

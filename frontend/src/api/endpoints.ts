@@ -22,6 +22,12 @@ import type {
 
 const BASE = '/admin'
 
+/** Append a query string to a path when there are any params. */
+function withQuery(path: string, params: URLSearchParams): string {
+  const s = params.toString()
+  return s === '' ? path : `${path}?${s}`
+}
+
 // --- Auth ---
 export function login(email: string, password: string) {
   return api.post<{ token: string }>(`${BASE}/auth/login`, { email, password })
@@ -115,7 +121,9 @@ export interface BankTransactionFilter {
   offset?: number
 }
 
-export function listBankTransactions(filter: BankTransactionFilter, signal?: AbortSignal) {
+// Filter + sort params (no pagination) — shared by the list query and the CSV
+// export path so the export always mirrors what the page is showing.
+function bankTransactionQuery(filter: BankTransactionFilter): URLSearchParams {
   const q = new URLSearchParams()
   if (filter.status) q.set('status', filter.status)
   if (filter.value_date_from) q.set('value_date_from', filter.value_date_from)
@@ -125,9 +133,18 @@ export function listBankTransactions(filter: BankTransactionFilter, signal?: Abo
   if (filter.counterparty) q.set('counterparty', filter.counterparty)
   if (filter.sortBy) q.set('sort_by', filter.sortBy)
   if (filter.sortDir) q.set('sort_dir', filter.sortDir)
+  return q
+}
+
+export function listBankTransactions(filter: BankTransactionFilter, signal?: AbortSignal) {
+  const q = bankTransactionQuery(filter)
   q.set('limit', String(filter.limit ?? 50))
   q.set('offset', String(filter.offset ?? 0))
   return api.get<ListEnvelope<BankTransaction>>(`${BASE}/bank-transactions?${q}`, signal)
+}
+
+export function bankTransactionsExportPath(filter: BankTransactionFilter): string {
+  return withQuery(`${BASE}/export/bank-transactions`, bankTransactionQuery(filter))
 }
 
 export interface UnmatchedQuery {
@@ -167,8 +184,8 @@ export interface ReconciliationQuery {
   offset?: number
 }
 
-export function listReconciliations(params: ReconciliationQuery, signal?: AbortSignal) {
-  const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+function reconciliationQuery(params: ReconciliationQuery): URLSearchParams {
+  const q = new URLSearchParams()
   if (params.status) q.set('status', params.status)
   if (params.bankTransactionId) q.set('bank_transaction_id', params.bankTransactionId)
   if (params.invoiceId) q.set('invoice_id', params.invoiceId)
@@ -176,7 +193,18 @@ export function listReconciliations(params: ReconciliationQuery, signal?: AbortS
   if (params.confirmedTo) q.set('confirmed_to', params.confirmedTo)
   if (params.sortBy) q.set('sort_by', params.sortBy)
   if (params.sortDir) q.set('sort_dir', params.sortDir)
+  return q
+}
+
+export function listReconciliations(params: ReconciliationQuery, signal?: AbortSignal) {
+  const q = reconciliationQuery(params)
+  q.set('limit', String(params.limit ?? 50))
+  q.set('offset', String(params.offset ?? 0))
   return api.get<ListEnvelope<Reconciliation>>(`${BASE}/reconciliations?${q}`, signal)
+}
+
+export function reconciliationsExportPath(params: ReconciliationQuery): string {
+  return withQuery(`${BASE}/export/reconciliations`, reconciliationQuery(params))
 }
 
 export function getReconciliation(id: number, signal?: AbortSignal) {
@@ -223,8 +251,8 @@ export interface ClientCreditQuery {
   offset?: number
 }
 
-export function listClientCredits(params: ClientCreditQuery, signal?: AbortSignal) {
-  const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+function clientCreditQuery(params: ClientCreditQuery): URLSearchParams {
+  const q = new URLSearchParams()
   if (params.clientId) q.set('client_id', params.clientId)
   if (params.status) q.set('status', params.status)
   if (params.amountMinCents != null) q.set('amount_min_cents', String(params.amountMinCents))
@@ -235,7 +263,18 @@ export function listClientCredits(params: ClientCreditQuery, signal?: AbortSigna
   if (params.createdTo) q.set('created_to', params.createdTo)
   if (params.sortBy) q.set('sort_by', params.sortBy)
   if (params.sortDir) q.set('sort_dir', params.sortDir)
+  return q
+}
+
+export function listClientCredits(params: ClientCreditQuery, signal?: AbortSignal) {
+  const q = clientCreditQuery(params)
+  q.set('limit', String(params.limit ?? 50))
+  q.set('offset', String(params.offset ?? 0))
   return api.get<ListEnvelope<ClientCredit>>(`${BASE}/client-credits?${q}`, signal)
+}
+
+export function clientCreditsExportPath(params: ClientCreditQuery): string {
+  return withQuery(`${BASE}/export/client-credits`, clientCreditQuery(params))
 }
 
 export function applyClientCredit(creditId: number, invoiceId: number, amountCents: number) {
@@ -266,8 +305,8 @@ export interface DunningNoticeQuery {
   offset?: number
 }
 
-export function listDunningNotices(params: DunningNoticeQuery, signal?: AbortSignal) {
-  const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+function dunningNoticeQuery(params: DunningNoticeQuery): URLSearchParams {
+  const q = new URLSearchParams()
   if (params.invoiceNumber) q.set('invoice_number', params.invoiceNumber)
   if (params.recipientEmail) q.set('recipient_email', params.recipientEmail)
   if (params.outstandingMinCents != null) q.set('outstanding_min_cents', String(params.outstandingMinCents))
@@ -276,7 +315,18 @@ export function listDunningNotices(params: DunningNoticeQuery, signal?: AbortSig
   if (params.sentTo) q.set('sent_to', params.sentTo)
   if (params.sortBy) q.set('sort_by', params.sortBy)
   if (params.sortDir) q.set('sort_dir', params.sortDir)
+  return q
+}
+
+export function listDunningNotices(params: DunningNoticeQuery, signal?: AbortSignal) {
+  const q = dunningNoticeQuery(params)
+  q.set('limit', String(params.limit ?? 50))
+  q.set('offset', String(params.offset ?? 0))
   return api.get<ListEnvelope<DunningNotice>>(`${BASE}/dunning-notices?${q}`, signal)
+}
+
+export function dunningNoticesExportPath(params: DunningNoticeQuery): string {
+  return withQuery(`${BASE}/export/dunning-notices`, dunningNoticeQuery(params))
 }
 
 // --- Audit trail (admin) ---

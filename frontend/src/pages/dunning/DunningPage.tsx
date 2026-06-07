@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listDunningNotices, sendDunningNotice, listUpstreamInvoices,
-  listDunningPauses, pauseDunningNotice, resumeDunningNotice, downloadCsv,
+  listDunningPauses, pauseDunningNotice, resumeDunningNotice, downloadCsv, dunningNoticesExportPath,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
 import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
@@ -70,15 +70,17 @@ export default function DunningPage() {
   const [hTo, setHTo] = useState('')
   const [hApplied, setHApplied] = useState({ invoice: '', email: '', from: '', to: '', offset: 0 })
   const [hSort, setHSort] = useState<SortState>({ by: 'sent_at', dir: 'desc' })
+  // Export mirrors the history list's current filter (same params, minus paging).
+  const noticesFilter = {
+    invoiceNumber: hApplied.invoice || undefined,
+    recipientEmail: hApplied.email || undefined,
+    sentFrom: hApplied.from ? hApplied.from.replace(/\//g, '-') : undefined,
+    sentTo: hApplied.to ? hApplied.to.replace(/\//g, '-') : undefined,
+    sortBy: hSort.by, sortDir: hSort.dir,
+  }
   const noticesQ = useQuery({
     queryKey: ['dunning-notices', hApplied, hSort],
-    queryFn: ({ signal }) => listDunningNotices({
-      invoiceNumber: hApplied.invoice || undefined,
-      recipientEmail: hApplied.email || undefined,
-      sentFrom: hApplied.from ? hApplied.from.replace(/\//g, '-') : undefined,
-      sentTo: hApplied.to ? hApplied.to.replace(/\//g, '-') : undefined,
-      sortBy: hSort.by, sortDir: hSort.dir, limit: HPAGE, offset: hApplied.offset,
-    }, signal),
+    queryFn: ({ signal }) => listDunningNotices({ ...noticesFilter, limit: HPAGE, offset: hApplied.offset }, signal),
   })
   function hSearch() { setHApplied({ invoice: hInvoice, email: hEmail, from: hFrom, to: hTo, offset: 0 }) }
   function hClear() { setHInvoice(''); setHEmail(''); setHFrom(''); setHTo(''); setHApplied({ invoice: '', email: '', from: '', to: '', offset: 0 }) }
@@ -107,7 +109,7 @@ export default function DunningPage() {
         title={t('dunning.title')}
         sub={t('dunning.subtitle')}
         actions={
-          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/dunning-notices', 'dunning-notices.csv')}>
+          <Button variant="ghost" onClick={() => void downloadCsv(dunningNoticesExportPath(noticesFilter), 'dunning-notices.csv')}>
             <Icon name="export" />{t('export.csv')}
           </Button>
         }

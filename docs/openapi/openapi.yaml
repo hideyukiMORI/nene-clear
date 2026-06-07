@@ -650,7 +650,8 @@ paths:
       description: >
         Convenience filter for `status=unmatched` / `partially_matched`,
         searchable by transaction date, amount, and counterparty and sortable
-        (same query contract as `listBankTransactions`, minus `status`).
+        (same query contract as `listBankTransactions`, minus `status`). The
+        export endpoint accepts the same filter params.
       operationId: listUnmatchedTransactions
       parameters:
         - $ref: '#/components/parameters/Limit'
@@ -1214,16 +1215,13 @@ paths:
         Requires `view_reconciliation`.
       operationId: exportReconciliations
       parameters:
-        - name: date_from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: date_to
-          in: query
-          schema:
-            type: string
-            format: date
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ReconciliationStatus' } }
+        - { name: bank_transaction_id, in: query, schema: { type: integer } }
+        - { name: invoice_id, in: query, schema: { type: integer } }
+        - { name: confirmed_from, in: query, schema: { type: string, format: date } }
+        - { name: confirmed_to, in: query, schema: { type: string, format: date } }
+        - { name: sort_by, in: query, schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: CSV file download.
@@ -1241,8 +1239,22 @@ paths:
     get:
       tags: [Export]
       summary: Export client credits as CSV
-      description: UTF-8 BOM CSV; one row per client credit record. Requires `view_reconciliation`.
+      description: >
+        UTF-8 BOM CSV; one row per client credit record. Accepts the same filter
+        params as listClientCredits so the export mirrors the list.
+        Requires `view_reconciliation`.
       operationId: exportClientCredits
+      parameters:
+        - { name: client_id, in: query, schema: { type: integer } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ClientCreditStatus' } }
+        - { name: amount_min_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: amount_max_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: remaining_min_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: remaining_max_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: created_from, in: query, schema: { type: string, format: date } }
+        - { name: created_to, in: query, schema: { type: string, format: date } }
+        - { name: sort_by, in: query, schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: CSV file download.
@@ -1263,8 +1275,19 @@ paths:
       description: >
         UTF-8 BOM CSV; one row per dunning send record (operational/audit copy).
         Columns reuse the dunning-notice response fields, incl.
-        `outstanding_at_send_cents`. Requires `view_reconciliation`.
+        `outstanding_at_send_cents`. Accepts the same filter params as
+        listDunningNotices so the export mirrors the list.
+        Requires `view_reconciliation`.
       operationId: exportDunningNotices
+      parameters:
+        - { name: invoice_number, in: query, schema: { type: string } }
+        - { name: recipient_email, in: query, schema: { type: string } }
+        - { name: outstanding_min_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: outstanding_max_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: sent_from, in: query, schema: { type: string, format: date } }
+        - { name: sent_to, in: query, schema: { type: string, format: date } }
+        - { name: sort_by, in: query, schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: CSV file download.
@@ -1284,20 +1307,19 @@ paths:
       summary: Export bank transactions as CSV
       description: >
         UTF-8 BOM CSV; one row per bank transaction. Acts as the 電帳法
-        evidence companion export. Supports date_from / date_to filters.
+        evidence companion export. Accepts the same filter params as
+        listBankTransactions so the export mirrors the list.
         Requires `view_reconciliation`.
       operationId: exportBankTransactions
       parameters:
-        - name: date_from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: date_to
-          in: query
-          schema:
-            type: string
-            format: date
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/BankTransactionStatus' } }
+        - { name: value_date_from, in: query, schema: { type: string, format: date } }
+        - { name: value_date_to, in: query, schema: { type: string, format: date } }
+        - { name: amount_min_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: amount_max_cents, in: query, schema: { type: integer, format: int64 } }
+        - { name: counterparty, in: query, schema: { type: string } }
+        - { name: sort_by, in: query, schema: { type: string } }
+        - { name: sort_dir, in: query, schema: { type: string, enum: [asc, desc] } }
       responses:
         '200':
           description: CSV file download.
