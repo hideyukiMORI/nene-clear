@@ -166,6 +166,8 @@ export const en: Record<MessageKey, string> = {
   'reconciliation.status.confirmed': 'Confirmed',
   'reconciliation.status.reversed': 'Reversed',
   'reconciliation.noUnmatched': 'No unmatched transactions',
+  'reconciliation.error.noAllocation': 'Enter at least one allocation (invoice ID and amount).',
+  'reconciliation.error.incompleteAllocation': 'Each allocation row needs both an invoice ID and an amount.',
 
   // ── Client credits ──
   'clientCredit.title': 'Client Credits',

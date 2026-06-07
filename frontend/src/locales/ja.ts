@@ -162,6 +162,8 @@ export const ja = {
   'reconciliation.status.confirmed': '確定済',
   'reconciliation.status.reversed': '取消済',
   'reconciliation.noUnmatched': '未消込の取引はありません',
+  'reconciliation.error.noAllocation': '消込先を1件以上入力してください（請求書IDと消込金額）。',
+  'reconciliation.error.incompleteAllocation': '消込先の行は、請求書IDと消込金額の両方を入力してください。',
 
   // ── Client credits ──
   'clientCredit.title': '前受金',
