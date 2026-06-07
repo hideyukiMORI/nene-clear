@@ -37,6 +37,16 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
         );
     }
 
+    public function fiscalYearEndMonth(int $organizationId): ?int
+    {
+        $row = $this->query->fetchOne(
+            'SELECT fiscal_year_end_month FROM clear_settings WHERE organization_id = ?',
+            [$organizationId],
+        );
+
+        return $row !== null && isset($row['fiscal_year_end_month']) ? (int) $row['fiscal_year_end_month'] : null;
+    }
+
     public function save(ClearSettings $settings): void
     {
         // Upsert without a destructive DELETE: update the existing row, and

@@ -13,6 +13,7 @@ use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Audit\AuditRecorderInterface;
+use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\User\UserRepositoryInterface;
@@ -71,6 +72,7 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                         ServiceResolver::get($c, UserRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
                         ServiceResolver::get($c, LocalizedProblemDetailsFactory::class),
+                        ServiceResolver::get($c, ClearSettingsRepositoryInterface::class),
                     ),
                 ),
             )

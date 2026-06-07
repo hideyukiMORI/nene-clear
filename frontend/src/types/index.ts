@@ -6,6 +6,8 @@ export interface User {
   email: string
   role: 'superadmin' | 'admin' | 'member' | 'viewer'
   status: 'active' | 'invited'
+  /** Org fiscal year-end month (1–12), surfaced on /me. Null when unset. */
+  fiscal_year_end_month?: number | null
 }
 
 export interface BankImportBatch {
