@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listBankTransactions, bankTransactionsExportPath, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
@@ -23,31 +23,18 @@ type AppliedFilter = { status: string; dateFrom: string; dateTo: string; amountM
 
 export default function BankTransactionsPage() {
   const { t } = useTranslation()
+  // The org's current fiscal year (decided by 決算月) seeds the value-date
+  // range. /me is loaded by AppShell before this page mounts, so it's available
+  // synchronously here; the Clear button resets to all.
+  const { range: fyRange } = useFiscalYearDefault()
   const [status, setStatus] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [dateFrom, setDateFrom] = useState(fyRange?.fromIso ?? '')
+  const [dateTo, setDateTo] = useState(fyRange?.toIso ?? '')
   const [amountMin, setAmountMin] = useState('')
   const [amountMax, setAmountMax] = useState('')
   const [counterparty, setCounterparty] = useState('')
-  const [applied, setApplied] = useState<AppliedFilter>({ status: '', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', counterparty: '', offset: 0 })
+  const [applied, setApplied] = useState<AppliedFilter>({ status: '', dateFrom: fyRange?.fromIso ?? '', dateTo: fyRange?.toIso ?? '', amountMin: '', amountMax: '', counterparty: '', offset: 0 })
   const [sort, setSort] = useState<SortState>({ by: 'value_date', dir: 'desc' })
-
-  // Default the value-date range to the current fiscal year (decided by the
-  // org's 決算月) once /me resolves — applied once; the Clear button resets to all.
-  const { range: fyRange, settled: fySettled } = useFiscalYearDefault()
-  const fyApplied = useRef(false)
-  useEffect(() => {
-    if (!fySettled || fyApplied.current) return
-    fyApplied.current = true
-    if (!fyRange) return
-    // One-time sync of the async org fiscal-year default into editable filter
-    // state (kept editable afterwards); not derivable at first render.
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setDateFrom(fyRange.fromIso)
-    setDateTo(fyRange.toIso)
-    setApplied(p => ({ ...p, dateFrom: fyRange.fromIso, dateTo: fyRange.toIso, offset: 0 }))
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [fySettled, fyRange])
 
   // Filter the export mirrors what the list shows (same params, minus paging).
   const txFilter = {

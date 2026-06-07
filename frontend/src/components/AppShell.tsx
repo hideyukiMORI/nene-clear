@@ -1,6 +1,8 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from '@/hooks/useTranslation'
 import { clearToken, isAdmin } from '@/api/client'
+import { getCurrentUser } from '@/api/endpoints'
 import { Icon, LogoMark } from '@/components/ui'
 import { KeyboardShortcuts, openShortcutsOverlay } from '@/components/keyboard'
 import type { MessageKey } from '@/locales'
@@ -45,6 +47,17 @@ export default function AppShell() {
   const navigate = useNavigate()
   const admin = isAdmin()
   const adminNav = ADMIN_NAV.filter(item => !item.adminOnly || admin)
+
+  // Load the session/org context (incl. the org's fiscal year-end month) once
+  // per session and hold it in the query cache. Page content waits for it so
+  // pages can read the fiscal-year default synchronously at mount — no
+  // per-page effect. Settings changes invalidate ['auth','me'] to refresh it.
+  const meQ = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: ({ signal }) => getCurrentUser(signal),
+    staleTime: 5 * 60_000,
+    retry: false,
+  })
 
   function handleLogout() {
     // Clearing the token flips the reactive auth store → the login screen
@@ -117,7 +130,9 @@ export default function AppShell() {
         </header>
         <div className="scroll">
           <div className="page">
-            <Outlet />
+            {meQ.isFetched
+              ? <Outlet />
+              : <p className="muted" style={{ padding: 24 }}>{t('common.loading')}</p>}
           </div>
         </div>
       </div>
