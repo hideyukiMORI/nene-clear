@@ -12,6 +12,21 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Human-facing message for an error from the API. Prefers the field-level
+ * validation reasons (`errors[]`) so the user sees *what* is wrong, then the
+ * localized `detail` (domain errors carry a translated one), then the title.
+ * Falls back to the raw Error message for non-API failures.
+ */
+export function describeApiError(error: unknown): string {
+  if (error instanceof ApiError) {
+    const fieldMessages = (error.problem.errors ?? []).map(e => e.message).filter(Boolean)
+    if (fieldMessages.length > 0) return fieldMessages.join(' / ')
+    return error.problem.detail || error.problem.title
+  }
+  return error instanceof Error ? error.message : String(error)
+}
+
 function getToken(): string | null {
   return sessionStorage.getItem(STORAGE_KEY)
 }

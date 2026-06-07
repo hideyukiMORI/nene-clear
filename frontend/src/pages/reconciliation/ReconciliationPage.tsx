@@ -6,6 +6,7 @@ import {
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
+import { describeApiError } from '@/api/client'
 import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
@@ -24,6 +25,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
   const qc = useQueryClient()
   const [allocs, setAllocs] = useState<AllocationInput[]>([{ invoice_id: 0, amount_cents: 0 }])
   const [reasonCode, setReasonCode] = useState('')
+  const [formError, setFormError] = useState('')
 
   const suggestQ = useQuery({
     queryKey: ['propose-match', tx.bank_transaction_id],
@@ -31,14 +33,30 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
     retry: false,
   })
 
+  const validAllocs = allocs.filter(a => a.invoice_id > 0 && a.amount_cents > 0)
+
   const confirmMut = useMutation({
-    mutationFn: () => confirmMatch(tx.bank_transaction_id, allocs.filter(a => a.invoice_id > 0 && a.amount_cents > 0), reasonCode || undefined),
+    mutationFn: () => confirmMatch(tx.bank_transaction_id, validAllocs, reasonCode || undefined),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['bank-transactions', 'unmatched'] })
       void qc.invalidateQueries({ queryKey: ['reconciliations'] })
       onClose()
     },
   })
+
+  // Validate in the browser first so the operator gets a specific, localized
+  // reason (the server's generic 422 "Validation Failed" only carries English
+  // field messages). Per-row issues are surfaced too: a row needs both a
+  // positive invoice ID and a positive amount.
+  function submit() {
+    if (validAllocs.length === 0) {
+      const partial = allocs.some(a => a.invoice_id > 0 || a.amount_cents > 0)
+      setFormError(partial ? t('reconciliation.error.incompleteAllocation') : t('reconciliation.error.noAllocation'))
+      return
+    }
+    setFormError('')
+    confirmMut.mutate()
+  }
 
   function applySuggestion(inv: UpstreamInvoice) {
     setAllocs([{ invoice_id: inv.invoice_id, amount_cents: inv.outstanding_cents }])
@@ -60,7 +78,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={confirmMut.isPending} onClick={() => confirmMut.mutate()}>
+          <Button variant="primary" disabled={confirmMut.isPending} onClick={submit}>
             <Icon name="check" />{confirmMut.isPending ? t('common.processing') : t('reconciliation.confirm')}
           </Button>
         </>
@@ -115,7 +133,9 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
         <label>{t('reconciliation.reasonCode')}</label>
         <input className="inp" placeholder={t('reconciliation.reasonCodePlaceholder')} value={reasonCode} onChange={e => setReasonCode(e.target.value)} />
       </div>
-      {confirmMut.isError && <Notice variant="bad">{confirmMut.error.message}</Notice>}
+      {(formError || confirmMut.isError) && (
+        <Notice variant="bad">{formError || describeApiError(confirmMut.error)}</Notice>
+      )}
     </Modal>
   )
 }
