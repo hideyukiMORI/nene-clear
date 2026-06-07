@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit, downloadCsv, clientCreditsExportPath } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
@@ -62,31 +62,21 @@ const isoDate = (v: string) => (v ? v.replace(/\//g, '-') : undefined)
 
 export default function ClientCreditsPage() {
   const { t } = useTranslation()
-  const [applyTarget, setApplyTarget] = useState<ClientCredit | null>(null)
 
-  const [f, setF] = useState<Filters>(EMPTY)
-  const [applied, setApplied] = useState<Filters>(EMPTY)
+  // Current fiscal year (org 決算月) seeds the created-date range. /me is loaded
+  // by AppShell before this page mounts → available synchronously; Clear resets
+  // to all (EMPTY). DatePicker uses YYYY/MM/DD, so convert the ISO range.
+  const { range: fyRange } = useFiscalYearDefault()
+  const initialFilters: Filters = fyRange
+    ? { ...EMPTY, createdFrom: fyRange.fromIso.replace(/-/g, '/'), createdTo: fyRange.toIso.replace(/-/g, '/') }
+    : EMPTY
+
+  const [applyTarget, setApplyTarget] = useState<ClientCredit | null>(null)
+  const [f, setF] = useState<Filters>(initialFilters)
+  const [applied, setApplied] = useState<Filters>(initialFilters)
   const [sort, setSort] = useState<SortState>({ by: 'id', dir: 'desc' })
   const [offset, setOffset] = useState(0)
   const set = (k: keyof Filters) => (v: string) => setF(prev => ({ ...prev, [k]: v }))
-
-  // Default the created-date range to the current fiscal year (org 決算月) once
-  // /me resolves; applied once, Clear resets to all. DatePicker uses YYYY/MM/DD.
-  const { range: fyRange, settled: fySettled } = useFiscalYearDefault()
-  const fyApplied = useRef(false)
-  useEffect(() => {
-    if (!fySettled || fyApplied.current) return
-    fyApplied.current = true
-    if (!fyRange) return
-    const createdFrom = fyRange.fromIso.replace(/-/g, '/')
-    const createdTo = fyRange.toIso.replace(/-/g, '/')
-    // One-time sync of the async org fiscal-year default into editable filter state.
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setF(prev => ({ ...prev, createdFrom, createdTo }))
-    setApplied(prev => ({ ...prev, createdFrom, createdTo }))
-    setOffset(0)
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [fySettled, fyRange])
 
   // Export mirrors the list's current filter (same params, minus paging).
   const creditFilter = {

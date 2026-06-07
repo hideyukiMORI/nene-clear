@@ -34,6 +34,20 @@ export async function bypassLogin(page: Page): Promise<void> {
     },
     [TOKEN_KEY, E2E_TOKEN],
   )
+  // AppShell loads /me on mount (session/org context) and gates page content on
+  // it. Default it so the gate opens deterministically; fiscal_year_end_month
+  // null = no fiscal-year date default, so date-filter specs are unaffected.
+  await mockMe(page)
+}
+
+/** Default /me mock. Override per-test by registering a later '/admin/auth/me' route. */
+export async function mockMe(page: Page, over: Record<string, unknown> = {}): Promise<void> {
+  await apiRoute(page, '**/admin/auth/me', (route) =>
+    json(route, 200, {
+      user_id: 1, organization_id: 7, email: 'admin@nene-clear.dev',
+      role: 'admin', status: 'active', fiscal_year_end_month: null, ...over,
+    }),
+  )
 }
 
 /**
@@ -53,6 +67,7 @@ export async function loginViaForm(
       user: { user_id: 1, email, role: opts.role ?? 'admin', organization_id: opts.orgId ?? 7 },
     }),
   )
+  await mockMe(page, { email, role: opts.role ?? 'admin', organization_id: opts.orgId ?? 7 })
   await page.goto('/admin')
   await page.locator('input[name="email"]').fill(email)
   await page.locator('input[name="password"]').fill('admin1234')

@@ -24,7 +24,13 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
 
   const saveMut = useMutation({
     mutationFn: () => updateClearSettings({ upstream_base_url: upstreamUrl, upstream_token_ref: upstreamToken, dunning_min_interval_days: dunningInterval, fiscal_year_end_month: fiscalMonth, bank_accounts: accounts } as Partial<ClearSettings>),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['clear-settings'] }); setSaved(true); setTimeout(() => setSaved(false), 3000) },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['clear-settings'] })
+      // The org's fiscal year-end month is held in the /me cache (it drives the
+      // fiscal-year date-range defaults); refresh it after a settings change.
+      void qc.invalidateQueries({ queryKey: ['auth', 'me'] })
+      setSaved(true); setTimeout(() => setSaved(false), 3000)
+    },
   })
 
   // The dunning interval must be at least one day. Guard client-side so an
