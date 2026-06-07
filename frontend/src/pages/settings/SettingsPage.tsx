@@ -15,6 +15,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   const [upstreamUrl, setUpstreamUrl] = useState(settings.upstream_base_url)
   const [upstreamToken, setUpstreamToken] = useState(settings.upstream_token_ref)
   const [dunningInterval, setDunningInterval] = useState(settings.dunning_min_interval_days)
+  const [fiscalMonth, setFiscalMonth] = useState<number | null>(settings.fiscal_year_end_month ?? null)
   const [accounts, setAccounts] = useState<BankAccount[]>(settings.bank_accounts)
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
   const [testing, setTesting] = useState(false)
@@ -22,7 +23,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   const [intervalError, setIntervalError] = useState('')
 
   const saveMut = useMutation({
-    mutationFn: () => updateClearSettings({ upstream_base_url: upstreamUrl, upstream_token_ref: upstreamToken, dunning_min_interval_days: dunningInterval, bank_accounts: accounts } as Partial<ClearSettings>),
+    mutationFn: () => updateClearSettings({ upstream_base_url: upstreamUrl, upstream_token_ref: upstreamToken, dunning_min_interval_days: dunningInterval, fiscal_year_end_month: fiscalMonth, bank_accounts: accounts } as Partial<ClearSettings>),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['clear-settings'] }); setSaved(true); setTimeout(() => setSaved(false), 3000) },
   })
 
@@ -72,6 +73,29 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
             <label>{t('settings.dunningInterval')}</label>
             <input className="inp tnum" type="number" min={1} data-testid="dunning-interval" value={dunningInterval} style={{ width: 120 }} onChange={e => setDunningInterval(Number(e.target.value))} />
             {intervalError && <span className="field-error" style={{ color: 'var(--bad)', fontSize: 12 }}>{intervalError}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Section: Fiscal year */}
+      <div className="set-sect">
+        <h3><Icon name="calendar" />{t('settings.section.fiscal')}</h3>
+        <div className="form-row">
+          <div className="field">
+            <label>{t('settings.fiscalYearEndMonth')}</label>
+            <select
+              className="inp"
+              data-testid="fiscal-year-end-month"
+              style={{ width: 160 }}
+              value={fiscalMonth ?? ''}
+              onChange={e => setFiscalMonth(e.target.value === '' ? null : Number(e.target.value))}
+            >
+              <option value="">{t('settings.fiscalYearEndMonthUnset')}</option>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+                <option key={m} value={m}>{t('settings.monthLabel', { n: m })}</option>
+              ))}
+            </select>
+            <span className="faint" style={{ fontSize: 12 }}>{t('settings.fiscalYearEndMonthHint')}</span>
           </div>
         </div>
       </div>

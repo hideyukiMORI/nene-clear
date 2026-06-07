@@ -18,7 +18,7 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
     public function findByOrganization(int $organizationId): ?ClearSettings
     {
         $row = $this->query->fetchOne(
-            'SELECT organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days '
+            'SELECT organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month '
             . 'FROM clear_settings WHERE organization_id = ?',
             [$organizationId],
         );
@@ -32,6 +32,7 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
             upstreamBaseUrl: (string) $row['upstream_base_url'],
             upstreamTokenRef: (string) $row['upstream_token_ref'],
             dunningMinIntervalDays: (int) $row['dunning_min_interval_days'],
+            fiscalYearEndMonth: isset($row['fiscal_year_end_month']) ? (int) $row['fiscal_year_end_month'] : null,
             bankAccounts: $this->bankAccounts->findByOrganization($organizationId),
         );
     }
@@ -41,25 +42,27 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
         // Upsert without a destructive DELETE: update the existing row, and
         // insert only when no row was affected (first save for the org).
         $affected = $this->query->execute(
-            'UPDATE clear_settings SET upstream_base_url = ?, upstream_token_ref = ?, dunning_min_interval_days = ? '
+            'UPDATE clear_settings SET upstream_base_url = ?, upstream_token_ref = ?, dunning_min_interval_days = ?, fiscal_year_end_month = ? '
             . 'WHERE organization_id = ?',
             [
                 $settings->upstreamBaseUrl,
                 $settings->upstreamTokenRef,
                 $settings->dunningMinIntervalDays,
+                $settings->fiscalYearEndMonth,
                 $settings->organizationId,
             ],
         );
 
         if ($affected === 0) {
             $this->query->execute(
-                'INSERT INTO clear_settings (organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days) '
-                . 'VALUES (?, ?, ?, ?)',
+                'INSERT INTO clear_settings (organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month) '
+                . 'VALUES (?, ?, ?, ?, ?)',
                 [
                     $settings->organizationId,
                     $settings->upstreamBaseUrl,
                     $settings->upstreamTokenRef,
                     $settings->dunningMinIntervalDays,
+                    $settings->fiscalYearEndMonth,
                 ],
             );
         }

@@ -60,14 +60,16 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
                     upstreamBaseUrl: $input->upstreamBaseUrl,
                     upstreamTokenRef: $input->upstreamTokenRef,
                     dunningMinIntervalDays: $input->dunningMinIntervalDays,
+                    fiscalYearEndMonth: $input->fiscalYearEndMonth,
                 ));
 
                 $updated = $settingsRepo->findByOrganization($input->organizationId)
                     ?? new ClearSettings(
-                        $input->organizationId,
-                        $input->upstreamBaseUrl,
-                        $input->upstreamTokenRef,
-                        $input->dunningMinIntervalDays,
+                        organizationId: $input->organizationId,
+                        upstreamBaseUrl: $input->upstreamBaseUrl,
+                        upstreamTokenRef: $input->upstreamTokenRef,
+                        dunningMinIntervalDays: $input->dunningMinIntervalDays,
+                        fiscalYearEndMonth: $input->fiscalYearEndMonth,
                     );
 
                 $auditRecorder->record(
@@ -100,6 +102,7 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
             'upstream_base_url' => $settings->upstreamBaseUrl,
             'upstream_token_ref' => $settings->upstreamTokenRef,
             'dunning_min_interval_days' => $settings->dunningMinIntervalDays,
+            'fiscal_year_end_month' => $settings->fiscalYearEndMonth,
             'bank_account_numbers' => array_map(
                 static fn ($account): string => $account->accountNumber,
                 $settings->bankAccounts,

@@ -125,6 +125,40 @@ final class ClearSettingsHttpTest extends TestCase
         self::assertSame(7, $body['dunning_min_interval_days']);
         self::assertSame('', $body['upstream_base_url']);
         self::assertSame([], $body['bank_accounts']);
+        self::assertNull($body['fiscal_year_end_month']);
+    }
+
+    public function test_put_saves_fiscal_year_end_month(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+
+        $saved = $this->decode($this->put($token, '/admin/clear-settings', [
+            'dunning_min_interval_days' => 7,
+            'fiscal_year_end_month' => 3,
+            'bank_accounts' => [],
+        ]));
+        self::assertSame(3, $saved['fiscal_year_end_month']);
+        self::assertSame(3, $this->decode($this->get($token, '/admin/clear-settings'))['fiscal_year_end_month']);
+
+        // Empty string clears it back to unset.
+        $cleared = $this->decode($this->put($token, '/admin/clear-settings', [
+            'dunning_min_interval_days' => 7,
+            'fiscal_year_end_month' => '',
+            'bank_accounts' => [],
+        ]));
+        self::assertNull($cleared['fiscal_year_end_month']);
+    }
+
+    public function test_put_rejects_out_of_range_fiscal_month(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+        $response = $this->put($token, '/admin/clear-settings', [
+            'dunning_min_interval_days' => 7,
+            'fiscal_year_end_month' => 13,
+            'bank_accounts' => [],
+        ]);
+        self::assertSame(422, $response->getStatusCode());
+        self::assertStringContainsString('fiscal_year_end_month', (string) $response->getBody());
     }
 
     public function test_put_saves_and_get_reflects_update(): void

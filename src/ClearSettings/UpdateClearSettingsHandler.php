@@ -36,6 +36,18 @@ final readonly class UpdateClearSettingsHandler
             $errors[] = new ValidationError('dunning_min_interval_days', 'dunning_min_interval_days must be at least 1.', 'invalid');
         }
 
+        // Fiscal year-end month (決算月): optional; null/empty = unset. If present
+        // it must be a calendar month 1–12.
+        $fiscalRaw = $body['fiscal_year_end_month'] ?? null;
+        $fiscalYearEndMonth = null;
+        if ($fiscalRaw !== null && $fiscalRaw !== '') {
+            if (is_numeric($fiscalRaw) && (int) $fiscalRaw >= 1 && (int) $fiscalRaw <= 12) {
+                $fiscalYearEndMonth = (int) $fiscalRaw;
+            } else {
+                $errors[] = new ValidationError('fiscal_year_end_month', 'fiscal_year_end_month must be between 1 and 12.', 'invalid');
+            }
+        }
+
         if ($errors !== []) {
             throw new ValidationException($errors);
         }
@@ -70,6 +82,7 @@ final readonly class UpdateClearSettingsHandler
             upstreamBaseUrl: $upstreamBaseUrl,
             upstreamTokenRef: $upstreamTokenRef,
             dunningMinIntervalDays: $dunningMinIntervalDays,
+            fiscalYearEndMonth: $fiscalYearEndMonth,
             bankAccounts: $newAccounts,
             actorUserId: AuthContext::userId($request),
         ));

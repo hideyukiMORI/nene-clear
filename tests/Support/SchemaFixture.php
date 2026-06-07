@@ -216,6 +216,7 @@ final class SchemaFixture
                 upstream_base_url TEXT NOT NULL DEFAULT \'\',
                 upstream_token_ref TEXT NOT NULL DEFAULT \'\',
                 dunning_min_interval_days INTEGER NOT NULL DEFAULT 7,
+                fiscal_year_end_month INTEGER,
                 created_at TEXT,
                 updated_at TEXT
             )'

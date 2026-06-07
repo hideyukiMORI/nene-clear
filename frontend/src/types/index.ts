@@ -89,6 +89,7 @@ export interface ClearSettings {
   upstream_base_url: string
   upstream_token_ref: string
   dunning_min_interval_days: number
+  fiscal_year_end_month: number | null
   bank_accounts: BankAccount[]
 }
 

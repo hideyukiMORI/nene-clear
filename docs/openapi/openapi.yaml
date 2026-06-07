@@ -1765,6 +1765,12 @@ components:
         dunning_min_interval_days:
           type: integer
           default: 7
+        fiscal_year_end_month:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 12
+          description: Fiscal year-end month (決算月). Null when unset.
         bank_accounts:
           type: array
           items:
@@ -1779,6 +1785,11 @@ components:
           type: string
         dunning_min_interval_days:
           type: integer
+        fiscal_year_end_month:
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 12
         bank_accounts:
           type: array
           items:
