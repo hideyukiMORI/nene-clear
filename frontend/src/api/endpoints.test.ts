@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import {
   login,
   listBankTransactions,
+  listUnmatchedTransactions,
   listReconciliations,
   confirmMatch,
   reverseReconciliation,
@@ -66,6 +67,37 @@ describe('endpoint request construction', () => {
     const url = calledUrl()
     expect(url).not.toContain('status=')
     expect(url).not.toContain('counterparty=')
+    expect(url).toContain('limit=50')
+    expect(url).toContain('offset=0')
+  })
+
+  it('listUnmatchedTransactions builds a filtered, sorted query string', async () => {
+    await listUnmatchedTransactions({
+      valueDateFrom: '2026-04-01',
+      amountMaxCents: 100000,
+      counterparty: 'ACME',
+      sortBy: 'amount_cents',
+      sortDir: 'asc',
+      limit: 20,
+      offset: 20,
+    })
+    const url = calledUrl()
+    expect(url).toContain('/admin/bank-transactions/unmatched?')
+    expect(url).toContain('value_date_from=2026-04-01')
+    expect(url).toContain('amount_max_cents=100000')
+    expect(url).toContain('counterparty=ACME')
+    expect(url).toContain('sort_by=amount_cents')
+    expect(url).toContain('sort_dir=asc')
+    expect(url).toContain('limit=20')
+    expect(url).toContain('offset=20')
+    expect(url).not.toContain('status=')
+  })
+
+  it('listUnmatchedTransactions omits unset filters but keeps pagination defaults', async () => {
+    await listUnmatchedTransactions({})
+    const url = calledUrl()
+    expect(url).not.toContain('counterparty=')
+    expect(url).not.toContain('sort_by=')
     expect(url).toContain('limit=50')
     expect(url).toContain('offset=0')
   })

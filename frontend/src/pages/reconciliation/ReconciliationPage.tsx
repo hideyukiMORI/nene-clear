@@ -145,11 +145,32 @@ export default function ReconciliationPage() {
   const [matchTarget, setMatchTarget] = useState<BankTransaction | null>(null)
   const [reverseTarget, setReverseTarget] = useState<Reconciliation | null>(null)
 
+  // Unmatched tab filter/sort/pager
+  const UPAGE = 50
+  const [uFrom, setUFrom] = useState('')
+  const [uTo, setUTo] = useState('')
+  const [uAmountMin, setUAmountMin] = useState('')
+  const [uAmountMax, setUAmountMax] = useState('')
+  const [uCounterparty, setUCounterparty] = useState('')
+  const [uApplied, setUApplied] = useState({ from: '', to: '', amountMin: '', amountMax: '', counterparty: '', offset: 0 })
+  const [uSort, setUSort] = useState<SortState>({ by: 'value_date', dir: 'desc' })
   const unmatchedQ = useQuery({
-    queryKey: ['bank-transactions', 'unmatched', { limit: 50 }],
-    queryFn: ({ signal }) => listUnmatchedTransactions({ limit: 50 }, signal),
+    queryKey: ['bank-transactions', 'unmatched', uApplied, uSort],
+    queryFn: ({ signal }) => listUnmatchedTransactions({
+      valueDateFrom: uApplied.from ? uApplied.from.replace(/\//g, '-') : undefined,
+      valueDateTo: uApplied.to ? uApplied.to.replace(/\//g, '-') : undefined,
+      amountMinCents: uApplied.amountMin ? Math.round(Number(uApplied.amountMin) * 100) : undefined,
+      amountMaxCents: uApplied.amountMax ? Math.round(Number(uApplied.amountMax) * 100) : undefined,
+      counterparty: uApplied.counterparty || undefined,
+      sortBy: uSort.by, sortDir: uSort.dir, limit: UPAGE, offset: uApplied.offset,
+    }, signal),
     enabled: tab === 'unmatched',
   })
+  function uSearch() { setUApplied({ from: uFrom, to: uTo, amountMin: uAmountMin, amountMax: uAmountMax, counterparty: uCounterparty, offset: 0 }) }
+  function uClear() { setUFrom(''); setUTo(''); setUAmountMin(''); setUAmountMax(''); setUCounterparty(''); setUApplied({ from: '', to: '', amountMin: '', amountMax: '', counterparty: '', offset: 0 }) }
+  function uOnSort(col: string) { setUSort(s => nextSort(s, col)); setUApplied(p => ({ ...p, offset: 0 })) }
+  const uTotal = unmatchedQ.data?.total ?? 0
+
   const HPAGE = 50
   const [hStatus, setHStatus] = useState('')
   const [hInvoice, setHInvoice] = useState('')
@@ -208,10 +229,43 @@ export default function ReconciliationPage() {
       />
 
       {tab === 'unmatched' && (
+        <>
+        <FilterBar>
+          <FilterField label={t('table.valueDate')}>
+            <div className="range-pair">
+              <DatePicker value={uFrom} onChange={setUFrom} />
+              <span className="tilde">〜</span>
+              <DatePicker value={uTo} onChange={setUTo} />
+            </div>
+          </FilterField>
+          <FilterField label={t('bankTransaction.amountFrom')}>
+            <input className="inp tnum" type="number" placeholder="0" style={{ width: 120 }} value={uAmountMin} onChange={e => setUAmountMin(e.target.value)} />
+          </FilterField>
+          <FilterField label={t('bankTransaction.amountTo')}>
+            <input className="inp tnum" type="number" placeholder="—" style={{ width: 120 }} value={uAmountMax} onChange={e => setUAmountMax(e.target.value)} />
+          </FilterField>
+          <FilterField label={t('table.counterparty')}>
+            <div className="inp-icon">
+              <Icon name="search" />
+              <input className="inp" data-kbd="search" placeholder={t('common.search')} style={{ paddingLeft: 32 }} value={uCounterparty} onChange={e => setUCounterparty(e.target.value)} />
+            </div>
+          </FilterField>
+          <div className="filter-actions">
+            <span className="filter-count">{t('filter.count', { n: uTotal })}</span>
+            <Button variant="ghost" size="sm" onClick={uClear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
+            <Button variant="primary" size="sm" onClick={uSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
+          </div>
+        </FilterBar>
         <Card>
           <DataTable>
             <thead>
-              <tr><th>{t('table.valueDate')}</th><th>{t('table.amount')}</th><th>{t('table.counterparty')}</th><th>{t('table.matchCandidates')}</th><th /></tr>
+              <tr>
+                <SortableTh column="value_date" sort={uSort} onSort={uOnSort}>{t('table.valueDate')}</SortableTh>
+                <SortableTh column="amount_cents" sort={uSort} onSort={uOnSort}>{t('table.amount')}</SortableTh>
+                <SortableTh column="counterparty_text" sort={uSort} onSort={uOnSort}>{t('table.counterparty')}</SortableTh>
+                <th>{t('table.matchCandidates')}</th>
+                <th />
+              </tr>
             </thead>
             <tbody>
               <TableStateRow colSpan={5} loading={unmatchedQ.isLoading} empty={unmatchedQ.data?.items.length === 0} emptyKey="reconciliation.noUnmatched" />
@@ -230,7 +284,9 @@ export default function ReconciliationPage() {
               ))}
             </tbody>
           </DataTable>
+          <Pager offset={uApplied.offset} pageSize={UPAGE} total={uTotal} onOffsetChange={off => setUApplied(p => ({ ...p, offset: off }))} />
         </Card>
+        </>
       )}
 
       {tab === 'history' && (

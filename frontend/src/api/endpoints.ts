@@ -121,8 +121,27 @@ export function listBankTransactions(filter: BankTransactionFilter, signal?: Abo
   return api.get<ListEnvelope<BankTransaction>>(`${BASE}/bank-transactions?${q}`, signal)
 }
 
-export function listUnmatchedTransactions(params: { limit?: number; offset?: number }, signal?: AbortSignal) {
+export interface UnmatchedQuery {
+  valueDateFrom?: string
+  valueDateTo?: string
+  amountMinCents?: number
+  amountMaxCents?: number
+  counterparty?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listUnmatchedTransactions(params: UnmatchedQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+  if (params.valueDateFrom) q.set('value_date_from', params.valueDateFrom)
+  if (params.valueDateTo) q.set('value_date_to', params.valueDateTo)
+  if (params.amountMinCents != null) q.set('amount_min_cents', String(params.amountMinCents))
+  if (params.amountMaxCents != null) q.set('amount_max_cents', String(params.amountMaxCents))
+  if (params.counterparty) q.set('counterparty', params.counterparty)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
   return api.get<ListEnvelope<BankTransaction>>(`${BASE}/bank-transactions/unmatched?${q}`, signal)
 }
 

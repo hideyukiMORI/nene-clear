@@ -15,6 +15,7 @@ final readonly class BankTransactionFilter
         public ?string $counterparty = null,
         public string $sortColumn = 'value_date',
         public string $sortDirection = 'desc',
+        public bool $openForMatchingOnly = false,
     ) {
     }
 }

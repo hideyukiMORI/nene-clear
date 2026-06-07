@@ -586,11 +586,45 @@ paths:
     get:
       tags: [BankTransaction]
       summary: List unmatched bank transactions
-      description: Convenience filter for `status=unmatched` / `partially_matched`.
+      description: >
+        Convenience filter for `status=unmatched` / `partially_matched`,
+        searchable by transaction date, amount, and counterparty and sortable
+        (same query contract as `listBankTransactions`, minus `status`).
       operationId: listUnmatchedTransactions
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
+        - name: value_date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: value_date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: amount_min_cents
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: amount_max_cents
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: counterparty
+          in: query
+          schema:
+            type: string
+        - name: sort_by
+          in: query
+          description: "Sort column: value_date | amount_cents | counterparty_text."
+          schema: { type: string }
+        - name: sort_dir
+          in: query
+          schema: { type: string, enum: [asc, desc] }
       responses:
         '200':
           description: A page of unmatched bank transactions.

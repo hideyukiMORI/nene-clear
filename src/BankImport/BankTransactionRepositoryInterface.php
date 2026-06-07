@@ -26,12 +26,13 @@ interface BankTransactionRepositoryInterface
 
     /**
      * Lines still open for matching (unmatched or partially matched).
+     * The filter's {@see BankTransactionFilter::$openForMatchingOnly} must be set.
      *
      * @return list<BankTransaction>
      */
-    public function findUnmatchedByOrganization(int $organizationId, int $limit, int $offset): array;
+    public function findUnmatchedByOrganization(int $organizationId, BankTransactionFilter $filter, int $limit, int $offset): array;
 
-    public function countUnmatchedByOrganization(int $organizationId): int;
+    public function countUnmatchedByOrganization(int $organizationId, BankTransactionFilter $filter): int;
 
     public function updateStatusById(int $organizationId, int $id, BankTransactionStatus $status): void;
 
