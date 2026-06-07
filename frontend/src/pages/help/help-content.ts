@@ -391,4 +391,38 @@ export const HELP_SECTIONS: HelpSection[] = [
       },
     ],
   },
+  {
+    id: 'disclaimer',
+    title: { ja: '免責事項・ご利用にあたって', en: 'Disclaimer & terms of use' },
+    blocks: [
+      {
+        kind: 'lede',
+        text: {
+          ja: '本ソフトウェア（NeNe Clear）は、入金消込・督促管理を補助するツールであり、税務・会計・法務に関する助言を提供するものではありません。消込結果の正確性、督促の内容・時期・送付の可否、税務申告および帳簿・書類の保存（電子帳簿保存法等）については、最終的にご利用者ご自身および顧問税理士の責任でご確認ください。',
+          en: 'This software (NeNe Clear) is a tool that assists with payment reconciliation and dunning. It does not provide tax, accounting, or legal advice. The accuracy of reconciliation results, the content / timing / appropriateness of dunning, and tax filing and record retention (including under the Electronic Books Preservation Act) are ultimately your responsibility and that of your tax accountant.',
+        },
+      },
+      {
+        kind: 'lede',
+        text: {
+          ja: '本ソフトウェアは MIT ライセンスに基づき「現状有姿（AS IS）」で提供され、明示・黙示を問わずいかなる保証も行いません。本ソフトウェアの使用または使用不能から生じたいかなる損害についても、作者および権利者は責任を負いません。',
+          en: 'This software is provided “AS IS” under the MIT License, without warranty of any kind, express or implied. The authors and copyright holders are not liable for any damages arising from the use of, or inability to use, this software.',
+        },
+      },
+      {
+        kind: 'lede',
+        text: {
+          ja: '自己ホスト型のため、データのバックアップ・保管・セキュリティおよび法定保存期間の遵守は、運用される事業者の責任となります。また、法令・制度の改正への追随を保証するものではありません。',
+          en: 'Because it is self-hosted, backing up, storing, and securing your data, and complying with statutory retention periods, are the responsibility of the operating business. Nor does it guarantee that it stays up to date with changes in laws or regulations.',
+        },
+      },
+      {
+        kind: 'note',
+        text: {
+          ja: '督促メールの送信は、送信先・文面・頻度を含め、関連法令や取引先との契約に照らしてご利用者の判断と責任で行ってください。',
+          en: 'Sending dunning e-mails — including recipients, wording, and frequency — is done at your own discretion and responsibility, in light of applicable laws and your agreements with clients.',
+        },
+      },
+    ],
+  },
 ]
