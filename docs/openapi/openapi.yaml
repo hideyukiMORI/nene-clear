@@ -1195,6 +1195,28 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /admin/export/dunning-notices:
+    get:
+      tags: [Export]
+      summary: Export dunning notices as CSV
+      description: >
+        UTF-8 BOM CSV; one row per dunning send record (operational/audit copy).
+        Columns reuse the dunning-notice response fields, incl.
+        `outstanding_at_send_cents`. Requires `view_reconciliation`.
+      operationId: exportDunningNotices
+      responses:
+        '200':
+          description: CSV file download.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /admin/export/bank-transactions:
     get:
       tags: [Export]

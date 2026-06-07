@@ -7,6 +7,7 @@ namespace NeneClear\Export;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
+use NeneClear\Dunning\DunningNoticeRepositoryInterface;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\Reconciliation\ClientCreditRepositoryInterface;
 use NeneClear\Reconciliation\ReconciliationRepositoryInterface;
@@ -16,7 +17,8 @@ use Psr\Http\Message\StreamFactoryInterface;
 
 /**
  * Wires the CSV export endpoints (reconciliations, client credits, bank
- * transactions). Streams are built with the framework PSR-17 factories.
+ * transactions, dunning notices). Streams are built with the framework PSR-17
+ * factories.
  */
 final readonly class ExportServiceProvider implements ServiceProviderInterface
 {
@@ -38,6 +40,11 @@ final readonly class ExportServiceProvider implements ServiceProviderInterface
                 ),
                 new ExportBankTransactionsCsvHandler(
                     ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
+                    ServiceResolver::get($c, ResponseFactoryInterface::class),
+                    ServiceResolver::get($c, StreamFactoryInterface::class),
+                ),
+                new ExportDunningNoticesCsvHandler(
+                    ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
                     ServiceResolver::get($c, ResponseFactoryInterface::class),
                     ServiceResolver::get($c, StreamFactoryInterface::class),
                 ),

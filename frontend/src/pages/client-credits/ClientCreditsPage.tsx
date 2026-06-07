@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listClientCredits, applyClientCredit } from '@/api/endpoints'
+import { listClientCredits, applyClientCredit, downloadCsv } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
@@ -102,7 +102,15 @@ export default function ClientCreditsPage() {
 
   return (
     <>
-      <PageHead title={t('clientCredit.title')} sub={t('clientCredit.subtitle')} />
+      <PageHead
+        title={t('clientCredit.title')}
+        sub={t('clientCredit.subtitle')}
+        actions={
+          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/client-credits', 'client-credits.csv')}>
+            <Icon name="export" />{t('export.csv')}
+          </Button>
+        }
+      />
 
       <FilterBar>
         <FilterField label={t('table.client')}>

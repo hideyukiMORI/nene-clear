@@ -216,6 +216,52 @@ final class ExportCsvHttpTest extends TestCase
         self::assertStringContainsString('client_credit_id', $body);
     }
 
+    public function test_export_dunning_notices_returns_csv(): void
+    {
+        $this->invoiceClient->addInvoice(new InvoiceItem(
+            invoiceId: 1,
+            invoiceNumber: 'INV-001',
+            clientId: 100,
+            outstandingCents: 110000,
+            totalCents: 110000,
+            dueAt: '2026-04-30',
+            status: 'issued',
+            currency: 'JPY',
+        ));
+        $this->invoiceClient->addClient(new InvoiceClientInfo(100, 'ACME', 'accounts@acme.example'));
+
+        $token = $this->tokenFor('admin@acme.example');
+        self::assertSame(201, $this->post($token, '/admin/dunning-notices', ['invoice_id' => 1])->getStatusCode());
+
+        $response = $this->get($token, '/admin/export/dunning-notices');
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringContainsString('text/csv', $response->getHeaderLine('Content-Type'));
+        self::assertStringContainsString('attachment', $response->getHeaderLine('Content-Disposition'));
+
+        $body = (string) $response->getBody();
+        self::assertStringStartsWith("\xEF\xBB\xBF", $body, 'Expected UTF-8 BOM');
+        self::assertStringContainsString('dunning_notice_id', $body);
+        // Canonical column name (terminology.md): outstanding_at_send_cents, not outstanding_cents.
+        self::assertStringContainsString('outstanding_at_send_cents', $body);
+        self::assertStringContainsString('INV-001', $body);
+        self::assertStringContainsString('accounts@acme.example', $body);
+    }
+
+    public function test_export_dunning_notices_empty_has_header_only(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+
+        $response = $this->get($token, '/admin/export/dunning-notices');
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = (string) $response->getBody();
+        self::assertStringStartsWith("\xEF\xBB\xBF", $body);
+        self::assertStringContainsString('dunning_notice_id', $body);
+        $lines = array_filter(explode("\n", trim($body)));
+        self::assertCount(1, $lines, 'Expected header-only CSV when no notices exist');
+    }
+
     public function test_viewer_can_export(): void
     {
         $token = $this->tokenFor('viewer@acme.example');

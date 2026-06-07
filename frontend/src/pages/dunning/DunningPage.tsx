@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listDunningNotices, sendDunningNotice, listUpstreamInvoices,
-  listDunningPauses, pauseDunningNotice, resumeDunningNotice,
+  listDunningPauses, pauseDunningNotice, resumeDunningNotice, downloadCsv,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
 import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
@@ -103,7 +103,15 @@ export default function DunningPage() {
 
   return (
     <>
-      <PageHead title={t('dunning.title')} sub={t('dunning.subtitle')} />
+      <PageHead
+        title={t('dunning.title')}
+        sub={t('dunning.subtitle')}
+        actions={
+          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/dunning-notices', 'dunning-notices.csv')}>
+            <Icon name="export" />{t('export.csv')}
+          </Button>
+        }
+      />
 
       {/* Pause banner */}
       {activePauses.size > 0 && (
