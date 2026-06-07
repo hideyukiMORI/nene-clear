@@ -17,6 +17,7 @@ const NAV: NavEntry[] = [
   { to: '/admin/client-credits', labelKey: 'nav.clientCredits', icon: 'credit' },
   { to: '/admin/manual-receivables', labelKey: 'nav.manualReceivables', icon: 'doc' },
   { to: '/admin/dunning', labelKey: 'nav.dunning', icon: 'bell' },
+  { to: '/admin/help', labelKey: 'nav.help', icon: 'info' },
 ]
 
 // Every entry here is administrators-only: the backend gates settings behind

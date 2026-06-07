@@ -22,6 +22,7 @@ export const en: Record<MessageKey, string> = {
   'nav.settings': 'Settings',
   'nav.users': 'Users',
   'nav.auditLog': 'Audit logs',
+  'nav.help': 'Help',
   'nav.logout': 'Sign out',
 
   // ── Login ──
