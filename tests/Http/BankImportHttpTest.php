@@ -134,6 +134,32 @@ final class BankImportHttpTest extends TestCase
         self::assertSame(2, $this->decode($this->get($token, '/admin/bank-transactions/unmatched'))['total'] ?? null);
     }
 
+    public function test_unmatched_supports_filter_sort_and_pagination(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+        $this->upload($token, self::CSV);
+
+        // Counterparty search narrows to a single open line.
+        $byCounterparty = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?counterparty=ACME'));
+        self::assertSame(1, $byCounterparty['total'] ?? null);
+        self::assertSame('ACME', $byCounterparty['items'][0]['counterparty_text'] ?? null);
+
+        // Amount range filter (TARO 50,000 < ACME 110,000).
+        $byAmount = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?amount_max_cents=100000'));
+        self::assertSame(1, $byAmount['total'] ?? null);
+        self::assertSame(50000, $byAmount['items'][0]['amount_cents'] ?? null);
+
+        // Sort by amount ascending → smallest (TARO 50,000) first.
+        $sorted = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?sort_by=amount_cents&sort_dir=asc'));
+        self::assertSame(2, $sorted['total'] ?? null);
+        self::assertSame('TARO', $sorted['items'][0]['counterparty_text'] ?? null);
+
+        // Pagination: total reflects the full open set, page returns one row.
+        $paged = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?limit=1&offset=0'));
+        self::assertSame(2, $paged['total'] ?? null);
+        self::assertCount(1, $paged['items'] ?? []);
+    }
+
     public function test_duplicate_upload_is_blocked(): void
     {
         $token = $this->tokenFor('admin@acme.example');

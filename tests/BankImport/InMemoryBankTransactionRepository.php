@@ -72,23 +72,21 @@ final class InMemoryBankTransactionRepository implements BankTransactionReposito
         ));
     }
 
-    public function findUnmatchedByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findUnmatchedByOrganization(int $organizationId, BankTransactionFilter $filter, int $limit, int $offset): array
     {
         $matches = array_values(array_filter(
             $this->byId,
-            static fn (BankTransaction $t): bool => $t->organizationId === $organizationId
-                && in_array($t->status, [BankTransactionStatus::Unmatched, BankTransactionStatus::PartiallyMatched], true),
+            fn (BankTransaction $t): bool => $this->matchesFilter($t, $organizationId, $filter),
         ));
 
         return array_slice($matches, $offset, $limit);
     }
 
-    public function countUnmatchedByOrganization(int $organizationId): int
+    public function countUnmatchedByOrganization(int $organizationId, BankTransactionFilter $filter): int
     {
         return count(array_filter(
             $this->byId,
-            static fn (BankTransaction $t): bool => $t->organizationId === $organizationId
-                && in_array($t->status, [BankTransactionStatus::Unmatched, BankTransactionStatus::PartiallyMatched], true),
+            fn (BankTransaction $t): bool => $this->matchesFilter($t, $organizationId, $filter),
         ));
     }
 
@@ -136,7 +134,11 @@ final class InMemoryBankTransactionRepository implements BankTransactionReposito
         if ($t->organizationId !== $organizationId) {
             return false;
         }
-        if ($filter->status !== null && $t->status !== $filter->status) {
+        if ($filter->openForMatchingOnly
+            && ! in_array($t->status, [BankTransactionStatus::Unmatched, BankTransactionStatus::PartiallyMatched], true)) {
+            return false;
+        }
+        if (! $filter->openForMatchingOnly && $filter->status !== null && $t->status !== $filter->status) {
             return false;
         }
         if ($filter->valueDateFrom !== null && $t->valueDate < $filter->valueDateFrom) {

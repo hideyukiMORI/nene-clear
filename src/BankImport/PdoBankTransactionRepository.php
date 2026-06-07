@@ -107,27 +107,25 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         return (int) ($row['c'] ?? 0);
     }
 
-    public function findUnmatchedByOrganization(int $organizationId, int $limit, int $offset): array
+    public function findUnmatchedByOrganization(int $organizationId, BankTransactionFilter $filter, int $limit, int $offset): array
     {
+        [$where, $params] = $this->buildWhere($organizationId, $filter);
         $rows = $this->query->fetchAll(
-            'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE organization_id = ? AND status IN (?, ?) '
-            . 'ORDER BY value_date DESC, id DESC LIMIT ? OFFSET ?',
-            [$organizationId, BankTransactionStatus::Unmatched->value, BankTransactionStatus::PartiallyMatched->value, $limit, $offset],
+            'SELECT ' . self::COLUMNS . ' FROM bank_transactions WHERE ' . $where
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
+            [...$params, $limit, $offset],
         );
 
         return array_map($this->hydrate(...), $rows);
     }
 
-    public function countUnmatchedByOrganization(int $organizationId): int
+    public function countUnmatchedByOrganization(int $organizationId, BankTransactionFilter $filter): int
     {
+        [$where, $params] = $this->buildWhere($organizationId, $filter);
         $row = $this->query->fetchOne(
-            'SELECT COUNT(*) AS c FROM bank_transactions WHERE organization_id = ? AND status IN (?, ?)',
-            [$organizationId, BankTransactionStatus::Unmatched->value, BankTransactionStatus::PartiallyMatched->value],
+            'SELECT COUNT(*) AS c FROM bank_transactions WHERE ' . $where,
+            $params,
         );
-
-        if ($row === null) {
-            return 0;
-        }
 
         return (int) ($row['c'] ?? 0);
     }
@@ -156,7 +154,11 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
         $wheres = ['organization_id = ?'];
         $params = [$organizationId];
 
-        if ($filter->status !== null) {
+        if ($filter->openForMatchingOnly) {
+            $wheres[] = 'status IN (?, ?)';
+            $params[] = BankTransactionStatus::Unmatched->value;
+            $params[] = BankTransactionStatus::PartiallyMatched->value;
+        } elseif ($filter->status !== null) {
             $wheres[] = 'status = ?';
             $params[] = $filter->status->value;
         }
