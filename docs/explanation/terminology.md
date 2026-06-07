@@ -151,6 +151,7 @@ login). New events MUST map to one of these registered `entity_type` values:
 | Organization slug | `slug` | `org_slug`, `code` |
 | User role | `role` (values in §2) | `user_role`, `permission` |
 | User credential | `password_hash` | `password`, `pass_hash` |
+| Fiscal year-end month (決算月) | `fiscal_year_end_month` (int 1–12, nullable) | `fiscal_month`, `settlement_month`, `closing_month` |
 | Invitation token (hashed at rest) | `token_hash` (SHA-256 hex) | `token`, `invite_token`, `secret` |
 | Invitation expiry / consumption | `expires_at`, `accepted_at` | `expiry`, `used_at`, `consumed_at` |
 | Soft-delete flag / time | `is_deleted`, `deleted_at` | `deleted`, `is_del` |

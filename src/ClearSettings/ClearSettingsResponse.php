@@ -16,6 +16,7 @@ final readonly class ClearSettingsResponse
             'upstream_base_url' => $settings->upstreamBaseUrl,
             'upstream_token_ref' => $settings->upstreamTokenRef,
             'dunning_min_interval_days' => $settings->dunningMinIntervalDays,
+            'fiscal_year_end_month' => $settings->fiscalYearEndMonth,
             'bank_accounts' => array_map(
                 static fn ($account): array => [
                     'bank_account_id' => $account->id,

@@ -16,6 +16,7 @@ final readonly class ClearSettings
         public string $upstreamBaseUrl,
         public string $upstreamTokenRef,
         public int $dunningMinIntervalDays,
+        public ?int $fiscalYearEndMonth = null,
         public array $bankAccounts = [],
     ) {
     }

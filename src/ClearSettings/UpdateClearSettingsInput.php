@@ -20,6 +20,7 @@ final readonly class UpdateClearSettingsInput
         public string $upstreamBaseUrl,
         public string $upstreamTokenRef,
         public int $dunningMinIntervalDays,
+        public ?int $fiscalYearEndMonth,
         public array $bankAccounts,
         public int $actorUserId,
     ) {

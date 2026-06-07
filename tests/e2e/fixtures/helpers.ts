@@ -221,6 +221,7 @@ export function clearSettings(over: Record<string, unknown> = {}) {
   return {
     organization_id: 7,
     dunning_min_interval_days: 7,
+    fiscal_year_end_month: null,
     bank_accounts: [
       {
         bank_account_id: 1,
