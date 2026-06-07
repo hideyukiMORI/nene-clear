@@ -23,7 +23,9 @@ export function Button({ variant = 'primary', size, children, className, ...rest
     .filter(Boolean)
     .join(' ')
   return (
-    <button className={cls} {...rest}>
+    // Default to type="button" so a Button inside a <form> doesn't implicitly
+    // submit it; callers opt into submit with an explicit type="submit".
+    <button type="button" className={cls} {...rest}>
       {children}
     </button>
   )

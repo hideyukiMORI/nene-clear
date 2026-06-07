@@ -72,13 +72,14 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
     <Modal
       open
       onClose={onClose}
+      onSubmit={submit}
       title={t('reconciliation.confirm')}
       sub={`${tx.counterparty_text} — ${yen(tx.amount_cents)}（${tx.value_date}）`}
       size="wide"
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={confirmMut.isPending} onClick={submit}>
+          <Button variant="primary" type="submit" disabled={confirmMut.isPending}>
             <Icon name="check" />{confirmMut.isPending ? t('common.processing') : t('reconciliation.confirm')}
           </Button>
         </>
@@ -106,7 +107,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
           {allocs.map((a, i) => (
             <div key={i} className="alloc-row">
               <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.invoiceId')}</label>
-                <input className="inp tnum" type="number" value={a.invoice_id || ''} onChange={e => updateAlloc(i, 'invoice_id', e.target.value)} />
+                <input className="inp tnum" type="number" data-autofocus={i === 0 ? true : undefined} value={a.invoice_id || ''} onChange={e => updateAlloc(i, 'invoice_id', e.target.value)} />
               </div>
               <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.allocationAmount')}</label>
                 <input className="inp tnum" type="number" value={a.amount_cents > 0 ? a.amount_cents / 100 : ''} onChange={e => updateAlloc(i, 'amount_cents', e.target.value)} />
