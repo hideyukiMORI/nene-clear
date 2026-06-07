@@ -16,10 +16,13 @@ const NAV: NavEntry[] = [
   { to: '/admin/dunning', labelKey: 'nav.dunning', icon: 'bell' },
 ]
 
+// Every entry here is administrators-only: the backend gates settings behind
+// manage_clear_settings and users/audit behind manage_users, so non-admins would
+// only ever see 403-empty screens. Hide them from the nav and guard the routes
+// (RequireAdmin) instead of showing dead links.
 const ADMIN_NAV: NavEntry[] = [
-  { to: '/admin/settings', labelKey: 'nav.settings', icon: 'gear' },
-  { to: '/admin/users', labelKey: 'nav.users', icon: 'users' },
-  // The audit log is administrators-only (backend gates it behind manage_users).
+  { to: '/admin/settings', labelKey: 'nav.settings', icon: 'gear', adminOnly: true },
+  { to: '/admin/users', labelKey: 'nav.users', icon: 'users', adminOnly: true },
   { to: '/admin/audit-log', labelKey: 'nav.auditLog', icon: 'clock', adminOnly: true },
 ]
 
@@ -66,10 +69,14 @@ export default function AppShell() {
           {NAV.map(item => (
             <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} badge={item.badge} end={item.end} />
           ))}
-          <div className="side-sect">{t('nav.section.admin')}</div>
-          {adminNav.map(item => (
-            <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
-          ))}
+          {adminNav.length > 0 && (
+            <>
+              <div className="side-sect">{t('nav.section.admin')}</div>
+              {adminNav.map(item => (
+                <NavItem key={item.to} to={item.to} icon={item.icon} label={t(item.labelKey)} />
+              ))}
+            </>
+          )}
         </nav>
         <div className="side-foot">
           <div className="side-user">
