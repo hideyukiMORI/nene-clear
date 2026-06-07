@@ -11,6 +11,7 @@ use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\User\CreateUserInput;
 use NeneClear\User\CreateUserUseCase;
+use NeneClear\User\InvitationLinkBuilder;
 use NeneClear\User\User;
 use NeneClear\User\UserAlreadyExistsException;
 use NeneClear\User\UserStatus;
@@ -19,15 +20,27 @@ use PHPUnit\Framework\TestCase;
 final class CreateUserUseCaseTest extends TestCase
 {
     private InMemoryAuditEventRepository $audit;
+    private InMemoryUserInvitationRepository $invitations;
+    private RecordingInvitationMailer $mailer;
 
     protected function setUp(): void
     {
         $this->audit = new InMemoryAuditEventRepository();
+        $this->invitations = new InMemoryUserInvitationRepository();
+        $this->mailer = new RecordingInvitationMailer();
     }
 
     private function useCase(InMemoryUserRepository $repo): CreateUserUseCase
     {
-        return new CreateUserUseCase(new FakeTransactionManager(), fn () => $repo, fn () => new AuditRecorder($this->audit), new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new CreateUserUseCase(
+            new FakeTransactionManager(),
+            fn () => $repo,
+            fn () => new AuditRecorder($this->audit),
+            fn () => $this->invitations,
+            $this->mailer,
+            new InvitationLinkBuilder('https://app.example'),
+            new FixedClock('2026-06-01T10:00:00+00:00'),
+        );
     }
 
     public function test_with_password_creates_active_user(): void
@@ -91,6 +104,27 @@ final class CreateUserUseCaseTest extends TestCase
         // A random placeholder hash must not verify against an empty password.
         self::assertFalse(password_verify('', $user->passwordHash));
         self::assertNotSame('', $user->passwordHash);
+
+        // An invitation e-mail is sent, carrying an accept link with a token.
+        self::assertCount(1, $this->mailer->sent);
+        $payload = $this->mailer->sent[0];
+        self::assertSame('invited@acme.example', $payload->to);
+        self::assertStringContainsString('https://app.example/accept-invite?token=', $payload->acceptUrl);
+    }
+
+    public function test_with_password_sends_no_invitation_email(): void
+    {
+        $useCase = $this->useCase(new InMemoryUserRepository());
+
+        $useCase->execute(new CreateUserInput(
+            organizationId: 7,
+            email: 'member@acme.example',
+            role: Role::Member,
+            password: 'secret-pass',
+            actorUserId: 42,
+        ));
+
+        self::assertCount(0, $this->mailer->sent);
     }
 
     public function test_rejects_duplicate_email(): void

@@ -26,6 +26,10 @@ use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamHttpClient;
+use NeneClear\User\InvitationLinkBuilder;
+use NeneClear\User\InvitationMailerInterface;
+use NeneClear\User\LogOnlyInvitationMailer;
+use NeneClear\User\SmtpInvitationMailer;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
@@ -69,6 +73,8 @@ final class ApplicationFactory
         string $smtpFromName = 'NeNe Clear',
         ?string $invoiceApiBaseUrl = null,
         string $invoiceBearerToken = '',
+        string $appBaseUrl = '',
+        ?InvitationMailerInterface $invitationMailer = null,
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
 
@@ -95,6 +101,8 @@ final class ApplicationFactory
             $psr17,
             self::resolveInvoiceClient($invoiceClient, $invoiceApiBaseUrl, $invoiceBearerToken),
             self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
+            $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
+            $appBaseUrl,
         );
 
         $routeRegistrars = $container->get(ApplicationServiceProvider::ROUTE_REGISTRARS);
@@ -130,6 +138,8 @@ final class ApplicationFactory
         Psr17Factory $psr17,
         InvoiceUpstreamClientInterface $invoiceClient,
         DunningMailerInterface $mailer,
+        InvitationMailerInterface $invitationMailer,
+        string $appBaseUrl,
     ): ContainerInterface {
         $langDir = dirname(__DIR__, 2) . '/lang';
 
@@ -162,6 +172,8 @@ final class ApplicationFactory
             ->set(TokenVerifierInterface::class, static fn (ContainerInterface $c): TokenVerifierInterface => ServiceResolver::get($c, JwtTokenService::class))
             ->set(InvoiceUpstreamClientInterface::class, static fn (ContainerInterface $c): InvoiceUpstreamClientInterface => $invoiceClient)
             ->set(DunningMailerInterface::class, static fn (ContainerInterface $c): DunningMailerInterface => $mailer)
+            ->set(InvitationMailerInterface::class, static fn (ContainerInterface $c): InvitationMailerInterface => $invitationMailer)
+            ->set(InvitationLinkBuilder::class, static fn (ContainerInterface $c): InvitationLinkBuilder => new InvitationLinkBuilder($appBaseUrl))
             ->addProvider(new ApplicationServiceProvider())
             ->build();
     }
@@ -195,5 +207,20 @@ final class ApplicationFactory
         }
 
         return new LogOnlyDunningMailer();
+    }
+
+    private static function resolveInvitationMailer(
+        ?string $smtpHost,
+        int $smtpPort,
+        string $smtpUsername,
+        string $smtpPassword,
+        string $smtpFromAddress,
+        string $smtpFromName,
+    ): InvitationMailerInterface {
+        if ($smtpHost !== null && $smtpHost !== '') {
+            return new SmtpInvitationMailer($smtpHost, $smtpPort, $smtpFromAddress, $smtpFromName, $smtpUsername, $smtpPassword);
+        }
+
+        return new LogOnlyInvitationMailer();
     }
 }

@@ -13,14 +13,21 @@ use NeneClear\Auth\Role;
 
 final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
 {
+    /** How long an invitation link stays valid. */
+    private const string INVITE_TTL = '+7 days';
+
     /**
      * @param Closure(DatabaseQueryExecutorInterface): UserRepositoryInterface $users
      * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
+     * @param Closure(DatabaseQueryExecutorInterface): UserInvitationRepositoryInterface $invitations
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $users,
         private Closure $auditRecorder,
+        private Closure $invitations,
+        private InvitationMailerInterface $mailer,
+        private InvitationLinkBuilder $linkBuilder,
         private ClockInterface $clock,
     ) {
     }
@@ -34,15 +41,24 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
             throw new RoleNotAssignableException($input->role->value);
         }
 
-        // With a password the account is active; without one it is invited and
-        // cannot log in until a password is set (the hash is a random placeholder).
-        $status = $input->password !== null ? UserStatus::Active : UserStatus::Invited;
+        // With a password the account is active immediately; without one it is
+        // invited — it gets a random placeholder hash (unusable for login) and an
+        // invitation token whose raw value is e-mailed to the operator. The
+        // account becomes active only once they accept the invite and set a real
+        // password (AcceptInvitationUseCase).
+        $invited = $input->password === null;
+        $status = $invited ? UserStatus::Invited : UserStatus::Active;
         $hash = password_hash($input->password ?? bin2hex(random_bytes(16)), PASSWORD_BCRYPT);
 
-        // The uniqueness check, insert, and audit record commit (or roll back)
-        // together so a created account can never lack its audit event (Issue #122).
-        return $this->transactionManager->transactional(
-            function (DatabaseQueryExecutorInterface $tx) use ($input, $status, $hash): User {
+        $rawToken = $invited ? InvitationToken::newRaw() : null;
+        $expiresAt = $this->clock->now()->modify(self::INVITE_TTL)->format('Y-m-d H:i:s');
+
+        // The uniqueness check, user insert, invitation insert, and audit record
+        // commit (or roll back) together so a created account can never lack its
+        // audit event or its invitation (Issue #122). The e-mail is sent only
+        // after the transaction commits.
+        $created = $this->transactionManager->transactional(
+            function (DatabaseQueryExecutorInterface $tx) use ($input, $status, $hash, $invited, $rawToken, $expiresAt): User {
                 $users = ($this->users)($tx);
                 $auditRecorder = ($this->auditRecorder)($tx);
 
@@ -58,10 +74,19 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
                     organizationId: $input->organizationId,
                 ));
 
-                $created = $users->findById($id);
+                $user = $users->findById($id);
 
-                if ($created === null) {
+                if ($user === null) {
                     throw new UserNotFoundException($id);
+                }
+
+                if ($invited && $rawToken !== null) {
+                    ($this->invitations)($tx)->save(new UserInvitation(
+                        organizationId: $input->organizationId,
+                        userId: $user->id ?? $id,
+                        tokenHash: InvitationToken::hash($rawToken),
+                        expiresAt: $expiresAt,
+                    ));
                 }
 
                 // Audit: account creation carries `after` only (no prior state). The
@@ -72,12 +97,36 @@ final readonly class CreateUserUseCase implements CreateUserUseCaseInterface
                     $this->clock->now()->format('Y-m-d H:i:s'),
                     'user_created',
                     'user',
-                    $created->id,
-                    ['after' => UserResponse::toArray($created)],
+                    $user->id,
+                    ['after' => UserResponse::toArray($user)],
                 );
 
-                return $created;
+                return $user;
             },
         );
+
+        if ($invited && $rawToken !== null) {
+            $this->sendInvitation($created, $rawToken);
+        }
+
+        return $created;
+    }
+
+    private function sendInvitation(User $user, string $rawToken): void
+    {
+        $link = $this->linkBuilder->forToken($rawToken);
+        $body = "NeNe Clear への招待が届いています。\n\n"
+            . "以下のリンクからパスワードを設定すると、ログインできるようになります（リンクの有効期限は7日間です）。\n\n"
+            . $link . "\n\n"
+            . "心当たりがない場合は、このメールを破棄してください。\n";
+
+        $this->mailer->send(new InvitationMailPayload(
+            userId: $user->id ?? 0,
+            organizationId: $user->organizationId,
+            to: $user->email,
+            subject: 'NeNe Clear への招待',
+            body: $body,
+            acceptUrl: $link,
+        ));
     }
 }

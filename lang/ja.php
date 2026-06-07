@@ -46,6 +46,12 @@ return [
     'problem.user-already-exists.title'  => 'ユーザーが既に存在します',
     'problem.user-already-exists.detail' => 'そのメールアドレスはすでに使用されています。',
 
+    'problem.invitation-invalid.title'  => '招待が無効です',
+    'problem.invitation-invalid.detail' => 'この招待リンクは無効か、すでに使用されています。',
+
+    'problem.invitation-expired.title'  => '招待の有効期限が切れています',
+    'problem.invitation-expired.detail' => 'この招待リンクは有効期限が切れています。管理者に再送を依頼してください。',
+
     'problem.bank-account-not-found.title'  => '銀行口座が見つかりません',
     'problem.bank-account-not-found.detail' => '指定された銀行口座は存在しません。',
 

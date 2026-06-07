@@ -249,6 +249,23 @@ export const ja = {
   'users.status.active': '有効',
   'users.status.invited': '招待中',
 
+  // ── Accept invitation (onboarding) ──
+  'acceptInvite.pitchTitle': 'アカウントを有効化',
+  'acceptInvite.pitchBody': 'パスワードを設定すると、NeNe Clear にログインできるようになります。',
+  'acceptInvite.title': 'パスワードの設定',
+  'acceptInvite.subtitle': '{email} のパスワードを設定してください。',
+  'acceptInvite.password': 'パスワード（8文字以上）',
+  'acceptInvite.passwordConfirm': 'パスワード（確認）',
+  'acceptInvite.submit': 'パスワードを設定してアカウントを有効化',
+  'acceptInvite.loading': '招待を確認しています…',
+  'acceptInvite.tooShort': 'パスワードは8文字以上で設定してください。',
+  'acceptInvite.mismatch': 'パスワードが一致しません。',
+  'acceptInvite.invalid': 'この招待リンクは無効か、すでに使用されています。管理者に再送を依頼してください。',
+  'acceptInvite.expired': 'この招待リンクは有効期限が切れています。管理者に再送を依頼してください。',
+  'acceptInvite.failed': '設定に失敗しました。時間をおいて再度お試しください。',
+  'acceptInvite.success': 'アカウントを有効化しました。ログインしてください。',
+  'acceptInvite.toLogin': 'ログインへ進む',
+
   // ── Audit log (operation history) ──
   'audit.title': '監査ログ',
   'audit.subtitle': 'すべての操作について、誰が・いつ・何を・どう変えたか（変更前後）を追跡する監査ログです。',

@@ -55,6 +55,7 @@ domain folders are **PascalCase singular**.
 | --- | --- | --- | --- |
 | Tenant | `Organization` | `organizations` | `organization_id` |
 | Operator account | `User` | `users` | `user_id` |
+| Operator onboarding token | `UserInvitation` | `user_invitations` | `user_invitation_id` |
 | Clear settings (singleton per org) | `ClearSettings` (entity); `Settings` (folder) | `clear_settings` | — (one per `organization_id`) |
 | Registered company bank account + CSV profile | `BankAccount` | `bank_accounts` | `bank_account_id` |
 | Bank CSV import batch | `BankImportBatch` | `bank_import_batches` | `bank_import_batch_id` |
@@ -108,7 +109,8 @@ follows `{entity}_{past-tense-verb}` in lowercase snake_case.
 | `dunning_sent` | Dunning notice sent | `before` + `after` |
 | `dunning_paused` | Dunning paused for an invoice | `before` + `after` |
 | `dunning_resumed` | Dunning resumed for an invoice | `before` + `after` |
-| `user_created` | Operator account created | `after` |
+| `user_created` | Operator account created (invited or active) | `after` |
+| `invitation_accepted` | Invitee set their password → account activated | `before` + `after` |
 | `user_updated` | Operator role/status changed | `before` + `after` |
 | `user_deleted` | Operator account deleted | `before` |
 | `organization_created` | Tenant created | `after` |
@@ -135,7 +137,7 @@ login). New events MUST map to one of these registered `entity_type` values:
 | `client_credit` | `client_credit_id` | `client_credit_applied` |
 | `dunning_notice` | `dunning_notice_id` | `dunning_sent` |
 | `invoice` | upstream `invoice_id` | `dunning_paused`, `dunning_resumed` |
-| `user` | `user_id` (null on failed login) | `user_created/updated/deleted`, `login_succeeded`, `login_failed` |
+| `user` | `user_id` (null on failed login) | `user_created/updated/deleted`, `invitation_accepted`, `login_succeeded`, `login_failed` |
 | `organization` | `organization_id` | `organization_created`, `organization_deleted` |
 | `clear_settings` | owning `organization_id` | `clear_settings_updated` |
 
@@ -149,6 +151,8 @@ login). New events MUST map to one of these registered `entity_type` values:
 | Organization slug | `slug` | `org_slug`, `code` |
 | User role | `role` (values in §2) | `user_role`, `permission` |
 | User credential | `password_hash` | `password`, `pass_hash` |
+| Invitation token (hashed at rest) | `token_hash` (SHA-256 hex) | `token`, `invite_token`, `secret` |
+| Invitation expiry / consumption | `expires_at`, `accepted_at` | `expiry`, `used_at`, `consumed_at` |
 | Soft-delete flag / time | `is_deleted`, `deleted_at` | `deleted`, `is_del` |
 | Bank transaction amount | `amount_cents` | `deposit_cents`, `value_cents` |
 | Bank value date | `value_date` (date type) | `transaction_date`, `valued_at`, `paid_at` (on the bank line) |
@@ -203,6 +207,8 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `organization-already-exists` | Create rejected — slug already taken |
 | `user-not-found` | User id not found |
 | `user-already-exists` | Create rejected — email already taken |
+| `invitation-invalid` | Invitation token not found, already accepted, or malformed (no enumeration of which) |
+| `invitation-expired` | Invitation token past its `expires_at` |
 | `bank-account-not-found` | Bank account id not found / not in caller's org |
 | `bank-import-batch-not-found` | Import batch id not found |
 | `bank-transaction-not-found` | Bank transaction id not found |
@@ -233,7 +239,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | operationId | Resource |
 | --- | --- |
 | `getHealth` | System |
-| `login`, `getCurrentUser` | Auth |
+| `login`, `getCurrentUser`, `getInvitation`, `acceptInvitation` | Auth |
 | `listOrganizations`, `getOrganizationById`, `createOrganization`, `deleteOrganization` | Organization (superadmin) |
 | `listUsers`, `getUserById`, `createUser`, `updateUser`, `deleteUser` | User (admin) |
 | `getClearSettings`, `updateClearSettings`, `testUpstreamConnection` | Clear settings (admin) |

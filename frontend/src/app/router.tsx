@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { isAuthenticated, isAdmin, subscribeAuthChange } from '@/api/client'
 import AppShell from '@/components/AppShell'
 import LoginPage from '@/pages/login/LoginPage'
+import AcceptInvitePage from '@/pages/accept-invite/AcceptInvitePage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
 import BankImportPage from '@/pages/bank-import/BankImportPage'
 import BankTransactionsPage from '@/pages/bank-transactions/BankTransactionsPage'
@@ -55,6 +56,12 @@ export const router = createBrowserRouter([
       { path: 'users', element: <UsersPage /> },
       { path: 'audit-log', element: <RequireAdmin><AuditLogPage /></RequireAdmin> },
     ],
+  },
+  {
+    // Public onboarding route reached from the invitation e-mail link. It lives
+    // outside RequireAuth so an invitee with no session can set their password.
+    path: '/accept-invite',
+    element: <AcceptInvitePage />,
   },
   {
     path: '/',

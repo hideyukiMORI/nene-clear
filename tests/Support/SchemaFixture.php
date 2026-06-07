@@ -45,6 +45,21 @@ final class SchemaFixture
         );
     }
 
+    public static function createUserInvitations(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE user_invitations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER,
+                user_id INTEGER NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE,
+                expires_at TEXT NOT NULL,
+                accepted_at TEXT,
+                created_at TEXT
+            )'
+        );
+    }
+
     public static function createLoginAttempts(DatabaseQueryExecutorInterface $query): void
     {
         $query->execute(

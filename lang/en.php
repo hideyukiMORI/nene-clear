@@ -46,6 +46,12 @@ return [
     'problem.user-already-exists.title'  => 'User Already Exists',
     'problem.user-already-exists.detail' => 'A user with that email already exists.',
 
+    'problem.invitation-invalid.title'  => 'Invitation Invalid',
+    'problem.invitation-invalid.detail' => 'This invitation link is invalid or has already been used.',
+
+    'problem.invitation-expired.title'  => 'Invitation Expired',
+    'problem.invitation-expired.detail' => 'This invitation link has expired. Ask an administrator to send a new one.',
+
     'problem.bank-account-not-found.title'  => 'Bank Account Not Found',
     'problem.bank-account-not-found.detail' => 'The requested bank account was not found.',
 
