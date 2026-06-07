@@ -296,11 +296,43 @@ final class ExportCsvHttpTest extends TestCase
                 ->withParsedBody(['bank_account_id' => 1]),
         );
 
-        $future = $this->get($token, '/admin/export/bank-transactions?date_from=2030-01-01');
+        // The export honours the same filter params as the list endpoint
+        // (value_date_from/to), so a future lower bound yields a header-only CSV.
+        $future = $this->get($token, '/admin/export/bank-transactions?value_date_from=2030-01-01');
         self::assertSame(200, $future->getStatusCode());
         $body = (string) $future->getBody();
-        // Header row only (BOM + header); no data rows for future date
         $lines = array_filter(explode("\n", trim($body)));
         self::assertCount(1, $lines, 'Expected header-only CSV for future date filter');
+
+        // Counterparty filter is honoured too.
+        $byCounterparty = (string) $this->get($token, '/admin/export/bank-transactions?counterparty=INV-001')->getBody();
+        self::assertStringContainsString('INV-001', $byCounterparty);
+        $miss = (string) $this->get($token, '/admin/export/bank-transactions?counterparty=ZZZ')->getBody();
+        self::assertCount(1, array_filter(explode("\n", trim($miss))), 'Header-only when counterparty matches nothing');
+    }
+
+    public function test_export_dunning_notices_honours_filter(): void
+    {
+        $this->invoiceClient->addInvoice(new InvoiceItem(
+            invoiceId: 1,
+            invoiceNumber: 'INV-001',
+            clientId: 100,
+            outstandingCents: 110000,
+            totalCents: 110000,
+            dueAt: '2026-04-30',
+            status: 'issued',
+            currency: 'JPY',
+        ));
+        $this->invoiceClient->addClient(new InvoiceClientInfo(100, 'ACME', 'accounts@acme.example'));
+        $token = $this->tokenFor('admin@acme.example');
+        self::assertSame(201, $this->post($token, '/admin/dunning-notices', ['invoice_id' => 1])->getStatusCode());
+
+        // Matching invoice number → the row is present.
+        $hit = (string) $this->get($token, '/admin/export/dunning-notices?invoice_number=INV-001')->getBody();
+        self::assertStringContainsString('INV-001', $hit);
+
+        // A future sent_from lower bound excludes the just-sent notice → header only.
+        $miss = (string) $this->get($token, '/admin/export/dunning-notices?sent_from=2099-01-01')->getBody();
+        self::assertCount(1, array_filter(explode("\n", trim($miss))), 'Header-only when sent_from is in the future');
     }
 }

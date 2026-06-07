@@ -26,12 +26,7 @@ final readonly class ExportBankTransactionsCsvHandler
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $organizationId = AuthContext::organizationId($request) ?? 0;
-        $q = (array) $request->getQueryParams();
-
-        $filter = new BankTransactionFilter(
-            valueDateFrom: is_string($q['date_from'] ?? null) && $q['date_from'] !== '' ? $q['date_from'] : null,
-            valueDateTo: is_string($q['date_to'] ?? null) && $q['date_to'] !== '' ? $q['date_to'] : null,
-        );
+        $filter = BankTransactionFilter::fromQueryParams($request->getQueryParams());
 
         $rows = [];
         $offset = 0;

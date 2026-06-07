@@ -27,7 +27,7 @@ final readonly class ExportDunningNoticesCsvHandler
     {
         $organizationId = AuthContext::organizationId($request) ?? 0;
 
-        $filter = new DunningNoticeFilter();
+        $filter = DunningNoticeFilter::fromQueryParams($request->getQueryParams());
         $rows = [];
         $offset = 0;
         do {

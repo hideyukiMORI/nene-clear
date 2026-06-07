@@ -27,7 +27,7 @@ final readonly class ExportClientCreditsCsvHandler
     {
         $organizationId = AuthContext::organizationId($request) ?? 0;
 
-        $filter = new ClientCreditFilter();
+        $filter = ClientCreditFilter::fromQueryParams($request->getQueryParams());
         $rows = [];
         $offset = 0;
         do {

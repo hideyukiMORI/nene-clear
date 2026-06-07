@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listBankTransactions, downloadCsv } from '@/api/endpoints'
+import { listBankTransactions, bankTransactionsExportPath, downloadCsv } from '@/api/endpoints'
 import type { BankTransaction } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead, SortableTh, nextSort } from '@/components/ui'
 import type { SortState } from '@/components/ui'
@@ -31,18 +31,20 @@ export default function BankTransactionsPage() {
   const [applied, setApplied] = useState<AppliedFilter>({ status: '', dateFrom: '', dateTo: '', amountMin: '', amountMax: '', counterparty: '', offset: 0 })
   const [sort, setSort] = useState<SortState>({ by: 'value_date', dir: 'desc' })
 
+  // Filter the export mirrors what the list shows (same params, minus paging).
+  const txFilter = {
+    status: applied.status || undefined,
+    value_date_from: applied.dateFrom || undefined,
+    value_date_to: applied.dateTo || undefined,
+    amount_min_cents: applied.amountMin ? Math.round(Number(applied.amountMin) * 100) : undefined,
+    amount_max_cents: applied.amountMax ? Math.round(Number(applied.amountMax) * 100) : undefined,
+    counterparty: applied.counterparty || undefined,
+    sortBy: sort.by, sortDir: sort.dir,
+  }
+
   const txQ = useQuery({
     queryKey: ['bank-transactions', applied, sort],
-    queryFn: ({ signal }) => listBankTransactions({
-      status: applied.status || undefined,
-      value_date_from: applied.dateFrom || undefined,
-      value_date_to: applied.dateTo || undefined,
-      amount_min_cents: applied.amountMin ? Math.round(Number(applied.amountMin) * 100) : undefined,
-      amount_max_cents: applied.amountMax ? Math.round(Number(applied.amountMax) * 100) : undefined,
-      counterparty: applied.counterparty || undefined,
-      sortBy: sort.by, sortDir: sort.dir,
-      limit: PAGE, offset: applied.offset,
-    }, signal),
+    queryFn: ({ signal }) => listBankTransactions({ ...txFilter, limit: PAGE, offset: applied.offset }, signal),
   })
 
   function search() { setApplied({ status, dateFrom, dateTo, amountMin, amountMax, counterparty, offset: 0 }) }
@@ -61,7 +63,7 @@ export default function BankTransactionsPage() {
         title={t('bankTransaction.title')}
         sub={t('bankTransaction.subtitle')}
         actions={
-          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/bank-transactions', 'bank-transactions.csv')}>
+          <Button variant="ghost" onClick={() => void downloadCsv(bankTransactionsExportPath(txFilter), 'bank-transactions.csv')}>
             <Icon name="export" />{t('export.csv')}
           </Button>
         }

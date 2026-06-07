@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listUnmatchedTransactions, listReconciliations,
-  confirmMatch, reverseReconciliation, proposeMatch, downloadCsv,
+  confirmMatch, reverseReconciliation, proposeMatch, downloadCsv, reconciliationsExportPath,
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
 import type { AllocationInput } from '@/api/endpoints'
@@ -199,15 +199,17 @@ export default function ReconciliationPage() {
   const [hTo, setHTo] = useState('')
   const [hApplied, setHApplied] = useState({ status: '', invoice: '', from: '', to: '', offset: 0 })
   const [hSort, setHSort] = useState<SortState>({ by: 'id', dir: 'desc' })
+  // Export mirrors the history list's current filter (same params, minus paging).
+  const reconFilter = {
+    status: hApplied.status || undefined,
+    invoiceId: hApplied.invoice || undefined,
+    confirmedFrom: hApplied.from ? hApplied.from.replace(/\//g, '-') : undefined,
+    confirmedTo: hApplied.to ? hApplied.to.replace(/\//g, '-') : undefined,
+    sortBy: hSort.by, sortDir: hSort.dir,
+  }
   const reconciliationsQ = useQuery({
     queryKey: ['reconciliations', hApplied, hSort],
-    queryFn: ({ signal }) => listReconciliations({
-      status: hApplied.status || undefined,
-      invoiceId: hApplied.invoice || undefined,
-      confirmedFrom: hApplied.from ? hApplied.from.replace(/\//g, '-') : undefined,
-      confirmedTo: hApplied.to ? hApplied.to.replace(/\//g, '-') : undefined,
-      sortBy: hSort.by, sortDir: hSort.dir, limit: HPAGE, offset: hApplied.offset,
-    }, signal),
+    queryFn: ({ signal }) => listReconciliations({ ...reconFilter, limit: HPAGE, offset: hApplied.offset }, signal),
     enabled: tab === 'history',
   })
   function hSearch() { setHApplied({ status: hStatus, invoice: hInvoice, from: hFrom, to: hTo, offset: 0 }) }
@@ -234,7 +236,7 @@ export default function ReconciliationPage() {
         title={t('reconciliation.title')}
         sub={t('reconciliation.subtitle')}
         actions={
-          <Button variant="ghost" onClick={() => void downloadCsv('/admin/export/reconciliations', 'reconciliations.csv')}>
+          <Button variant="ghost" onClick={() => void downloadCsv(reconciliationsExportPath(reconFilter), 'reconciliations.csv')}>
             <Icon name="export" />{t('export.csv')}
           </Button>
         }

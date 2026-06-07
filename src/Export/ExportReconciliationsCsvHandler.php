@@ -28,11 +28,12 @@ final readonly class ExportReconciliationsCsvHandler
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $organizationId = AuthContext::organizationId($request) ?? 0;
+        $filter = ReconciliationFilter::fromQueryParams($request->getQueryParams());
 
         $rows = [];
         $offset = 0;
         do {
-            $batch = $this->reconciliations->findByOrganization($organizationId, new ReconciliationFilter(), self::BATCH, $offset);
+            $batch = $this->reconciliations->findByOrganization($organizationId, $filter, self::BATCH, $offset);
             foreach ($batch as $recon) {
                 $tx = $this->transactions->findById($organizationId, $recon->bankTransactionId);
 
