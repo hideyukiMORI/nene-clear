@@ -28,8 +28,27 @@ export default defineConfig(({ mode }) => {
       port: frontendPort,
       strictPort: true, // fail fast instead of silently bumping to next port
       // Dev only: forward API + health to the PHP backend.
+      //
+      // The SPA's client routes live under /admin/* — the same prefix as the
+      // API — so a plain proxy would also forward browser *document* reloads of
+      // e.g. /admin/reconciliation to PHP, which answers with the built
+      // index.html whose hashed asset URLs don't exist on the dev server → blank
+      // page. The `bypass` mirrors the prod SPA fallback in public_html/index.php:
+      // GET navigations that explicitly want text/html (and not application/json)
+      // are served the dev index.html so the SPA boots in place (and #135's
+      // expired-session login renders at the same URL). Real API calls
+      // (Accept: application/json) and CSV downloads (Accept: */*) still proxy.
       proxy: {
-        '/admin': { target, changeOrigin: true },
+        '/admin': {
+          target,
+          changeOrigin: true,
+          bypass(req) {
+            const accept = req.headers.accept ?? ''
+            if (req.method === 'GET' && accept.includes('text/html') && !accept.includes('application/json')) {
+              return '/index.html'
+            }
+          },
+        },
         '/health': { target, changeOrigin: true },
       },
     },
