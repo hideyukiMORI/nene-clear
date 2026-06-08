@@ -263,7 +263,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `listUpstreamInvoices` | Invoice upstream (read-only) |
 | `proposeMatch`, `confirmMatch`, `reverseReconciliation`, `listReconciliations`, `getReconciliationById` | Reconciliation |
 | `listClientCredits`, `applyClientCredit` | Client credit |
-| `listManualReceivables`, `getManualReceivableById`, `createManualReceivable`, `updateManualReceivable`, `cancelManualReceivable` | Manual receivable (ADR 0014) |
+| `listManualReceivables`, `getManualReceivableById`, `createManualReceivable`, `updateManualReceivable`, `cancelManualReceivable`, `importManualReceivables` | Manual receivable (ADR 0014) |
 | `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice` | Dunning |
 | `listAuditEvents` | Audit trail (admin) |
 

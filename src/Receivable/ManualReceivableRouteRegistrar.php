@@ -16,6 +16,7 @@ final readonly class ManualReceivableRouteRegistrar
         private GetManualReceivableHandler $getHandler,
         private UpdateManualReceivableHandler $updateHandler,
         private CancelManualReceivableHandler $cancelHandler,
+        private ImportManualReceivablesHandler $importHandler,
     ) {
     }
 
@@ -26,7 +27,9 @@ final readonly class ManualReceivableRouteRegistrar
         $getHandler = $this->getHandler;
         $updateHandler = $this->updateHandler;
         $cancelHandler = $this->cancelHandler;
+        $importHandler = $this->importHandler;
 
+        $router->post('/admin/manual-receivable-imports', static fn (ServerRequestInterface $r): ResponseInterface => $importHandler->handle($r));
         $router->get('/admin/manual-receivables', static fn (ServerRequestInterface $r): ResponseInterface => $listHandler->handle($r));
         $router->post('/admin/manual-receivables', static fn (ServerRequestInterface $r): ResponseInterface => $createHandler->handle($r));
         $router->get('/admin/manual-receivables/{id}', static fn (ServerRequestInterface $r): ResponseInterface => $getHandler->handle($r));

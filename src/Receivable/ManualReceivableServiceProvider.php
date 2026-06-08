@@ -73,6 +73,13 @@ final readonly class ManualReceivableServiceProvider implements ServiceProviderI
                 ),
             )
             ->set(
+                ImportManualReceivablesUseCaseInterface::class,
+                static fn (ContainerInterface $c): ImportManualReceivablesUseCaseInterface => new ImportManualReceivablesUseCase(
+                    new ManualReceivableCsvParser(),
+                    ServiceResolver::get($c, CreateManualReceivableUseCaseInterface::class),
+                ),
+            )
+            ->set(
                 ManualReceivableRouteRegistrar::class,
                 static fn (ContainerInterface $c): ManualReceivableRouteRegistrar => new ManualReceivableRouteRegistrar(
                     new ListManualReceivablesHandler(
@@ -93,6 +100,10 @@ final readonly class ManualReceivableServiceProvider implements ServiceProviderI
                     ),
                     new CancelManualReceivableHandler(
                         ServiceResolver::get($c, CancelManualReceivableUseCaseInterface::class),
+                        ServiceResolver::get($c, JsonResponseFactory::class),
+                    ),
+                    new ImportManualReceivablesHandler(
+                        ServiceResolver::get($c, ImportManualReceivablesUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
                     ),
                 ),
