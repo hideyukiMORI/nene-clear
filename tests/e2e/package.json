@@ -6,7 +6,8 @@
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",
-    "report": "playwright show-report playwright-report"
+    "report": "playwright show-report playwright-report",
+    "screens": "node capture-screens.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0"
