@@ -15,6 +15,7 @@ const NAV: NavEntry[] = [
   { to: '/admin/bank-transactions', labelKey: 'bankTransaction.title', icon: 'table' },
   { to: '/admin/reconciliation', labelKey: 'nav.reconciliation', icon: 'reconcile', badge: 12 },
   { to: '/admin/client-credits', labelKey: 'nav.clientCredits', icon: 'credit' },
+  { to: '/admin/manual-receivables', labelKey: 'nav.manualReceivables', icon: 'doc' },
   { to: '/admin/dunning', labelKey: 'nav.dunning', icon: 'bell' },
 ]
 
