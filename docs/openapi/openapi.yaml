@@ -2179,13 +2179,29 @@ components:
       additionalProperties: false
     MatchSuggestion:
       type: object
-      required: [invoice_id, amount_cents, score]
+      required: [source, amount_cents, score]
       properties:
+        source:
+          type: string
+          enum: [invoice_upstream, manual]
+          description: Candidate receivable type (ADR 0014).
         invoice_id:
           type: integer
           format: int64
+          nullable: true
+          description: Set for invoice_upstream candidates.
         invoice_number:
           type: string
+          nullable: true
+        manual_receivable_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set for manual candidates (ADR 0014).
+        reference_number:
+          type: string
+          nullable: true
+          description: Manual receivable document number.
         amount_cents:
           type: integer
           format: int64
@@ -2198,7 +2214,7 @@ components:
           description: Confidence 0..1 (rules-based in Phase 1).
         reason:
           type: string
-          description: Why this invoice was suggested (e.g. exact amount, invoice number in counterparty).
+          description: Why this candidate was suggested (e.g. exact amount, payer/invoice number in counterparty).
     ProposeMatchResponse:
       type: object
       required: [bank_transaction_id, suggestions]

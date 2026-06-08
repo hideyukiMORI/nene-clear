@@ -5,18 +5,25 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Nene2\Http\ClockInterface;
+use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Receivable\ManualReceivableFilter;
+use NeneClear\Receivable\ManualReceivableRepositoryInterface;
+use NeneClear\Receivable\ManualReceivableStatus;
 
 final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
 {
     private const int MAX_SUGGESTIONS = 10;
     private const int DUE_SOON_DAYS = 30;
+    /** Upper bound on manual receivables scanned for candidates. */
+    private const int MANUAL_SCAN_LIMIT = 200;
 
     public function __construct(
         private BankTransactionRepositoryInterface $transactions,
         private InvoiceUpstreamClientInterface $invoiceClient,
+        private ManualReceivableRepositoryInterface $manualReceivables,
         private ClockInterface $clock,
     ) {
     }
@@ -29,11 +36,29 @@ final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
             throw new BankTransactionNotFoundException($input->bankTransactionId);
         }
 
-        $invoices = $this->invoiceClient->listInvoices($input->organizationId, ['issued', 'partially_paid']);
-
         $today = $this->clock->now();
-        $suggestions = [];
 
+        $suggestions = [
+            ...$this->upstreamSuggestions($input->organizationId, $tx, $today),
+            ...$this->manualSuggestions($input->organizationId, $tx, $today),
+        ];
+
+        usort($suggestions, static fn (MatchSuggestion $a, MatchSuggestion $b): int => $b->score <=> $a->score);
+
+        return new ProposeMatchOutput(
+            bankTransactionId: $input->bankTransactionId,
+            suggestions: array_slice($suggestions, 0, self::MAX_SUGGESTIONS),
+        );
+    }
+
+    /**
+     * @return list<MatchSuggestion>
+     */
+    private function upstreamSuggestions(int $organizationId, BankTransaction $tx, \DateTimeImmutable $today): array
+    {
+        $invoices = $this->invoiceClient->listInvoices($organizationId, ['issued', 'partially_paid']);
+
+        $out = [];
         foreach ($invoices as $invoice) {
             $score = 0.0;
             $reasons = [];
@@ -42,23 +67,14 @@ final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
                 $score += 0.5;
                 $reasons[] = 'exact amount match';
             }
-
             if (stripos($tx->counterpartyText, $invoice->invoiceNumber) !== false) {
                 $score += 0.3;
                 $reasons[] = 'invoice number in counterparty';
             }
-
-            if ($score > 0.0 || count($reasons) > 0) {
-                $dueAt = new \DateTimeImmutable($invoice->dueAt);
-                $daysUntilDue = (int) $today->diff($dueAt)->days;
-                if ($dueAt >= $today && $daysUntilDue <= self::DUE_SOON_DAYS) {
-                    $score += 0.2;
-                    $reasons[] = 'due soon';
-                }
-            }
+            $score += $this->dueSoonBonus($invoice->dueAt, $today, $score > 0.0 || $reasons !== [], $reasons);
 
             if ($score > 0.0) {
-                $suggestions[] = new MatchSuggestion(
+                $out[] = MatchSuggestion::upstream(
                     invoiceId: $invoice->invoiceId,
                     invoiceNumber: $invoice->invoiceNumber,
                     amountCents: $invoice->totalCents,
@@ -69,11 +85,72 @@ final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
             }
         }
 
-        usort($suggestions, static fn (MatchSuggestion $a, MatchSuggestion $b): int => $b->score <=> $a->score);
+        return $out;
+    }
 
-        return new ProposeMatchOutput(
-            bankTransactionId: $input->bankTransactionId,
-            suggestions: array_slice($suggestions, 0, self::MAX_SUGGESTIONS),
-        );
+    /**
+     * @return list<MatchSuggestion>
+     */
+    private function manualSuggestions(int $organizationId, BankTransaction $tx, \DateTimeImmutable $today): array
+    {
+        $receivables = $this->manualReceivables->findByOrganization($organizationId, new ManualReceivableFilter(), self::MANUAL_SCAN_LIMIT, 0);
+
+        $out = [];
+        foreach ($receivables as $receivable) {
+            if ($receivable->status !== ManualReceivableStatus::Open && $receivable->status !== ManualReceivableStatus::PartiallyPaid) {
+                continue;
+            }
+
+            $score = 0.0;
+            $reasons = [];
+
+            if ($receivable->outstandingCents === $tx->amountCents) {
+                $score += 0.5;
+                $reasons[] = 'exact amount match';
+            }
+            if ($receivable->clientName !== '' && stripos($tx->counterpartyText, $receivable->clientName) !== false) {
+                $score += 0.3;
+                $reasons[] = 'payer name in counterparty';
+            }
+            if ($receivable->dueAt !== null) {
+                $score += $this->dueSoonBonus($receivable->dueAt, $today, $score > 0.0 || $reasons !== [], $reasons);
+            }
+
+            if ($score > 0.0 && $receivable->id !== null) {
+                $out[] = MatchSuggestion::manual(
+                    manualReceivableId: $receivable->id,
+                    referenceNumber: $receivable->referenceNumber,
+                    amountCents: $receivable->totalCents,
+                    outstandingCents: $receivable->outstandingCents,
+                    score: $score,
+                    reason: implode('; ', $reasons),
+                );
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * +0.2 when the receivable is due within the next {@see DUE_SOON_DAYS} days,
+     * but only when there is already another matching signal. Appends the reason.
+     *
+     * @param list<string> $reasons
+     */
+    private function dueSoonBonus(string $dueAt, \DateTimeImmutable $today, bool $hasOtherSignal, array &$reasons): float
+    {
+        if (!$hasOtherSignal) {
+            return 0.0;
+        }
+
+        $due = new \DateTimeImmutable($dueAt);
+        $daysUntilDue = (int) $today->diff($due)->days;
+        if ($due >= $today && $daysUntilDue <= self::DUE_SOON_DAYS) {
+            $reasons[] = 'due soon';
+
+            return 0.2;
+        }
+
+        return 0.0;
     }
 }
