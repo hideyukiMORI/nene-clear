@@ -31,6 +31,7 @@ export const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { ja: 'ユーザー管理', en: 'Users', combos: [{ caps: ['g', 'u'], join: 'then' }] },
       { ja: '設定', en: 'Settings', combos: [{ caps: ['g', 's'], join: 'then' }] },
       { ja: '監査ログ', en: 'Audit log', combos: [{ caps: ['g', 'a'], join: 'then' }] },
+      { ja: 'ヘルプ', en: 'Help', combos: [{ caps: ['g', 'h'], join: 'then' }] },
     ],
   },
   {

@@ -33,6 +33,8 @@ export interface HelpSection {
   /** Anchor id (also the ToC target). */
   id: string
   title: Bi
+  /** Sprite icon name (`#i-<icon>`) shown beside the section heading. */
+  icon?: string
   /** Marks the section as admin-only (badge in the ToC and the heading). */
   admin?: boolean
   blocks: HelpBlock[]
@@ -54,8 +56,8 @@ export const HELP_LABELS = {
   backToToc: { ja: '目次へ戻る', en: 'Back to contents' },
   footTitle: { ja: '解決しませんでしたか？', en: 'Still need help?' },
   footDesc: {
-    ja: '管理者にお問い合わせいただくか、キーボードショートカット一覧（? キー）もご活用ください。',
-    en: 'Contact your administrator, or press ? for the keyboard-shortcut list.',
+    ja: '管理者にお問い合わせいただくか、キーボードショートカット一覧（`?` キー）もご活用ください。',
+    en: 'Contact your administrator, or press `?` for the keyboard-shortcut list.',
   },
 } as const
 
@@ -100,6 +102,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'dashboard',
     title: { ja: 'ダッシュボード', en: 'Dashboard' },
+    icon: 'grid',
     blocks: [
       {
         kind: 'lede',
@@ -120,6 +123,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'import',
     title: { ja: '銀行CSVの取込', en: 'Importing bank CSV' },
+    icon: 'import',
     blocks: [
       {
         kind: 'lede',
@@ -148,6 +152,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'reconcile',
     title: { ja: '入金の消込', en: 'Reconciling deposits' },
+    icon: 'reconcile',
     blocks: [
       {
         kind: 'lede',
@@ -186,6 +191,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'credits',
     title: { ja: '前受金', en: 'Client credits' },
+    icon: 'credit',
     blocks: [
       {
         kind: 'lede',
@@ -207,6 +213,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'dunning',
     title: { ja: '督促', en: 'Dunning' },
+    icon: 'bell',
     blocks: [
       {
         kind: 'lede',
@@ -235,6 +242,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'export',
     title: { ja: 'CSVエクスポート', en: 'CSV export' },
+    icon: 'export',
     blocks: [
       {
         kind: 'lede',
@@ -255,6 +263,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'settings',
     title: { ja: '設定', en: 'Settings' },
+    icon: 'gear',
     admin: true,
     blocks: [
       {
@@ -278,6 +287,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'users',
     title: { ja: 'ユーザー管理（招待）', en: 'User management (invitations)' },
+    icon: 'users',
     admin: true,
     blocks: [
       {
@@ -296,17 +306,41 @@ export const HELP_SECTIONS: HelpSection[] = [
         ],
       },
       {
-        kind: 'note',
-        text: {
-          ja: 'ロールは **管理者 / オペレーター / 閲覧者**。オペレーターは消込・督促が可能、閲覧者は閲覧のみ。管理者だけが設定・ユーザー管理・監査ログにアクセスできます。',
-          en: 'Roles are **admin / operator / viewer**. Operators can reconcile and dun; viewers are read-only. Only admins reach Settings, Users, and the audit log.',
-        },
+        kind: 'subhead',
+        text: { ja: 'ロール', en: 'Roles' },
+      },
+      {
+        kind: 'options',
+        items: [
+          {
+            title: { ja: '管理者', en: 'Admin' },
+            desc: {
+              ja: 'すべての操作に加え、設定・ユーザー管理・監査ログにアクセスできます。',
+              en: 'Everything operators can do, plus access to Settings, user management, and the audit log.',
+            },
+          },
+          {
+            title: { ja: 'オペレーター', en: 'Operator' },
+            desc: {
+              ja: '消込・督促を含む日常業務を実行できます。管理機能は不可。',
+              en: 'Runs day-to-day work including reconciliation and dunning. No admin functions.',
+            },
+          },
+          {
+            title: { ja: '閲覧者', en: 'Viewer' },
+            desc: {
+              ja: 'データの閲覧のみ。消込・督促などの実行はできません。',
+              en: 'Read-only. Cannot reconcile, dun, or make other changes.',
+            },
+          },
+        ],
       },
     ],
   },
   {
     id: 'audit',
     title: { ja: '監査ログ', en: 'Audit log' },
+    icon: 'shield',
     admin: true,
     blocks: [
       {
@@ -321,6 +355,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'keys',
     title: { ja: 'キーボードショートカット', en: 'Keyboard shortcuts' },
+    icon: 'key',
     blocks: [
       {
         kind: 'lede',
@@ -363,6 +398,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'faq',
     title: { ja: 'よくある質問', en: 'FAQ' },
+    icon: 'help',
     blocks: [
       {
         kind: 'faq',
@@ -394,6 +430,7 @@ export const HELP_SECTIONS: HelpSection[] = [
   {
     id: 'disclaimer',
     title: { ja: '免責事項・ご利用にあたって', en: 'Disclaimer & terms of use' },
+    icon: 'doc',
     blocks: [
       {
         kind: 'lede',

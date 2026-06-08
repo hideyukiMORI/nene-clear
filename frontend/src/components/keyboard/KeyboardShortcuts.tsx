@@ -22,6 +22,7 @@ const GOTO: Record<string, string> = {
   u: '/admin/users',
   s: '/admin/settings',
   a: '/admin/audit-log',
+  h: '/admin/help',
 }
 
 /**
