@@ -67,6 +67,15 @@ return [
     'problem.client-credit-not-found.title'  => 'Client Credit Not Found',
     'problem.client-credit-not-found.detail' => 'The requested client credit was not found.',
 
+    'problem.manual-receivable-not-found.title'  => 'Receivable Not Found',
+    'problem.manual-receivable-not-found.detail' => 'The requested manual receivable was not found.',
+
+    'problem.manual-receivable-already-exists.title'  => 'Receivable Already Exists',
+    'problem.manual-receivable-already-exists.detail' => 'A receivable with this reference number already exists.',
+
+    'problem.manual-receivable-cancelled.title'  => 'Receivable Cancelled',
+    'problem.manual-receivable-cancelled.detail' => 'This receivable is cancelled and can no longer be changed.',
+
     'problem.dunning-notice-not-found.title'  => 'Dunning Notice Not Found',
     'problem.dunning-notice-not-found.detail' => 'The requested dunning notice was not found.',
 

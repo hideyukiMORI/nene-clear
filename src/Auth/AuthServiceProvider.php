@@ -109,6 +109,7 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                             '/admin/bank-transactions' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                             '/admin/reconciliations' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                             '/admin/client-credits' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
+                            '/admin/manual-receivables' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::ManageReconciliation),
                             '/admin/clear-settings' => CapabilityRule::same(Capability::ManageClearSettings),
                             '/admin/dunning-notices' => new CapabilityRule(read: Capability::ViewReconciliation, write: Capability::SendDunning),
                             '/admin/upstream/invoices' => CapabilityRule::same(Capability::ViewReconciliation),

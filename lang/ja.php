@@ -67,6 +67,15 @@ return [
     'problem.client-credit-not-found.title'  => '前受金が見つかりません',
     'problem.client-credit-not-found.detail' => '指定された前受金は存在しません。',
 
+    'problem.manual-receivable-not-found.title'  => '売掛が見つかりません',
+    'problem.manual-receivable-not-found.detail' => '指定された手入力売掛は存在しません。',
+
+    'problem.manual-receivable-already-exists.title'  => '売掛が既に存在します',
+    'problem.manual-receivable-already-exists.detail' => 'この請求書番号の売掛は既に登録されています。',
+
+    'problem.manual-receivable-cancelled.title'  => '売掛は取消済みです',
+    'problem.manual-receivable-cancelled.detail' => 'この売掛は取消済みのため変更できません。',
+
     'problem.dunning-notice-not-found.title'  => '督促記録が見つかりません',
     'problem.dunning-notice-not-found.detail' => '指定された督促記録は存在しません。',
 
