@@ -152,7 +152,7 @@ final readonly class PdoDunningNoticeRepository implements DunningNoticeReposito
             clientId: (int) $row['client_id'],
             recipientEmail: (string) $row['recipient_email'],
             outstandingCents: (int) $row['outstanding_cents'],
-            dueAt: (string) $row['due_at'],
+            dueAt: isset($row['due_at']) ? (string) $row['due_at'] : null,
             channel: (string) $row['channel'],
             templateVersion: (string) $row['template_version'],
             sentBy: (int) $row['sent_by'],

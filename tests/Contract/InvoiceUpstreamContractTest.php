@@ -49,7 +49,11 @@ final class InvoiceUpstreamContractTest extends TestCase
             self::assertNotEmpty($invoice->invoiceNumber);
             self::assertGreaterThanOrEqual(0, $invoice->outstandingCents);
             self::assertGreaterThan(0, $invoice->totalCents);
-            self::assertNotEmpty($invoice->dueAt);
+            // due_at is nullable per the contract (an invoice may have no due date);
+            // when present it must be a non-empty date string.
+            if ($invoice->dueAt !== null) {
+                self::assertNotEmpty($invoice->dueAt);
+            }
             self::assertContains($invoice->status, ['issued', 'partially_paid', 'paid']);
             self::assertSame('JPY', $invoice->currency);
         }

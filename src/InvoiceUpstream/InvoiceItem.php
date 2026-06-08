@@ -12,7 +12,8 @@ final readonly class InvoiceItem
         public int $clientId,
         public int $outstandingCents,
         public int $totalCents,
-        public string $dueAt,
+        /** Nullable per the Invoice contract — an invoice may be issued with no due date. */
+        public ?string $dueAt,
         public string $status,
         public string $currency,
     ) {

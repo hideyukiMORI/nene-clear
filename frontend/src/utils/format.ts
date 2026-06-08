@@ -13,8 +13,9 @@ export function formatDateTime(iso: string): string {
   return iso.slice(0, 16).replace('T', ' ')
 }
 
-/** Days elapsed since a due date; returns `${n}日` or '—' when not yet due. */
-export function daysOverdue(due: string): string {
+/** Days elapsed since a due date; '—' when not yet due or no due date (nullable per the Invoice contract). */
+export function daysOverdue(due: string | null): string {
+  if (due === null || due === '') return '—'
   const days = Math.floor((Date.now() - new Date(due).getTime()) / 86400000)
   return days > 0 ? `${days}日` : '—'
 }

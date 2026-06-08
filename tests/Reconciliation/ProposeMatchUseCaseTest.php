@@ -176,6 +176,27 @@ final class ProposeMatchUseCaseTest extends TestCase
         self::assertStringContainsString('exact amount match', $output->suggestions[0]->reason);
     }
 
+    public function test_upstream_invoice_with_null_due_date_is_handled(): void
+    {
+        // due_at is nullable per the Invoice contract (#164) — must not crash.
+        $txId = $this->makeTx(100000);
+        $this->invoiceClient->addInvoice(new InvoiceItem(
+            invoiceId: 1,
+            invoiceNumber: 'INV-001',
+            clientId: 100,
+            outstandingCents: 100000,
+            totalCents: 100000,
+            dueAt: null,
+            status: 'issued',
+            currency: 'JPY',
+        ));
+
+        $output = $this->useCase->execute(new ProposeMatchInput(7, $txId));
+
+        self::assertCount(1, $output->suggestions);
+        self::assertSame(0.5, $output->suggestions[0]->score); // exact amount only; no due-soon bonus
+    }
+
     public function test_invoice_number_in_counterparty_adds_score(): void
     {
         $txId = $this->makeTx(200000, 'Payment for INV-999 ACME');

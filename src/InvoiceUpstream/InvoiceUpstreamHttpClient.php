@@ -17,6 +17,10 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
 {
     private const int CONNECT_TIMEOUT = 5;
     private const int READ_TIMEOUT = 10;
+    /** Invoice contract caps `limit` at 100; sending more is a 422. */
+    private const int PAGE_LIMIT = 100;
+    /** Safety bound so a misbehaving upstream can't loop forever (≤ 10k invoices). */
+    private const int MAX_PAGES = 100;
 
     public function __construct(
         private string $baseUrl,
@@ -26,38 +30,53 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
 
     public function listInvoices(int $organizationId, array $statuses): array
     {
-        $query = http_build_query(['status' => $statuses, 'limit' => 200, 'offset' => 0]);
-        $body = $this->request('GET', '/api/invoices?' . $query);
+        // The Invoice contract caps `limit` at 100 (more → 422), so page through
+        // with `offset` until a short page returns. Reconciliation needs the full
+        // set of open invoices, not just the first page.
+        $invoices = [];
+        $offset = 0;
 
-        return array_values(array_map(
-            static fn (array $item): InvoiceItem => new InvoiceItem(
-                invoiceId: (int) $item['invoice_id'],
-                invoiceNumber: (string) $item['invoice_number'],
-                clientId: (int) $item['client_id'],
-                outstandingCents: (int) $item['outstanding_cents'],
-                totalCents: (int) $item['total_cents'],
-                dueAt: (string) $item['due_at'],
-                status: (string) $item['status'],
-                currency: (string) ($item['currency'] ?? 'JPY'),
-            ),
-            (array) ($body['items'] ?? []),
-        ));
+        for ($page = 0; $page < self::MAX_PAGES; ++$page) {
+            $query = http_build_query(['status' => $statuses, 'limit' => self::PAGE_LIMIT, 'offset' => $offset]);
+            $body = $this->request('GET', '/api/invoices?' . $query);
+            $items = (array) ($body['items'] ?? []);
+
+            foreach ($items as $item) {
+                /** @var array<string, mixed> $item */
+                $invoices[] = $this->hydrateInvoice($item);
+            }
+
+            if (count($items) < self::PAGE_LIMIT) {
+                break;
+            }
+            $offset += self::PAGE_LIMIT;
+        }
+
+        return $invoices;
+    }
+
+    /**
+     * @param array<string, mixed> $item
+     */
+    private function hydrateInvoice(array $item): InvoiceItem
+    {
+        return new InvoiceItem(
+            invoiceId: (int) $item['invoice_id'],
+            invoiceNumber: (string) $item['invoice_number'],
+            clientId: (int) $item['client_id'],
+            outstandingCents: (int) $item['outstanding_cents'],
+            totalCents: (int) $item['total_cents'],
+            dueAt: isset($item['due_at']) ? (string) $item['due_at'] : null,
+            status: (string) $item['status'],
+            currency: (string) ($item['currency'] ?? 'JPY'),
+        );
     }
 
     public function getInvoice(int $organizationId, int $invoiceId): InvoiceItem
     {
         $body = $this->request('GET', '/api/invoices/' . $invoiceId, resourceId: $invoiceId);
 
-        return new InvoiceItem(
-            invoiceId: (int) $body['invoice_id'],
-            invoiceNumber: (string) $body['invoice_number'],
-            clientId: (int) $body['client_id'],
-            outstandingCents: (int) $body['outstanding_cents'],
-            totalCents: (int) $body['total_cents'],
-            dueAt: (string) $body['due_at'],
-            status: (string) $body['status'],
-            currency: (string) ($body['currency'] ?? 'JPY'),
-        );
+        return $this->hydrateInvoice($body);
     }
 
     public function createPayment(

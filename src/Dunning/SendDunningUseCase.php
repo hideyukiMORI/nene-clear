@@ -75,13 +75,14 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             $this->catalog->get('dunning_email.subject', Locale::Ja),
             $invoice->invoiceNumber,
         );
+        $dueAtLabel = $invoice->dueAt ?? '—';
         $body = sprintf(
             $this->catalog->get('dunning_email.body', Locale::Ja),
             $client->contactName,
             $invoice->invoiceNumber,
-            $invoice->dueAt,
+            $dueAtLabel,
             number_format((int) ($invoice->outstandingCents / 100)),
-            $invoice->dueAt,
+            $dueAtLabel,
             number_format((int) ($invoice->outstandingCents / 100)),
         );
 
