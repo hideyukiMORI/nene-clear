@@ -259,4 +259,28 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createManualReceivables(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE manual_receivables (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                organization_id INTEGER NOT NULL,
+                reference_number TEXT NOT NULL,
+                client_name TEXT NOT NULL,
+                recipient_email TEXT,
+                total_cents INTEGER NOT NULL,
+                outstanding_cents INTEGER NOT NULL,
+                currency TEXT NOT NULL DEFAULT \'JPY\',
+                issued_at TEXT,
+                due_at TEXT,
+                status TEXT NOT NULL DEFAULT \'open\',
+                created_by INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                deleted_at TEXT
+            )'
+        );
+    }
 }

@@ -65,7 +65,7 @@ A reviewing professional is the real acceptance test: **帳簿 (Invoice) ↔ 証
 | # | Clear must NOT | Why (risk) | Belongs to |
 | --- | --- | --- | --- |
 | X1 | Issue quotes / invoices / qualified-invoice PDFs, or compute consumption tax | Two issuers of the same document = two truths; tax errors | **NeNe Invoice** (ADR 0009) |
-| X2 | Hold invoices, outstanding balances, or payments as its **own** source of truth | Competing balances → "which number is right?" at audit | **NeNe Invoice** (ADR 0010) |
+| X2 | Hold **upstream (Invoice-sourced)** invoices, balances, or payments as its **own** source of truth | Competing balances → "which number is right?" at audit | **NeNe Invoice** (ADR 0010); narrowed by **ADR 0014** |
 | X3 | Post journal entries (仕訳) or replace double-entry bookkeeping | Clear is a reconciliation subledger, not a ledger | Accounting software (ADR 0013) |
 | X4 | **Determine bad debt (貸倒損失)** or write off a receivable as a tax event | 貸倒 is a tax judgment (法人税基本通達 9-6-1〜9-6-3) | Operator + 税理士 |
 | X5 | Make **legal determinations** about prescription/time-bar (消滅時効, 売掛金 5年 — 民法166) | Misstating a legal status creates liability | Operator + 弁護士 |
@@ -79,6 +79,15 @@ A reviewing professional is the real acceptance test: **帳簿 (Invoice) ↔ 証
 | X13 | Mutate **imported bank data** in place | Breaks 真実性の確保 | — (reversal import batch only) |
 | X14 | Share a database with Invoice or any sibling | Couples schemas, bypasses the contract | — (HTTP only, ADR 0002/0009) |
 | X15 | Issue receipts (領収書) | 印紙税 and document issuance are not Clear's domain | Invoice / operator |
+
+> **X2 carve-out ([ADR 0014](../adr/0014-accept-manual-receivables.md)):**
+> *Manually-entered* receivables (`source = manual`) exist **only** in Clear — no
+> NeNe Invoice record holds them — so there is no competing balance to drift
+> against, and Clear **is** their system of record (it stores the figures and
+> computes `outstanding_cents` / `status`). This narrows X2 to upstream
+> receivables; it does **not** touch **X1** — a manual receivable is a
+> reconciliation reference, and Clear still issues no invoice/PDF and computes no
+> tax.
 
 ---
 

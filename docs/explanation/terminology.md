@@ -63,6 +63,7 @@ domain folders are **PascalCase singular**.
 | Confirmed match link | `PaymentReconciliation` | `payment_reconciliations` | `payment_reconciliation_id` |
 | Allocation row (one match → one invoice) | `ReconciliationAllocation` | `reconciliation_allocations` | `reconciliation_allocation_id` |
 | Overpayment credit balance | `ClientCredit` | `client_credits` | `client_credit_id` |
+| Manually-entered receivable (Clear-owned; ADR 0014) | `ManualReceivable` (entity); `Receivable` (folder) | `manual_receivables` | `manual_receivable_id` |
 | Dunning send record | `DunningNotice` | `dunning_notices` | `dunning_notice_id` |
 | Audit event | `AuditEvent` | `audit_events` | `audit_event_id` |
 
@@ -82,6 +83,8 @@ Stored and transmitted **exactly** as written (lowercase snake_case).
 | `bank_import_batch.status` | `imported`, `reversed` |
 | `payment_reconciliation.status` | `confirmed`, `reversed` |
 | `client_credit.status` | `open`, `partially_applied`, `applied` |
+| `manual_receivable.status` | `open`, `partially_paid`, `paid`, `cancelled` (ADR 0014; Clear-computed) |
+| Receivable `source` (allocations, dunning, credits, receivable reads) | `invoice_upstream`, `manual` (ADR 0014) |
 | `dunning_notice.status` | `sent`, `failed` |
 | `user.role` | `superadmin`, `admin`, `member`, `viewer` (ADR 0006) |
 | `user.status` | `active`, `invited` |
@@ -172,10 +175,14 @@ login). New events MUST map to one of these registered `entity_type` values:
 | Dunning recipient | `recipient_email` | `email`, `to` |
 | Dunning template version | `template_version` | `template`, `version` |
 | Credit remaining balance | `remaining_cents` | `balance_cents`, `left_cents` |
+| Manual receivable document number | `reference_number` | `invoice_number` (it is **not** an invoice — X1), `ref_no`, `doc_no` |
+| Manual receivable payer name | `client_name` | `payer`, `customer_name`, `client` |
+| Receivable outstanding balance (live) | `outstanding_cents` (Invoice-reported upstream; Clear-computed for `manual`) | `balance_cents`; not `outstanding_at_send_cents` (that is the dunning snapshot) |
+| Currency code | `currency` (ISO 4217; `JPY` only for now) | `ccy`, `currency_code` |
 | Upstream invoice id | `invoice_id` | `upstream_invoice_id`, `invoiceId` |
 | Upstream client id | `client_id` | `upstream_client_id`, `clientId` |
 | Upstream payment id | `payment_id` | `upstream_payment_id`, `paymentId` |
-| Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `bank_account_id`, `payment_reconciliation_id`, `client_credit_id` | camelCase, abbreviations |
+| Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `bank_account_id`, `payment_reconciliation_id`, `client_credit_id`, `manual_receivable_id` | camelCase, abbreviations |
 | Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`, `actor_id` (use role-specific names above) |
 | Audit event type | `event_type` | `type`, `action` |
 | Audit subject type | `entity_type` | `entity`, `target_type`, `resource` |
