@@ -25,7 +25,9 @@ final readonly class ReconciliationResponse
             'allocations' => array_map(
                 static fn (ReconciliationAllocation $a): array => [
                     'reconciliation_allocation_id' => $a->id,
+                    'source' => $a->source->value,
                     'invoice_id' => $a->invoiceId,
+                    'manual_receivable_id' => $a->manualReceivableId,
                     'amount_cents' => $a->amountCents,
                     'payment_id' => $a->paymentId,
                     'external_reference' => $a->externalReference,

@@ -10,6 +10,8 @@ use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceItem;
+use NeneClear\Receivable\ManualReceivable;
+use NeneClear\Receivable\ManualReceivableStatus;
 use NeneClear\Reconciliation\AllocationExceedsOutstandingException;
 use NeneClear\Reconciliation\AllocationInput;
 use NeneClear\Reconciliation\BankTransactionNotMatchableException;
@@ -29,6 +31,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
     private InMemoryBankTransactionRepository $transactions;
     private InMemoryReconciliationRepository $reconciliations;
     private InMemoryClientCreditRepository $clientCredits;
+    private InMemoryManualReceivableRepository $manualReceivables;
     private FakeInvoiceUpstreamClient $invoiceClient;
     private InMemoryAuditEventRepository $audit;
     private ConfirmMatchUseCase $useCase;
@@ -38,6 +41,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $this->transactions = new InMemoryBankTransactionRepository();
         $this->reconciliations = new InMemoryReconciliationRepository();
         $this->clientCredits = new InMemoryClientCreditRepository();
+        $this->manualReceivables = new InMemoryManualReceivableRepository();
         $this->invoiceClient = new FakeInvoiceUpstreamClient();
         $this->audit = new InMemoryAuditEventRepository();
         $this->useCase = new ConfirmMatchUseCase(
@@ -46,6 +50,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
             fn () => $this->transactions,
             fn () => $this->reconciliations,
             fn () => $this->clientCredits,
+            fn () => $this->manualReceivables,
             $this->invoiceClient,
             fn () => new AuditRecorder($this->audit),
             new FixedClock(),
@@ -80,6 +85,102 @@ final class ConfirmMatchUseCaseTest extends TestCase
         ));
     }
 
+    private function makeManualReceivable(int $totalCents): int
+    {
+        return $this->manualReceivables->save(new ManualReceivable(
+            organizationId: 7,
+            referenceNumber: 'MR-' . $totalCents,
+            clientName: 'カ）アクメ',
+            recipientEmail: 'ar@acme.example',
+            totalCents: $totalCents,
+            outstandingCents: $totalCents,
+            currency: 'JPY',
+            issuedAt: '2026-03-31',
+            dueAt: '2026-04-30',
+            status: ManualReceivableStatus::Open,
+            createdBy: 1,
+            createdAt: '2026-04-01 09:00:00',
+        ));
+    }
+
+    public function test_manual_allocation_reduces_outstanding_without_upstream_payment(): void
+    {
+        $txId = $this->makeTx(100000);
+        $mrId = $this->makeManualReceivable(100000);
+
+        $output = $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [AllocationInput::manual($mrId, 100000)],
+            actorUserId: 42,
+        ));
+
+        self::assertSame(BankTransactionStatus::Matched, $this->transactions->findById(7, $txId)?->status);
+        self::assertSame(ReconciliationStatus::Confirmed, $this->reconciliations->findById(7, $output->reconciliationId)?->status);
+
+        $mr = $this->manualReceivables->findById($mrId);
+        self::assertNotNull($mr);
+        self::assertSame(0, $mr->outstandingCents);
+        self::assertSame(ManualReceivableStatus::Paid, $mr->status);
+
+        // Clear is the SSOR for manual receivables — no upstream payment was created.
+        self::assertEmpty($this->clientCredits->all());
+    }
+
+    public function test_manual_partial_allocation_sets_partially_paid(): void
+    {
+        $txId = $this->makeTx(40000);
+        $mrId = $this->makeManualReceivable(100000);
+
+        $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [AllocationInput::manual($mrId, 40000)],
+            actorUserId: 42,
+        ));
+
+        $mr = $this->manualReceivables->findById($mrId);
+        self::assertNotNull($mr);
+        self::assertSame(60000, $mr->outstandingCents);
+        self::assertSame(ManualReceivableStatus::PartiallyPaid, $mr->status);
+    }
+
+    public function test_manual_overpayment_creates_manual_client_credit(): void
+    {
+        $txId = $this->makeTx(150000);
+        $mrId = $this->makeManualReceivable(100000);
+
+        $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [AllocationInput::manual($mrId, 100000)],
+            actorUserId: 42,
+        ));
+
+        self::assertSame(BankTransactionStatus::PartiallyMatched, $this->transactions->findById(7, $txId)?->status);
+
+        $credits = $this->clientCredits->all();
+        self::assertCount(1, $credits);
+        self::assertSame(50000, $credits[0]->amountCents);
+        self::assertNull($credits[0]->clientId);
+        self::assertSame('カ）アクメ', $credits[0]->clientName);
+        self::assertSame($mrId, $credits[0]->manualReceivableId);
+    }
+
+    public function test_manual_allocation_over_outstanding_is_rejected(): void
+    {
+        $txId = $this->makeTx(120000);
+        $mrId = $this->makeManualReceivable(100000);
+
+        $this->expectException(AllocationExceedsOutstandingException::class);
+        $this->useCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [AllocationInput::manual($mrId, 120000)],
+            actorUserId: 42,
+        ));
+    }
+
     public function test_exact_match_sets_status_to_matched(): void
     {
         $txId = $this->makeTx(100000);
@@ -88,7 +189,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $output = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
@@ -114,7 +215,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $output = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
@@ -136,7 +237,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $output = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 200000), new AllocationInput(2, 100000)],
+            allocations: [AllocationInput::upstream(1, 200000), AllocationInput::upstream(2, 100000)],
             actorUserId: 42,
         ));
 
@@ -156,7 +257,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 150000)],
+            allocations: [AllocationInput::upstream(1, 150000)],
             actorUserId: 42,
         ));
     }
@@ -169,7 +270,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $first = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
             idempotencyKey: 'key-abc-123',
         ));
@@ -178,7 +279,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $replay = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
             idempotencyKey: 'key-abc-123',
         ));
@@ -197,7 +298,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $first = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
             idempotencyKey: 'key-abc-111',
         ));
@@ -209,7 +310,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $second = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId2,
-            allocations: [new AllocationInput(2, 50000)],
+            allocations: [AllocationInput::upstream(2, 50000)],
             actorUserId: 42,
             idempotencyKey: 'key-abc-222',
         ));
@@ -224,7 +325,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: 9999,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
     }
@@ -238,7 +339,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
     }
@@ -252,7 +353,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 999, // different org cannot see org 7 transactions
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
     }
@@ -266,7 +367,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $output1 = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
@@ -296,7 +397,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         $confirmOutput = $this->useCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 

@@ -13,6 +13,12 @@ use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Receivable\ManualReceivable;
+use NeneClear\Receivable\ManualReceivableCancelledException;
+use NeneClear\Receivable\ManualReceivableNotFoundException;
+use NeneClear\Receivable\ManualReceivableRepositoryInterface;
+use NeneClear\Receivable\ManualReceivableStatus;
+use NeneClear\Receivable\ReceivableSource;
 
 final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
 {
@@ -21,6 +27,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
      * @param Closure(DatabaseQueryExecutorInterface): ReconciliationRepositoryInterface $reconciliations
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
+     * @param Closure(DatabaseQueryExecutorInterface): ManualReceivableRepositoryInterface $manualReceivables
      * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
@@ -29,6 +36,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
         private Closure $transactions,
         private Closure $reconciliations,
         private Closure $clientCredits,
+        private Closure $manualReceivables,
         private InvoiceUpstreamClientInterface $invoiceClient,
         private Closure $auditRecorder,
         private ClockInterface $clock,
@@ -59,46 +67,77 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
 
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
-        // Validate outstanding and call upstream for each allocation. Upstream payment
-        // creation is an external side effect and must happen OUTSIDE the database
-        // transaction (it cannot be rolled back); the local writes below are atomic.
-        $paymentsCreated = [];
+        // Validate outstanding per allocation. For UPSTREAM, the invoice payment is an
+        // external side effect created here (OUTSIDE the db transaction, since it cannot
+        // be rolled back). For MANUAL, Clear is the system of record — no upstream call;
+        // the balance is adjusted in the atomic block below.
+        $prepared = [];
         foreach ($input->allocations as $allocation) {
-            $invoice = $this->invoiceClient->getInvoice($input->organizationId, $allocation->invoiceId);
+            if ($allocation->source === ReceivableSource::Manual) {
+                $manualId = (int) $allocation->manualReceivableId;
+                $receivable = ($this->manualReceivables)($this->reader)->findById($manualId);
+                if ($receivable === null || $receivable->organizationId !== $input->organizationId) {
+                    throw new ManualReceivableNotFoundException($manualId);
+                }
+                if ($receivable->status === ManualReceivableStatus::Cancelled) {
+                    throw new ManualReceivableCancelledException($manualId);
+                }
+                if ($allocation->amountCents > $receivable->outstandingCents) {
+                    throw new AllocationExceedsOutstandingException($manualId, $receivable->outstandingCents);
+                }
+
+                $prepared[] = [
+                    'allocation' => $allocation,
+                    'source' => ReceivableSource::Manual,
+                    'payment' => null,
+                    'outstandingBefore' => $receivable->outstandingCents,
+                    'clientId' => null,
+                    'clientName' => $receivable->clientName,
+                    'manualReceivableId' => $manualId,
+                ];
+
+                continue;
+            }
+
+            $invoiceId = (int) $allocation->invoiceId;
+            $invoice = $this->invoiceClient->getInvoice($input->organizationId, $invoiceId);
 
             if ($allocation->amountCents > $invoice->outstandingCents) {
-                throw new AllocationExceedsOutstandingException($allocation->invoiceId, $invoice->outstandingCents);
+                throw new AllocationExceedsOutstandingException($invoiceId, $invoice->outstandingCents);
             }
 
             $externalRef = sprintf('clear:recon:pending:%s', bin2hex(random_bytes(8)));
-            $idempotencyKey = sprintf('clear:recon:confirm:%d:%d:%s', $input->bankTransactionId, $allocation->invoiceId, bin2hex(random_bytes(8)));
+            $idempotencyKey = sprintf('clear:recon:confirm:%d:%d:%s', $input->bankTransactionId, $invoiceId, bin2hex(random_bytes(8)));
 
             $payment = $this->invoiceClient->createPayment(
                 organizationId: $input->organizationId,
-                invoiceId: $allocation->invoiceId,
+                invoiceId: $invoiceId,
                 amountCents: $allocation->amountCents,
                 paidAt: $tx->valueDate,
                 externalReference: $externalRef,
                 idempotencyKey: $idempotencyKey,
             );
 
-            $paymentsCreated[] = [
+            $prepared[] = [
                 'allocation' => $allocation,
+                'source' => ReceivableSource::InvoiceUpstream,
                 'payment' => $payment,
-                'externalRef' => $externalRef,
-                'invoiceOutstandingBefore' => $invoice->outstandingCents,
+                'outstandingBefore' => $invoice->outstandingCents,
                 'clientId' => $invoice->clientId,
+                'clientName' => null,
+                'manualReceivableId' => null,
             ];
         }
 
         // Atomic local writes + audit: the reconciliation, its allocations, the bank
-        // transaction status, any overpayment credit, and the audit record commit (or
-        // roll back) together so a confirmed match can never lack its audit (Issue #122).
+        // transaction status, any manual-receivable balance update, any overpayment
+        // credit, and the audit record commit (or roll back) together (Issue #122).
         return $this->transactionManager->transactional(
-            function (DatabaseQueryExecutorInterface $ex) use ($input, $tx, $now, $paymentsCreated): ConfirmMatchOutput {
+            function (DatabaseQueryExecutorInterface $ex) use ($input, $tx, $now, $prepared): ConfirmMatchOutput {
                 $reconciliations = ($this->reconciliations)($ex);
                 $transactions = ($this->transactions)($ex);
                 $clientCredits = ($this->clientCredits)($ex);
+                $manualReceivables = ($this->manualReceivables)($ex);
                 $auditRecorder = ($this->auditRecorder)($ex);
 
                 $reconciliationId = $reconciliations->save(new Reconciliation(
@@ -112,20 +151,32 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 ));
 
                 $totalAllocated = 0;
-                foreach ($paymentsCreated as $entry) {
+                foreach ($prepared as $entry) {
                     /** @var AllocationInput $allocation */
                     $allocation = $entry['allocation'];
-                    $payment = $entry['payment'];
-                    $externalRef = sprintf('clear:recon:%d:%d', $reconciliationId, $allocation->invoiceId);
 
-                    $reconciliations->saveAllocation(new ReconciliationAllocation(
-                        organizationId: $input->organizationId,
-                        reconciliationId: $reconciliationId,
-                        invoiceId: $allocation->invoiceId,
-                        amountCents: $allocation->amountCents,
-                        paymentId: $payment->paymentId,
-                        externalReference: $externalRef,
-                    ));
+                    if ($entry['source'] === ReceivableSource::Manual) {
+                        $reconciliations->saveAllocation(new ReconciliationAllocation(
+                            organizationId: $input->organizationId,
+                            reconciliationId: $reconciliationId,
+                            invoiceId: null,
+                            amountCents: $allocation->amountCents,
+                            source: ReceivableSource::Manual,
+                            manualReceivableId: $entry['manualReceivableId'],
+                        ));
+                        $this->applyManualBalance($manualReceivables, (int) $entry['manualReceivableId'], -$allocation->amountCents, $now);
+                    } else {
+                        $payment = $entry['payment'];
+                        $externalRef = sprintf('clear:recon:%d:%d', $reconciliationId, (int) $allocation->invoiceId);
+                        $reconciliations->saveAllocation(new ReconciliationAllocation(
+                            organizationId: $input->organizationId,
+                            reconciliationId: $reconciliationId,
+                            invoiceId: $allocation->invoiceId,
+                            amountCents: $allocation->amountCents,
+                            paymentId: $payment->paymentId,
+                            externalReference: $externalRef,
+                        ));
+                    }
 
                     $totalAllocated += $allocation->amountCents;
                 }
@@ -135,9 +186,12 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 $transactions->updateStatusById($input->organizationId, $input->bankTransactionId, $newStatus);
 
                 if ($remainder > 0) {
+                    // The overpayment is attributed to the first allocation's payer; for a
+                    // manual receivable that is a client_name (no upstream client_id).
+                    $first = $prepared[0];
                     $clientCredits->save(new ClientCredit(
                         organizationId: $input->organizationId,
-                        clientId: $paymentsCreated[0]['clientId'],
+                        clientId: $first['clientId'],
                         amountCents: $remainder,
                         remainingCents: $remainder,
                         status: ClientCreditStatus::Open,
@@ -145,6 +199,9 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                         reconciliationId: $reconciliationId,
                         createdBy: $input->actorUserId,
                         createdAt: $now,
+                        source: $first['source'],
+                        manualReceivableId: $first['manualReceivableId'],
+                        clientName: $first['clientName'],
                     ));
                 }
 
@@ -159,13 +216,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                         'before' => [
                             'bank_transaction_status' => $tx->status->value,
                             'bank_transaction_amount_cents' => $tx->amountCents,
-                            'allocations' => array_map(
-                                static fn (array $e): array => [
-                                    'invoice_id' => $e['allocation']->invoiceId,
-                                    'invoice_outstanding_cents' => $e['invoiceOutstandingBefore'],
-                                ],
-                                $paymentsCreated,
-                            ),
+                            'allocations' => array_map(self::auditTarget(...), $prepared),
                         ],
                         'after' => [
                             'payment_reconciliation_id' => $reconciliationId,
@@ -173,12 +224,19 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                             'total_allocated_cents' => $totalAllocated,
                             'remainder_cents' => $remainder,
                             'allocations' => array_map(
-                                static fn (array $e): array => [
-                                    'invoice_id' => $e['allocation']->invoiceId,
-                                    'amount_cents' => $e['allocation']->amountCents,
-                                    'payment_id' => $e['payment']->paymentId,
-                                ],
-                                $paymentsCreated,
+                                static function (array $e): array {
+                                    /** @var AllocationInput $a */
+                                    $a = $e['allocation'];
+
+                                    return [
+                                        'source' => $e['source']->value,
+                                        'invoice_id' => $a->invoiceId,
+                                        'manual_receivable_id' => $e['manualReceivableId'],
+                                        'amount_cents' => $a->amountCents,
+                                        'payment_id' => $e['payment']?->paymentId,
+                                    ];
+                                },
+                                $prepared,
                             ),
                         ],
                     ],
@@ -187,5 +245,60 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 return new ConfirmMatchOutput(reconciliationId: $reconciliationId);
             },
         );
+    }
+
+    /**
+     * Adjusts a manual receivable's outstanding by `$delta` (negative to apply a
+     * payment, positive to restore on reversal) and recomputes its status. Clear
+     * owns this balance (ADR 0014).
+     */
+    private function applyManualBalance(ManualReceivableRepositoryInterface $repo, int $id, int $delta, string $now): void
+    {
+        $receivable = $repo->findById($id);
+        if ($receivable === null) {
+            return;
+        }
+
+        $outstanding = max(0, $receivable->outstandingCents + $delta);
+        $status = match (true) {
+            $outstanding <= 0 => ManualReceivableStatus::Paid,
+            $outstanding < $receivable->totalCents => ManualReceivableStatus::PartiallyPaid,
+            default => ManualReceivableStatus::Open,
+        };
+
+        $repo->update(new ManualReceivable(
+            organizationId: $receivable->organizationId,
+            referenceNumber: $receivable->referenceNumber,
+            clientName: $receivable->clientName,
+            recipientEmail: $receivable->recipientEmail,
+            totalCents: $receivable->totalCents,
+            outstandingCents: $outstanding,
+            currency: $receivable->currency,
+            issuedAt: $receivable->issuedAt,
+            dueAt: $receivable->dueAt,
+            status: $status,
+            createdBy: $receivable->createdBy,
+            createdAt: $receivable->createdAt,
+            updatedAt: $now,
+            id: $receivable->id,
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     *
+     * @return array<string, mixed>
+     */
+    private static function auditTarget(array $entry): array
+    {
+        /** @var AllocationInput $allocation */
+        $allocation = $entry['allocation'];
+
+        return [
+            'source' => $entry['source']->value,
+            'invoice_id' => $allocation->invoiceId,
+            'manual_receivable_id' => $entry['manualReceivableId'],
+            'outstanding_before_cents' => $entry['outstandingBefore'],
+        ];
     }
 }

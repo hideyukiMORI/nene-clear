@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use NeneClear\Receivable\ReceivableSource;
 
 final readonly class PdoReconciliationRepository implements ReconciliationRepositoryInterface
 {
@@ -12,7 +13,7 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
         . 'confirmed_by, confirmed_at, reversed_at, reversal_reason, idempotency_key';
 
     private const string ALLOC_COLUMNS = 'id, organization_id, payment_reconciliation_id, invoice_id, '
-        . 'amount_cents, payment_id, external_reference';
+        . 'amount_cents, payment_id, external_reference, source, manual_receivable_id';
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
@@ -132,8 +133,8 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
     public function saveAllocation(ReconciliationAllocation $allocation): int
     {
         $this->query->execute(
-            'INSERT INTO reconciliation_allocations (organization_id, payment_reconciliation_id, invoice_id, amount_cents, payment_id, external_reference) '
-            . 'VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO reconciliation_allocations (organization_id, payment_reconciliation_id, invoice_id, amount_cents, payment_id, external_reference, source, manual_receivable_id) '
+            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $allocation->organizationId,
                 $allocation->reconciliationId,
@@ -141,6 +142,8 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
                 $allocation->amountCents,
                 $allocation->paymentId,
                 $allocation->externalReference,
+                $allocation->source->value,
+                $allocation->manualReceivableId,
             ],
         );
 
@@ -192,11 +195,13 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
         return new ReconciliationAllocation(
             organizationId: (int) $row['organization_id'],
             reconciliationId: (int) $row['payment_reconciliation_id'],
-            invoiceId: (int) $row['invoice_id'],
+            invoiceId: isset($row['invoice_id']) ? (int) $row['invoice_id'] : null,
             amountCents: (int) $row['amount_cents'],
             paymentId: isset($row['payment_id']) ? (int) $row['payment_id'] : null,
             externalReference: isset($row['external_reference']) ? (string) $row['external_reference'] : null,
             id: (int) $row['id'],
+            source: ReceivableSource::from((string) ($row['source'] ?? 'invoice_upstream')),
+            manualReceivableId: isset($row['manual_receivable_id']) ? (int) $row['manual_receivable_id'] : null,
         );
     }
 }

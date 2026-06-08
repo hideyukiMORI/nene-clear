@@ -89,6 +89,8 @@ final class InMemoryReconciliationRepository implements ReconciliationRepository
             paymentId: $allocation->paymentId,
             externalReference: $allocation->externalReference,
             id: $id,
+            source: $allocation->source,
+            manualReceivableId: $allocation->manualReceivableId,
         );
 
         return $id;

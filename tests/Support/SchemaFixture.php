@@ -181,10 +181,12 @@ final class SchemaFixture
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 organization_id INTEGER NOT NULL,
                 payment_reconciliation_id INTEGER NOT NULL,
-                invoice_id INTEGER NOT NULL,
+                invoice_id INTEGER,
                 amount_cents INTEGER NOT NULL,
                 payment_id INTEGER,
                 external_reference TEXT,
+                source TEXT NOT NULL DEFAULT \'invoice_upstream\',
+                manual_receivable_id INTEGER,
                 created_at TEXT
             )'
         );
@@ -196,14 +198,17 @@ final class SchemaFixture
             'CREATE TABLE client_credits (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 organization_id INTEGER NOT NULL,
-                client_id INTEGER NOT NULL,
+                client_id INTEGER,
                 amount_cents INTEGER NOT NULL,
                 remaining_cents INTEGER NOT NULL,
                 status TEXT NOT NULL DEFAULT \'open\',
                 source_bank_transaction_id INTEGER NOT NULL,
                 reconciliation_id INTEGER NOT NULL,
                 created_by INTEGER NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                source TEXT NOT NULL DEFAULT \'invoice_upstream\',
+                manual_receivable_id INTEGER,
+                client_name TEXT
             )'
         );
     }

@@ -2213,32 +2213,53 @@ components:
 
     Allocation:
       type: object
-      required: [invoice_id, amount_cents]
+      required: [amount_cents]
       properties:
+        source:
+          type: string
+          enum: [invoice_upstream, manual]
+          default: invoice_upstream
+          description: Target receivable type (ADR 0014). Defaults to invoice_upstream.
         invoice_id:
           type: integer
           format: int64
+          description: Required when source is invoice_upstream.
+        manual_receivable_id:
+          type: integer
+          format: int64
+          description: Required when source is manual.
         amount_cents:
           type: integer
           format: int64
       additionalProperties: false
     ReconciliationAllocation:
       type: object
-      required: [reconciliation_allocation_id, invoice_id, amount_cents]
+      required: [reconciliation_allocation_id, source, amount_cents]
       properties:
         reconciliation_allocation_id:
           type: integer
           format: int64
+        source:
+          type: string
+          enum: [invoice_upstream, manual]
         invoice_id:
           type: integer
           format: int64
+          nullable: true
+          description: Set for invoice_upstream allocations.
+        manual_receivable_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set for manual allocations (ADR 0014).
         amount_cents:
           type: integer
           format: int64
         payment_id:
           type: integer
           format: int64
-          description: Upstream payment id returned by NeNe Invoice.
+          nullable: true
+          description: Upstream payment id (invoice_upstream only); null for manual.
         external_reference:
           type: string
           example: clear:recon:777

@@ -9,6 +9,8 @@ use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceItem;
+use NeneClear\Receivable\ManualReceivable;
+use NeneClear\Receivable\ManualReceivableStatus;
 use NeneClear\Reconciliation\AllocationInput;
 use NeneClear\Reconciliation\ClientCreditStatus;
 use NeneClear\Reconciliation\ConfirmMatchInput;
@@ -30,6 +32,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
     private InMemoryBankTransactionRepository $transactions;
     private InMemoryReconciliationRepository $reconciliations;
     private InMemoryClientCreditRepository $clientCredits;
+    private InMemoryManualReceivableRepository $manualReceivables;
     private FakeInvoiceUpstreamClient $invoiceClient;
     private InMemoryAuditEventRepository $audit;
     private ConfirmMatchUseCase $confirmUseCase;
@@ -40,6 +43,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         $this->transactions = new InMemoryBankTransactionRepository();
         $this->reconciliations = new InMemoryReconciliationRepository();
         $this->clientCredits = new InMemoryClientCreditRepository();
+        $this->manualReceivables = new InMemoryManualReceivableRepository();
         $this->invoiceClient = new FakeInvoiceUpstreamClient();
         $this->audit = new InMemoryAuditEventRepository();
 
@@ -50,6 +54,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             fn () => $this->transactions,
             fn () => $this->reconciliations,
             fn () => $this->clientCredits,
+            fn () => $this->manualReceivables,
             $this->invoiceClient,
             fn () => new AuditRecorder($this->audit),
             $clock,
@@ -60,6 +65,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             fn () => $this->reconciliations,
             fn () => $this->clientCredits,
             fn () => $this->transactions,
+            fn () => $this->manualReceivables,
             $this->invoiceClient,
             fn () => new AuditRecorder($this->audit),
             $clock,
@@ -94,6 +100,48 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         ));
     }
 
+    private function makeManualReceivable(int $totalCents): int
+    {
+        return $this->manualReceivables->save(new ManualReceivable(
+            organizationId: 7,
+            referenceNumber: 'MR-' . $totalCents,
+            clientName: 'カ）アクメ',
+            recipientEmail: 'ar@acme.example',
+            totalCents: $totalCents,
+            outstandingCents: $totalCents,
+            currency: 'JPY',
+            issuedAt: '2026-03-31',
+            dueAt: '2026-04-30',
+            status: ManualReceivableStatus::Open,
+            createdBy: 1,
+            createdAt: '2026-04-01 09:00:00',
+        ));
+    }
+
+    public function test_reverse_restores_manual_receivable_outstanding(): void
+    {
+        $txId = $this->makeTx(100000);
+        $mrId = $this->makeManualReceivable(100000);
+        $confirmOutput = $this->confirmUseCase->execute(new ConfirmMatchInput(
+            organizationId: 7,
+            bankTransactionId: $txId,
+            allocations: [AllocationInput::manual($mrId, 100000)],
+            actorUserId: 42,
+        ));
+
+        // Sanity: fully applied before reversal.
+        self::assertSame(ManualReceivableStatus::Paid, $this->manualReceivables->findById($mrId)?->status);
+
+        $this->reverseUseCase->execute($this->reverseInput($confirmOutput->reconciliationId));
+
+        self::assertSame(BankTransactionStatus::Unmatched, $this->transactions->findById(7, $txId)?->status);
+
+        $mr = $this->manualReceivables->findById($mrId);
+        self::assertNotNull($mr);
+        self::assertSame(100000, $mr->outstandingCents);
+        self::assertSame(ManualReceivableStatus::Open, $mr->status);
+    }
+
     private function reverseInput(int $reconciliationId, int $orgId = 7): ReverseReconciliationInput
     {
         return new ReverseReconciliationInput(
@@ -111,7 +159,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         $confirmOutput = $this->confirmUseCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
@@ -141,7 +189,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         $confirmOutput = $this->confirmUseCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
@@ -167,7 +215,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         $output = $this->confirmUseCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
@@ -182,7 +230,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         $output = $this->confirmUseCase->execute(new ConfirmMatchInput(
             organizationId: 7,
             bankTransactionId: $txId,
-            allocations: [new AllocationInput(1, 100000)],
+            allocations: [AllocationInput::upstream(1, 100000)],
             actorUserId: 42,
         ));
 
