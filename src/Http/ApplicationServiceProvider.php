@@ -40,6 +40,7 @@ use NeneClear\Organization\OrganizationAlreadyExistsExceptionHandler;
 use NeneClear\Organization\OrganizationNotFoundExceptionHandler;
 use NeneClear\Organization\OrganizationRouteRegistrar;
 use NeneClear\Organization\OrganizationServiceProvider;
+use NeneClear\Receivable\ManualReceivableServiceProvider;
 use NeneClear\Reconciliation\AllocationExceedsOutstandingExceptionHandler;
 use NeneClear\Reconciliation\BankTransactionNotMatchableExceptionHandler;
 use NeneClear\Reconciliation\ClientCreditNotFoundExceptionHandler;
@@ -80,6 +81,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
             ->addProvider(new UserServiceProvider())
             ->addProvider(new BankImportServiceProvider())
             ->addProvider(new ClearSettingsServiceProvider())
+            ->addProvider(new ManualReceivableServiceProvider())
             ->addProvider(new ReconciliationServiceProvider())
             ->addProvider(new InvoiceUpstreamServiceProvider())
             ->addProvider(new ExportServiceProvider())

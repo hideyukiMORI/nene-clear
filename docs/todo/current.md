@@ -67,6 +67,14 @@ Fixed local ports (see `CLAUDE.md`; do **not** revert to framework defaults).
 
 ## Next steps
 
+0. **Manual receivables (standalone use without NeNe Invoice)** — accepted
+   [ADR 0014](../adr/0014-accept-manual-receivables.md); design +
+   Issue breakdown in
+   [`manual-receivables-design.md`](../development/manual-receivables-design.md).
+   A `source` (`invoice_upstream` | `manual`) discriminator lets Clear reconcile
+   and dun directly-entered receivables; X2 narrowed (manual = Clear-owned, no
+   competing system), X1 unchanged. Sequenced Issues 1–6 (foundation → CRUD →
+   CSV import → reconcile → dun → frontend).
 1. **Activate real Invoice upstream** — set env vars, run contract tests live.
 2. **Dunning template customization** — operator-editable templates per org
    (currently a single hardcoded `lang/ja.php` template).
