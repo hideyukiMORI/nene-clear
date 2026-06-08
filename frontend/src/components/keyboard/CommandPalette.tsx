@@ -20,6 +20,7 @@ const COMMANDS: Command[] = [
   { id: 'users', labelKey: 'nav.users', path: '/admin/users', combo: ['g', 'u'] },
   { id: 'settings', labelKey: 'nav.settings', path: '/admin/settings', combo: ['g', 's'] },
   { id: 'audit', labelKey: 'nav.auditLog', path: '/admin/audit-log', combo: ['g', 'a'] },
+  { id: 'help', labelKey: 'nav.help', path: '/admin/help', combo: ['g', 'h'] },
 ]
 
 export function CommandPalette({ onClose }: { onClose: () => void }) {
@@ -41,10 +42,15 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       void navigate(cmd.path)
     }
     const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'j' || e.key === 'ArrowDown') {
+      // Match on physical key (e.code) as well as e.key: with a kana input mode
+      // or a non-QWERTY layout, the J/K keys report e.key as 'ま'/'の' (etc.),
+      // so an e.key-only check would silently fail to move the cursor.
+      const down = e.key === 'j' || e.code === 'KeyJ' || e.key === 'ArrowDown'
+      const up = e.key === 'k' || e.code === 'KeyK' || e.key === 'ArrowUp'
+      if (down) {
         e.preventDefault()
         setCursor((c) => Math.min(c + 1, COMMANDS.length - 1))
-      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      } else if (up) {
         e.preventDefault()
         setCursor((c) => Math.max(c - 1, 0))
       } else if (e.key === 'Enter' || e.key === ' ') {
