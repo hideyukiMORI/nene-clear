@@ -1191,6 +1191,45 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /admin/manual-receivable-imports:
+    post:
+      tags: [ManualReceivable]
+      summary: Import manual receivables from CSV
+      description: >
+        Bulk-create receivables from a header-mapped CSV (columns: reference_number,
+        client_name, total_cents, and optionally recipient_email, due_at, issued_at,
+        currency). Amounts are integers in the smallest unit (¥1 = 1). Partial
+        success: valid new rows are created, duplicate reference numbers are
+        skipped, invalid rows are reported by line number. A header missing a
+        required column fails the whole request (422). Requires `manage_reconciliation`.
+      operationId: importManualReceivables
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Import summary.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualReceivableImportResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /admin/manual-receivables/{id}/cancel:
     parameters:
       - $ref: '#/components/parameters/IdPath'
@@ -2375,6 +2414,32 @@ components:
           type: integer
         total:
           type: integer
+    ManualReceivableImportResult:
+      type: object
+      required: [created, skipped, errors]
+      properties:
+        created:
+          type: integer
+          description: Number of receivables created.
+        skipped:
+          type: integer
+          description: Rows skipped as duplicates (existing reference_number).
+        errors:
+          type: array
+          items:
+            type: object
+            required: [row, errors]
+            properties:
+              row:
+                type: integer
+                description: 1-based CSV line number of the invalid row.
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field: { type: string }
+                    message: { type: string }
     CreateManualReceivableRequest:
       type: object
       required: [reference_number, client_name, total_cents]
