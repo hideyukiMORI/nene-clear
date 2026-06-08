@@ -211,10 +211,34 @@ export function getReconciliation(id: number, signal?: AbortSignal) {
   return api.get<Reconciliation>(`${BASE}/reconciliations/${id}`, signal)
 }
 
-export interface AllocationInput { invoice_id: number; amount_cents: number }
+export type ReceivableSource = 'invoice_upstream' | 'manual'
+
+/** A confirm allocation targets an upstream invoice OR a manual receivable (ADR 0014). */
+export interface AllocationInput {
+  source: ReceivableSource
+  invoice_id?: number
+  manual_receivable_id?: number
+  amount_cents: number
+}
+
+/** A ranked propose candidate; upstream or manual (ADR 0014). */
+export interface MatchSuggestion {
+  source: ReceivableSource
+  invoice_id: number | null
+  invoice_number: string | null
+  manual_receivable_id: number | null
+  reference_number: string | null
+  amount_cents: number
+  outstanding_cents: number
+  score: number
+  reason: string
+}
 
 export function proposeMatch(bankTransactionId: number) {
-  return api.post<{ invoices: UpstreamInvoice[] }>(`${BASE}/reconciliations/propose`, { bank_transaction_id: bankTransactionId })
+  return api.post<{ bank_transaction_id: number; suggestions: MatchSuggestion[] }>(
+    `${BASE}/reconciliations/propose`,
+    { bank_transaction_id: bankTransactionId },
+  )
 }
 
 export function confirmMatch(
