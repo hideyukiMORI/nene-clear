@@ -109,6 +109,9 @@ follows `{entity}_{past-tense-verb}` in lowercase snake_case.
 | `reconciliation_confirmed` | Match confirmed | `before` + `after` |
 | `reconciliation_reversed` | Match reversed | `before` + `after` |
 | `client_credit_applied` | Overpayment credit applied | `before` + `after` |
+| `manual_receivable_created` | Manual receivable entered (ADR 0014) | `after` |
+| `manual_receivable_updated` | Manual receivable edited | `before` + `after` |
+| `manual_receivable_cancelled` | Manual receivable cancelled | `before` + `after` |
 | `dunning_sent` | Dunning notice sent | `before` + `after` |
 | `dunning_paused` | Dunning paused for an invoice | `before` + `after` |
 | `dunning_resumed` | Dunning resumed for an invoice | `before` + `after` |
@@ -138,6 +141,7 @@ login). New events MUST map to one of these registered `entity_type` values:
 | `bank_import_batch` | `bank_import_batch_id` | `bank_import`, `bank_import_batch_reversed` |
 | `payment_reconciliation` | `payment_reconciliation_id` | `reconciliation_confirmed`, `reconciliation_reversed` |
 | `client_credit` | `client_credit_id` | `client_credit_applied` |
+| `manual_receivable` | `manual_receivable_id` | `manual_receivable_created`, `manual_receivable_updated`, `manual_receivable_cancelled` |
 | `dunning_notice` | `dunning_notice_id` | `dunning_sent` |
 | `invoice` | upstream `invoice_id` | `dunning_paused`, `dunning_resumed` |
 | `user` | `user_id` (null on failed login) | `user_created/updated/deleted`, `invitation_accepted`, `login_succeeded`, `login_failed` |
@@ -222,6 +226,9 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `bank-transaction-not-found` | Bank transaction id not found |
 | `reconciliation-not-found` | Reconciliation id not found |
 | `client-credit-not-found` | Client credit id not found |
+| `manual-receivable-not-found` | Manual receivable id not found / not in caller's org (ADR 0014) |
+| `manual-receivable-already-exists` | Create/rename rejected — `reference_number` already used in the tenant (ADR 0014) |
+| `manual-receivable-cancelled` | Edit/cancel rejected — the receivable is already cancelled (ADR 0014) |
 | `dunning-notice-not-found` | Dunning notice id not found |
 | `invalid-state-transition` | Disallowed status change (e.g. reverse an already-reversed match) |
 | `duplicate-bank-import` | Re-import of same file hash / duplicate line key |
@@ -256,6 +263,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `listUpstreamInvoices` | Invoice upstream (read-only) |
 | `proposeMatch`, `confirmMatch`, `reverseReconciliation`, `listReconciliations`, `getReconciliationById` | Reconciliation |
 | `listClientCredits`, `applyClientCredit` | Client credit |
+| `listManualReceivables`, `getManualReceivableById`, `createManualReceivable`, `updateManualReceivable`, `cancelManualReceivable` | Manual receivable (ADR 0014) |
 | `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice` | Dunning |
 | `listAuditEvents` | Audit trail (admin) |
 
@@ -272,6 +280,7 @@ exact spellings; do not invent variants per endpoint.
 | --- | --- |
 | `{field}_min_cents` / `{field}_max_cents` | Inclusive integer-cents range (e.g. `amount_min_cents`, `remaining_max_cents`) |
 | `{field}_from` / `{field}_to` | Inclusive date range `YYYY-MM-DD` (e.g. `created_from`, `value_date_from`) |
+| `q` | Free-text substring search across the row's text columns (the handler defines which) |
 | `sort_by` | Sort column; the handler validates it against a per-endpoint whitelist |
 | `sort_dir` | `asc` or `desc` (default `desc`) |
 

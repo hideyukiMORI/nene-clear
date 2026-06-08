@@ -7,6 +7,7 @@ namespace NeneClear\Tests\Database;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
 use NeneClear\Receivable\ManualReceivable;
+use NeneClear\Receivable\ManualReceivableFilter;
 use NeneClear\Receivable\ManualReceivableStatus;
 use NeneClear\Receivable\PdoManualReceivableRepository;
 use NeneClear\Tests\Support\SchemaFixture;
@@ -86,9 +87,10 @@ final class PdoManualReceivableRepositoryTest extends TestCase
         $this->seed('INV-B');
         $this->seed('OTHER-ORG', orgId: 99);
 
-        $rows = $this->repo->findByOrganization(7);
+        $rows = $this->repo->findByOrganization(7, new ManualReceivableFilter(), 50, 0);
 
         self::assertCount(2, $rows);
+        self::assertSame(2, $this->repo->countByOrganization(7, new ManualReceivableFilter()));
         // newest (highest id) first
         self::assertSame('INV-B', $rows[0]->referenceNumber);
         self::assertSame('INV-A', $rows[1]->referenceNumber);
@@ -114,7 +116,7 @@ final class PdoManualReceivableRepositoryTest extends TestCase
 
         self::assertNull($this->repo->findById($id));
         self::assertNull($this->repo->findByReferenceNumber(7, 'INV-DEL'));
-        self::assertCount(0, $this->repo->findByOrganization(7));
+        self::assertCount(0, $this->repo->findByOrganization(7, new ManualReceivableFilter(), 50, 0));
     }
 
     public function test_soft_deleted_reference_number_can_be_reused(): void

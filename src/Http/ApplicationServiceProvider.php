@@ -40,6 +40,10 @@ use NeneClear\Organization\OrganizationAlreadyExistsExceptionHandler;
 use NeneClear\Organization\OrganizationNotFoundExceptionHandler;
 use NeneClear\Organization\OrganizationRouteRegistrar;
 use NeneClear\Organization\OrganizationServiceProvider;
+use NeneClear\Receivable\ManualReceivableAlreadyExistsExceptionHandler;
+use NeneClear\Receivable\ManualReceivableCancelledExceptionHandler;
+use NeneClear\Receivable\ManualReceivableNotFoundExceptionHandler;
+use NeneClear\Receivable\ManualReceivableRouteRegistrar;
 use NeneClear\Receivable\ManualReceivableServiceProvider;
 use NeneClear\Reconciliation\AllocationExceedsOutstandingExceptionHandler;
 use NeneClear\Reconciliation\BankTransactionNotMatchableExceptionHandler;
@@ -98,6 +102,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, AuditRouteRegistrar::class),
                     ServiceResolver::get($c, BankImportRouteRegistrar::class),
                     ServiceResolver::get($c, ClearSettingsRouteRegistrar::class),
+                    ServiceResolver::get($c, ManualReceivableRouteRegistrar::class),
                     ServiceResolver::get($c, ReconciliationRouteRegistrar::class),
                     ServiceResolver::get($c, InvoiceUpstreamRouteRegistrar::class),
                     ServiceResolver::get($c, ExportRouteRegistrar::class),
@@ -129,6 +134,9 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, ReconciliationAlreadyReversedExceptionHandler::class),
                     ServiceResolver::get($c, ClientCreditNotFoundExceptionHandler::class),
                     ServiceResolver::get($c, CreditExceedsRemainingExceptionHandler::class),
+                    ServiceResolver::get($c, ManualReceivableNotFoundExceptionHandler::class),
+                    ServiceResolver::get($c, ManualReceivableAlreadyExistsExceptionHandler::class),
+                    ServiceResolver::get($c, ManualReceivableCancelledExceptionHandler::class),
                     ServiceResolver::get($c, AllocationExceedsOutstandingExceptionHandler::class),
                     ServiceResolver::get($c, BankTransactionNotMatchableExceptionHandler::class),
                     ServiceResolver::get($c, UpstreamInvoiceUnavailableExceptionHandler::class),

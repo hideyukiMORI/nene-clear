@@ -40,6 +40,8 @@ tags:
     description: Match proposal, confirmation, reversal (human-confirmed).
   - name: ClientCredit
     description: Overpayment credit balances and their application.
+  - name: ManualReceivable
+    description: Receivables entered directly in Clear, with no Invoice upstream (ADR 0014). A reconciliation reference, not an issued invoice.
   - name: Dunning
     description: Overdue reminders — send, history, pause/resume per invoice.
   - name: Export
@@ -1042,6 +1044,183 @@ paths:
           $ref: '#/components/responses/ValidationFailed'
         '503':
           $ref: '#/components/responses/UpstreamUnavailable'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/manual-receivables:
+    get:
+      tags: [ManualReceivable]
+      summary: List manual receivables
+      description: Receivables entered directly in Clear (ADR 0014). Requires `view_reconciliation`.
+      operationId: listManualReceivables
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ManualReceivableStatus'
+        - name: q
+          in: query
+          description: Free-text substring match on reference_number or client_name.
+          schema: { type: string }
+        - name: due_from
+          in: query
+          description: Inclusive lower bound on due_at (YYYY-MM-DD).
+          schema: { type: string, format: date }
+        - name: due_to
+          in: query
+          description: Inclusive upper bound on due_at (YYYY-MM-DD).
+          schema: { type: string, format: date }
+        - name: sort_by
+          in: query
+          description: "Sort column: id | due_at | total_cents | outstanding_cents | created_at."
+          schema: { type: string }
+        - name: sort_dir
+          in: query
+          schema: { type: string, enum: [asc, desc] }
+      responses:
+        '200':
+          description: A page of manual receivables.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualReceivableListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags: [ManualReceivable]
+      summary: Create a manual receivable
+      description: >
+        Record a receivable that has no Invoice upstream. It is a reconciliation
+        reference (a receivable stub), not an issued invoice / 適格請求書 — Clear
+        issues nothing and computes no tax (scope-contract X1). Requires
+        `manage_reconciliation`.
+      operationId: createManualReceivable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateManualReceivableRequest'
+      responses:
+        '201':
+          description: Created; the new receivable is returned.
+          headers:
+            Location:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualReceivable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: A receivable with this reference_number already exists in the tenant.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/manual-receivables/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    get:
+      tags: [ManualReceivable]
+      summary: Get a manual receivable
+      operationId: getManualReceivableById
+      responses:
+        '200':
+          description: The receivable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualReceivable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags: [ManualReceivable]
+      summary: Update a manual receivable
+      description: >
+        Full replace of the editable fields. A cancelled receivable cannot be
+        edited. Requires `manage_reconciliation`.
+      operationId: updateManualReceivable
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateManualReceivableRequest'
+      responses:
+        '200':
+          description: Updated; the receivable is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualReceivable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The receivable is cancelled, or the new reference_number is already used.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          $ref: '#/components/responses/ValidationFailed'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /admin/manual-receivables/{id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/IdPath'
+    post:
+      tags: [ManualReceivable]
+      summary: Cancel a manual receivable
+      description: >
+        Mark the receivable cancelled (a soft, audited state change — never a
+        hard delete). An already-cancelled receivable returns 409. Requires
+        `manage_reconciliation`.
+      operationId: cancelManualReceivable
+      responses:
+        '200':
+          description: Cancelled; the receivable is returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManualReceivable'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The receivable is already cancelled.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -2128,6 +2307,108 @@ components:
           type: integer
         total:
           type: integer
+    ManualReceivableStatus:
+      type: string
+      enum: [open, partially_paid, paid, cancelled]
+    ManualReceivable:
+      type: object
+      required: [manual_receivable_id, organization_id, source, reference_number, client_name,
+                 total_cents, outstanding_cents, currency, status, created_at, updated_at]
+      properties:
+        manual_receivable_id:
+          type: integer
+          format: int64
+        organization_id:
+          type: integer
+          format: int64
+        source:
+          type: string
+          enum: [manual]
+          description: Discriminator vs Invoice-sourced receivables (ADR 0014); always `manual` here.
+        reference_number:
+          type: string
+          maxLength: 64
+          description: External document number; not an invoice number Clear issues (X1).
+        client_name:
+          type: string
+          maxLength: 255
+        recipient_email:
+          type: string
+          format: email
+          nullable: true
+        total_cents:
+          type: integer
+          format: int64
+        outstanding_cents:
+          type: integer
+          format: int64
+          description: Clear-computed (= total_cents − Σ confirmed allocations).
+        currency:
+          type: string
+          enum: [JPY]
+        issued_at:
+          type: string
+          format: date
+          nullable: true
+        due_at:
+          type: string
+          format: date
+          nullable: true
+          description: Required before the receivable can be dunned or aged.
+        status:
+          $ref: '#/components/schemas/ManualReceivableStatus'
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    ManualReceivableListResponse:
+      type: object
+      required: [items, limit, offset, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManualReceivable'
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+    CreateManualReceivableRequest:
+      type: object
+      required: [reference_number, client_name, total_cents]
+      properties:
+        reference_number:
+          type: string
+          minLength: 1
+          maxLength: 64
+        client_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+        recipient_email:
+          type: string
+          format: email
+        total_cents:
+          type: integer
+          format: int64
+          minimum: 1
+        currency:
+          type: string
+          enum: [JPY]
+          default: JPY
+        issued_at:
+          type: string
+          format: date
+        due_at:
+          type: string
+          format: date
+      additionalProperties: false
+    UpdateManualReceivableRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateManualReceivableRequest'
+      description: Full replace of the editable fields (omitting an optional field clears it).
     ApplyClientCreditRequest:
       type: object
       required: [invoice_id, amount_cents]

@@ -26,14 +26,27 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
         return $row !== null ? $this->hydrate($row) : null;
     }
 
-    public function findByOrganization(int $organizationId): array
+    public function findByOrganization(int $organizationId, ManualReceivableFilter $filter, int $limit, int $offset): array
     {
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $params[] = $limit;
+        $params[] = $offset;
+
         $rows = $this->query->fetchAll(
-            'SELECT ' . self::COLUMNS . ' FROM manual_receivables WHERE organization_id = ? AND is_deleted = 0 ORDER BY id DESC',
-            [$organizationId],
+            'SELECT ' . self::COLUMNS . ' FROM manual_receivables WHERE ' . $where
+            . ' ORDER BY ' . self::orderBy($filter) . ' LIMIT ? OFFSET ?',
+            $params,
         );
 
         return array_map($this->hydrate(...), $rows);
+    }
+
+    public function countByOrganization(int $organizationId, ManualReceivableFilter $filter): int
+    {
+        [$where, $params] = $this->whereClause($organizationId, $filter);
+        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM manual_receivables WHERE ' . $where, $params);
+
+        return (int) ($row['c'] ?? 0);
     }
 
     public function findByReferenceNumber(int $organizationId, string $referenceNumber): ?ManualReceivable
@@ -73,12 +86,83 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
         return $this->query->lastInsertId();
     }
 
+    public function update(ManualReceivable $receivable): void
+    {
+        $this->query->execute(
+            'UPDATE manual_receivables SET reference_number = ?, client_name = ?, recipient_email = ?, '
+            . 'total_cents = ?, outstanding_cents = ?, currency = ?, issued_at = ?, due_at = ?, status = ?, updated_at = ? '
+            . 'WHERE id = ? AND is_deleted = 0',
+            [
+                $receivable->referenceNumber,
+                $receivable->clientName,
+                $receivable->recipientEmail,
+                $receivable->totalCents,
+                $receivable->outstandingCents,
+                $receivable->currency,
+                $receivable->issuedAt,
+                $receivable->dueAt,
+                $receivable->status->value,
+                $receivable->updatedAt ?? $receivable->createdAt,
+                $receivable->id,
+            ],
+        );
+    }
+
     public function softDelete(int $id, string $deletedAt): void
     {
         $this->query->execute(
             'UPDATE manual_receivables SET is_deleted = 1, deleted_at = ? WHERE id = ? AND is_deleted = 0',
             [$deletedAt, $id],
         );
+    }
+
+    /**
+     * @return array{0: string, 1: list<string|int>}
+     */
+    private function whereClause(int $organizationId, ManualReceivableFilter $filter): array
+    {
+        $clauses = ['organization_id = ?', 'is_deleted = 0'];
+        /** @var list<string|int> $params */
+        $params = [$organizationId];
+
+        if ($filter->status !== null) {
+            $clauses[] = 'status = ?';
+            $params[] = $filter->status->value;
+        }
+        if ($filter->q !== null) {
+            $clauses[] = '(reference_number LIKE ? OR client_name LIKE ?)';
+            $like = '%' . $filter->q . '%';
+            $params[] = $like;
+            $params[] = $like;
+        }
+        if ($filter->dueFrom !== null) {
+            $clauses[] = 'due_at >= ?';
+            $params[] = $filter->dueFrom;
+        }
+        if ($filter->dueTo !== null) {
+            $clauses[] = 'due_at <= ?';
+            $params[] = $filter->dueTo;
+        }
+
+        return [implode(' AND ', $clauses), $params];
+    }
+
+    /**
+     * Whitelisted ORDER BY — column and direction map from a closed set, so user
+     * input is never interpolated into SQL.
+     */
+    private static function orderBy(ManualReceivableFilter $filter): string
+    {
+        $column = match ($filter->sortColumn) {
+            'due_at' => 'due_at',
+            'total_cents' => 'total_cents',
+            'outstanding_cents' => 'outstanding_cents',
+            'created_at' => 'created_at',
+            default => 'id',
+        };
+        $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
+
+        return $column . ' ' . $direction . ', id DESC';
     }
 
     /**
