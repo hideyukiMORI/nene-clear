@@ -12,6 +12,9 @@ use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\Http\ApplicationFactory;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceItem;
+use NeneClear\Receivable\ManualReceivable;
+use NeneClear\Receivable\ManualReceivableStatus;
+use NeneClear\Receivable\PdoManualReceivableRepository;
 use NeneClear\Tests\Support\SchemaFixture;
 use NeneClear\User\PdoUserRepository;
 use NeneClear\User\User;
@@ -31,6 +34,7 @@ final class ReconciliationHttpTest extends TestCase
     private RequestHandlerInterface $app;
     private Psr17Factory $psr17;
     private FakeInvoiceUpstreamClient $invoiceClient;
+    private PdoManualReceivableRepository $manualReceivables;
 
     protected function setUp(): void
     {
@@ -47,6 +51,7 @@ final class ReconciliationHttpTest extends TestCase
         SchemaFixture::createPaymentReconciliations($query);
         SchemaFixture::createReconciliationAllocations($query);
         SchemaFixture::createClientCredits($query);
+        SchemaFixture::createManualReceivables($query);
 
         $users = new PdoUserRepository($query);
         $users->save($this->user('admin@acme.example', Role::Admin));
@@ -66,6 +71,7 @@ final class ReconciliationHttpTest extends TestCase
             csvHeaderRows: 1,
         ));
 
+        $this->manualReceivables = new PdoManualReceivableRepository($query);
         $this->invoiceClient = new FakeInvoiceUpstreamClient();
         $this->app = ApplicationFactory::create(query: $query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET, invoiceClient: $this->invoiceClient);
         $this->psr17 = new Psr17Factory();
@@ -197,6 +203,67 @@ final class ReconciliationHttpTest extends TestCase
 
         $txDetail = $this->decode($this->get($token, '/admin/bank-transactions/' . $txId));
         self::assertSame('matched', $txDetail['status']);
+    }
+
+    private function seedManualReceivable(int $totalCents): int
+    {
+        return $this->manualReceivables->save(new ManualReceivable(
+            organizationId: 7,
+            referenceNumber: 'MR-001',
+            clientName: 'カ）アクメ',
+            recipientEmail: 'ar@acme.example',
+            totalCents: $totalCents,
+            outstandingCents: $totalCents,
+            currency: 'JPY',
+            issuedAt: '2026-03-31',
+            dueAt: '2026-04-30',
+            status: ManualReceivableStatus::Open,
+            createdBy: 1,
+            createdAt: '2026-04-01 09:00:00',
+        ));
+    }
+
+    public function test_confirm_against_a_manual_receivable(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+        $txId = $this->importCsv($token); // 110000 deposit
+
+        // A receivable entered directly in Clear (no upstream invoice).
+        $mrId = $this->seedManualReceivable(110000);
+
+        $response = $this->post($token, '/admin/reconciliations', [
+            'bank_transaction_id' => $txId,
+            'allocations' => [['source' => 'manual', 'manual_receivable_id' => $mrId, 'amount_cents' => 110000]],
+        ]);
+
+        self::assertSame(201, $response->getStatusCode());
+        $body = $this->decode($response);
+        self::assertSame('confirmed', $body['status']);
+        self::assertCount(1, $body['allocations']);
+        self::assertSame('manual', $body['allocations'][0]['source']);
+        self::assertSame($mrId, $body['allocations'][0]['manual_receivable_id']);
+        self::assertNull($body['allocations'][0]['invoice_id']);
+        self::assertNull($body['allocations'][0]['payment_id']);
+
+        // Clear owns the manual receivable's balance — it is now fully paid.
+        $mr = $this->decode($this->get($token, '/admin/manual-receivables/' . $mrId));
+        self::assertSame('paid', $mr['status']);
+        self::assertSame(0, $mr['outstanding_cents']);
+
+        self::assertSame('matched', $this->decode($this->get($token, '/admin/bank-transactions/' . $txId))['status']);
+    }
+
+    public function test_propose_includes_manual_receivable_candidates(): void
+    {
+        $token = $this->tokenFor('admin@acme.example');
+        $txId = $this->importCsv($token); // 110000 deposit
+        $mrId = $this->seedManualReceivable(110000);
+
+        $body = $this->decode($this->post($token, '/admin/reconciliations/propose', ['bank_transaction_id' => $txId]));
+
+        $manual = array_values(array_filter($body['suggestions'], static fn (array $s): bool => $s['source'] === 'manual'));
+        self::assertCount(1, $manual);
+        self::assertSame($mrId, $manual[0]['manual_receivable_id']);
     }
 
     public function test_list_reconciliations(): void

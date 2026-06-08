@@ -48,6 +48,7 @@ final readonly class ReconciliationServiceProvider implements ServiceProviderInt
                 static fn (ContainerInterface $c): ProposeMatchUseCaseInterface => new ProposeMatchUseCase(
                     ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
+                    ServiceResolver::get($c, ManualReceivableRepositoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

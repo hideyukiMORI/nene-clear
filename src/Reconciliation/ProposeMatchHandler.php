@@ -39,8 +39,11 @@ final readonly class ProposeMatchHandler
             'bank_transaction_id' => $output->bankTransactionId,
             'suggestions' => array_map(
                 static fn (MatchSuggestion $s): array => [
+                    'source' => $s->source->value,
                     'invoice_id' => $s->invoiceId,
                     'invoice_number' => $s->invoiceNumber,
+                    'manual_receivable_id' => $s->manualReceivableId,
+                    'reference_number' => $s->referenceNumber,
                     'amount_cents' => $s->amountCents,
                     'outstanding_cents' => $s->outstandingCents,
                     'score' => $s->score,
