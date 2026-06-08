@@ -37,6 +37,7 @@ final readonly class ProposeMatchHandler
 
         return $this->response->create([
             'bank_transaction_id' => $output->bankTransactionId,
+            'upstream_unavailable' => $output->upstreamUnavailable,
             'suggestions' => array_map(
                 static fn (MatchSuggestion $s): array => [
                     'source' => $s->source->value,

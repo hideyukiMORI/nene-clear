@@ -2217,11 +2217,17 @@ components:
           description: Why this candidate was suggested (e.g. exact amount, payer/invoice number in counterparty).
     ProposeMatchResponse:
       type: object
-      required: [bank_transaction_id, suggestions]
+      required: [bank_transaction_id, suggestions, upstream_unavailable]
       properties:
         bank_transaction_id:
           type: integer
           format: int64
+        upstream_unavailable:
+          type: boolean
+          description: >
+            True when the Invoice upstream could not be reached, so only manual
+            candidates are returned (ADR 0014 degraded mode). The UI surfaces this
+            instead of failing the whole proposal.
         suggestions:
           type: array
           items:

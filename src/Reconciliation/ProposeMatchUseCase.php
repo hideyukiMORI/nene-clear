@@ -9,6 +9,7 @@ use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableException;
 use NeneClear\Receivable\ManualReceivableFilter;
 use NeneClear\Receivable\ManualReceivableRepositoryInterface;
 use NeneClear\Receivable\ManualReceivableStatus;
@@ -38,8 +39,20 @@ final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
 
         $today = $this->clock->now();
 
+        // Degraded mode (ADR 0014): if the Invoice upstream is unavailable, still
+        // return the manual candidates and flag the gap, rather than failing the
+        // whole proposal. A user with no upstream configured hits the fake client
+        // (empty list, no throw), so this only affects a configured-but-down Invoice.
+        $upstreamUnavailable = false;
+        try {
+            $upstream = $this->upstreamSuggestions($input->organizationId, $tx, $today);
+        } catch (UpstreamInvoiceUnavailableException) {
+            $upstream = [];
+            $upstreamUnavailable = true;
+        }
+
         $suggestions = [
-            ...$this->upstreamSuggestions($input->organizationId, $tx, $today),
+            ...$upstream,
             ...$this->manualSuggestions($input->organizationId, $tx, $today),
         ];
 
@@ -48,6 +61,7 @@ final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
         return new ProposeMatchOutput(
             bankTransactionId: $input->bankTransactionId,
             suggestions: array_slice($suggestions, 0, self::MAX_SUGGESTIONS),
+            upstreamUnavailable: $upstreamUnavailable,
         );
     }
 

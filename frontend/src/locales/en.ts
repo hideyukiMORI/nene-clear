@@ -161,6 +161,7 @@ export const en: Record<MessageKey, string> = {
   'reconciliation.target': 'Target',
   'reconciliation.source.invoice': 'Invoice',
   'reconciliation.source.manual': 'Manual',
+  'reconciliation.upstreamUnavailable': 'NeNe Invoice candidates are currently unavailable. Showing manual receivable candidates only.',
   'reconciliation.allocationAmount': 'Allocation (¥)',
   'reconciliation.addAllocation': 'Add allocation',
   'reconciliation.allocationTotal': 'Allocated / deposit',

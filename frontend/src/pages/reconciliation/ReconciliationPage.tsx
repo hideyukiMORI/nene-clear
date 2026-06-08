@@ -94,6 +94,9 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
       <div className="sugg">
         <div className="sugg-h"><Icon name="reconcile" size="sm" />{t('reconciliation.suggestions')}</div>
         {suggestQ.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.searchingSuggestions')}</p>}
+        {suggestQ.data?.upstream_unavailable && (
+          <Notice variant="warn">{t('reconciliation.upstreamUnavailable')}</Notice>
+        )}
         {suggestQ.data?.suggestions.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.noSuggestions')}</p>}
         {suggestQ.data?.suggestions.map((s, i) => (
           <div key={`${s.source}-${s.invoice_id ?? s.manual_receivable_id}-${i}`} className="sugg-row">

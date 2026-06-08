@@ -157,6 +157,7 @@ export const ja = {
   'reconciliation.target': '消込先',
   'reconciliation.source.invoice': 'Invoice',
   'reconciliation.source.manual': '手入力',
+  'reconciliation.upstreamUnavailable': 'NeNe Invoice 側の候補は現在取得できませんでした。手入力売掛の候補のみ表示しています。',
   'reconciliation.allocationAmount': '配賦額（¥）',
   'reconciliation.addAllocation': '配賦を追加',
   'reconciliation.allocationTotal': '配賦合計 / 入金額',
