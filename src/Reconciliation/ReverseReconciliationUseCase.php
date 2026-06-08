@@ -12,6 +12,10 @@ use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Receivable\ManualReceivable;
+use NeneClear\Receivable\ManualReceivableRepositoryInterface;
+use NeneClear\Receivable\ManualReceivableStatus;
+use NeneClear\Receivable\ReceivableSource;
 
 final readonly class ReverseReconciliationUseCase implements ReverseReconciliationUseCaseInterface
 {
@@ -20,6 +24,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
      * @param Closure(DatabaseQueryExecutorInterface): ReconciliationRepositoryInterface $reconciliations
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
+     * @param Closure(DatabaseQueryExecutorInterface): ManualReceivableRepositoryInterface $manualReceivables
      * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
@@ -28,6 +33,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
         private Closure $reconciliations,
         private Closure $clientCredits,
         private Closure $transactions,
+        private Closure $manualReceivables,
         private InvoiceUpstreamClientInterface $invoiceClient,
         private Closure $auditRecorder,
         private ClockInterface $clock,
@@ -51,8 +57,10 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
 
         // Upstream payment voids are external side effects and run OUTSIDE the
         // database transaction; the local writes below are atomic (Issue #122).
+        // Manual allocations have no upstream payment — their balance is restored
+        // locally in the transaction.
         foreach ($allocations as $allocation) {
-            if ($allocation->paymentId !== null) {
+            if ($allocation->source === ReceivableSource::InvoiceUpstream && $allocation->paymentId !== null && $allocation->invoiceId !== null) {
                 $idempotencyKey = sprintf('clear:recon:reverse:%d:%d', $input->reconciliationId, $allocation->invoiceId);
                 $this->invoiceClient->voidPayment(
                     organizationId: $input->organizationId,
@@ -69,11 +77,19 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                 $reconciliations = ($this->reconciliations)($ex);
                 $transactions = ($this->transactions)($ex);
                 $clientCredits = ($this->clientCredits)($ex);
+                $manualReceivables = ($this->manualReceivables)($ex);
                 $auditRecorder = ($this->auditRecorder)($ex);
 
                 $reconciliations->reverseById($input->reconciliationId, $now, $input->reversalReason);
                 $transactions->updateStatusById($input->organizationId, $reconciliation->bankTransactionId, BankTransactionStatus::Unmatched);
                 $clientCredits->voidByReconciliation($input->reconciliationId);
+
+                // Restore each manual receivable's outstanding (Clear is its SSOR).
+                foreach ($allocations as $allocation) {
+                    if ($allocation->source === ReceivableSource::Manual && $allocation->manualReceivableId !== null) {
+                        $this->restoreManualBalance($manualReceivables, $allocation->manualReceivableId, $allocation->amountCents, $now);
+                    }
+                }
 
                 $auditRecorder->record(
                     $input->organizationId,
@@ -90,7 +106,9 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                             'confirmed_at' => $reconciliation->confirmedAt,
                             'allocations' => array_map(
                                 static fn (ReconciliationAllocation $a): array => [
+                                    'source' => $a->source->value,
                                     'invoice_id' => $a->invoiceId,
+                                    'manual_receivable_id' => $a->manualReceivableId,
                                     'amount_cents' => $a->amountCents,
                                     'payment_id' => $a->paymentId,
                                 ],
@@ -108,5 +126,44 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                 return new ReverseReconciliationOutput(reconciliationId: $input->reconciliationId);
             },
         );
+    }
+
+    /**
+     * Adds `$amountCents` back to a manual receivable's outstanding on reversal and
+     * recomputes its status. A receivable cancelled after the match keeps its
+     * cancelled status (only the balance is restored).
+     */
+    private function restoreManualBalance(ManualReceivableRepositoryInterface $repo, int $id, int $amountCents, string $now): void
+    {
+        $receivable = $repo->findById($id);
+        if ($receivable === null) {
+            return;
+        }
+
+        $outstanding = min($receivable->totalCents, $receivable->outstandingCents + $amountCents);
+        $status = $receivable->status === ManualReceivableStatus::Cancelled
+            ? ManualReceivableStatus::Cancelled
+            : match (true) {
+                $outstanding <= 0 => ManualReceivableStatus::Paid,
+                $outstanding < $receivable->totalCents => ManualReceivableStatus::PartiallyPaid,
+                default => ManualReceivableStatus::Open,
+            };
+
+        $repo->update(new ManualReceivable(
+            organizationId: $receivable->organizationId,
+            referenceNumber: $receivable->referenceNumber,
+            clientName: $receivable->clientName,
+            recipientEmail: $receivable->recipientEmail,
+            totalCents: $receivable->totalCents,
+            outstandingCents: $outstanding,
+            currency: $receivable->currency,
+            issuedAt: $receivable->issuedAt,
+            dueAt: $receivable->dueAt,
+            status: $status,
+            createdBy: $receivable->createdBy,
+            createdAt: $receivable->createdAt,
+            updatedAt: $now,
+            id: $receivable->id,
+        ));
     }
 }

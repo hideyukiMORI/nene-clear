@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use NeneClear\Receivable\ReceivableSource;
 
 final readonly class PdoClientCreditRepository implements ClientCreditRepositoryInterface
 {
     private const string COLUMNS = 'id, organization_id, client_id, amount_cents, remaining_cents, status, '
-        . 'source_bank_transaction_id, reconciliation_id, created_by, created_at';
+        . 'source_bank_transaction_id, reconciliation_id, created_by, created_at, source, manual_receivable_id, client_name';
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
@@ -20,7 +21,8 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
     {
         $this->query->execute(
             'INSERT INTO client_credits (organization_id, client_id, amount_cents, remaining_cents, status, '
-            . 'source_bank_transaction_id, reconciliation_id, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            . 'source_bank_transaction_id, reconciliation_id, created_by, created_at, source, manual_receivable_id, client_name) '
+            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $credit->organizationId,
                 $credit->clientId,
@@ -31,6 +33,9 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
                 $credit->reconciliationId,
                 $credit->createdBy,
                 $credit->createdAt,
+                $credit->source->value,
+                $credit->manualReceivableId,
+                $credit->clientName,
             ],
         );
 
@@ -181,7 +186,7 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
     {
         return new ClientCredit(
             organizationId: (int) $row['organization_id'],
-            clientId: (int) $row['client_id'],
+            clientId: isset($row['client_id']) ? (int) $row['client_id'] : null,
             amountCents: (int) $row['amount_cents'],
             remainingCents: (int) $row['remaining_cents'],
             status: ClientCreditStatus::from((string) $row['status']),
@@ -190,6 +195,9 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
             createdBy: (int) $row['created_by'],
             createdAt: (string) $row['created_at'],
             id: (int) $row['id'],
+            source: ReceivableSource::from((string) ($row['source'] ?? 'invoice_upstream')),
+            manualReceivableId: isset($row['manual_receivable_id']) ? (int) $row['manual_receivable_id'] : null,
+            clientName: isset($row['client_name']) ? (string) $row['client_name'] : null,
         );
     }
 }

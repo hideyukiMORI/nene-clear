@@ -18,6 +18,8 @@ use NeneClear\BankImport\PdoBankTransactionRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Receivable\ManualReceivableRepositoryInterface;
+use NeneClear\Receivable\PdoManualReceivableRepository;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -57,6 +59,7 @@ final readonly class ReconciliationServiceProvider implements ServiceProviderInt
                     static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): ReconciliationRepositoryInterface => new PdoReconciliationRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): ClientCreditRepositoryInterface => new PdoClientCreditRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ManualReceivableRepositoryInterface => new PdoManualReceivableRepository($tx),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
@@ -70,6 +73,7 @@ final readonly class ReconciliationServiceProvider implements ServiceProviderInt
                     static fn (DatabaseQueryExecutorInterface $tx): ReconciliationRepositoryInterface => new PdoReconciliationRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): ClientCreditRepositoryInterface => new PdoClientCreditRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ManualReceivableRepositoryInterface => new PdoManualReceivableRepository($tx),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),

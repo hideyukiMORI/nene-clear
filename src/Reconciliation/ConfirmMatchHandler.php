@@ -8,6 +8,7 @@ use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Receivable\ReceivableSource;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -46,12 +47,28 @@ final readonly class ConfirmMatchHandler
             if (!is_array($raw)) {
                 throw new ValidationException([new ValidationError("allocations.$i", 'Each allocation must be an object.', 'invalid')]);
             }
-            $invoiceId = is_numeric($raw['invoice_id'] ?? null) ? (int) $raw['invoice_id'] : 0;
             $amountCents = is_numeric($raw['amount_cents'] ?? null) ? (int) $raw['amount_cents'] : 0;
-            if ($invoiceId <= 0 || $amountCents <= 0) {
-                throw new ValidationException([new ValidationError("allocations.$i", 'invoice_id and amount_cents must be positive integers.', 'invalid')]);
+            if ($amountCents <= 0) {
+                throw new ValidationException([new ValidationError("allocations.$i", 'amount_cents must be a positive integer.', 'invalid')]);
             }
-            $allocations[] = new AllocationInput($invoiceId, $amountCents);
+
+            // Default source keeps existing (upstream-only) clients working unchanged.
+            $source = is_string($raw['source'] ?? null) ? (string) $raw['source'] : ReceivableSource::InvoiceUpstream->value;
+            if ($source === ReceivableSource::Manual->value) {
+                $manualReceivableId = is_numeric($raw['manual_receivable_id'] ?? null) ? (int) $raw['manual_receivable_id'] : 0;
+                if ($manualReceivableId <= 0) {
+                    throw new ValidationException([new ValidationError("allocations.$i", 'manual_receivable_id must be a positive integer for a manual allocation.', 'invalid')]);
+                }
+                $allocations[] = AllocationInput::manual($manualReceivableId, $amountCents);
+            } elseif ($source === ReceivableSource::InvoiceUpstream->value) {
+                $invoiceId = is_numeric($raw['invoice_id'] ?? null) ? (int) $raw['invoice_id'] : 0;
+                if ($invoiceId <= 0) {
+                    throw new ValidationException([new ValidationError("allocations.$i", 'invoice_id must be a positive integer.', 'invalid')]);
+                }
+                $allocations[] = AllocationInput::upstream($invoiceId, $amountCents);
+            } else {
+                throw new ValidationException([new ValidationError("allocations.$i", 'source must be invoice_upstream or manual.', 'invalid')]);
+            }
         }
 
         $reasonCode = isset($body['reason_code']) && is_string($body['reason_code']) ? $body['reason_code'] : null;

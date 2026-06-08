@@ -30,6 +30,9 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
             createdBy: $credit->createdBy,
             createdAt: $credit->createdAt,
             id: $id,
+            source: $credit->source,
+            manualReceivableId: $credit->manualReceivableId,
+            clientName: $credit->clientName,
         );
 
         return $id;
@@ -59,6 +62,9 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
             createdBy: $credit->createdBy,
             createdAt: $credit->createdAt,
             id: $credit->id,
+            source: $credit->source,
+            manualReceivableId: $credit->manualReceivableId,
+            clientName: $credit->clientName,
         );
 
         return $this->byId[$id];
@@ -90,6 +96,9 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
                     createdBy: $credit->createdBy,
                     createdAt: $credit->createdAt,
                     id: $credit->id,
+                    source: $credit->source,
+                    manualReceivableId: $credit->manualReceivableId,
+                    clientName: $credit->clientName,
                 );
             }
         }
@@ -157,7 +166,7 @@ final class InMemoryClientCreditRepository implements ClientCreditRepositoryInte
     private function sortKey(ClientCredit $c, string $column): int|string
     {
         return match ($column) {
-            'client_id' => $c->clientId,
+            'client_id' => $c->clientId ?? 0,
             'amount_cents' => $c->amountCents,
             'remaining_cents' => $c->remainingCents,
             'created_at' => $c->createdAt,
