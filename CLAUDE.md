@@ -14,6 +14,7 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 - **Follow NENE2 conventions** — code MUST comply with `docs/development/nene2-compliance.md` (binding); reuse framework objects, don't reinvent them
 - **Terminology registry is binding** — every identifier (Problem Details slug, field name, status value, operationId) MUST be registered in `docs/explanation/terminology.md` **before first use**. Check the registry before introducing any new term. Spelling MUST match exactly — same characters, same case, same separators. No synonyms, no abbreviations, no typos.
 - No direct commits to `main`; Issue required
+- Closing **multiple** issues from one PR: repeat the keyword for each — `Closes #a, Closes #b, Closes #c`. A single `Closes #a, #b, #c` only closes the first; the rest stay open
 - Repository docs: English only (ADR 0008)
 
 ## Local development ports
