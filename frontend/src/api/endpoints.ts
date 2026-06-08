@@ -17,7 +17,7 @@ export async function downloadCsv(path: string, filename: string): Promise<void>
 import type {
   User, BankImportBatch, BankTransaction, Reconciliation,
   ClientCredit, DunningNotice, ClearSettings, UpstreamInvoice,
-  AuditEvent, ListEnvelope,
+  AuditEvent, ListEnvelope, ManualReceivable, ManualReceivableImportResult,
 } from '@/types'
 
 const BASE = '/admin'
@@ -282,6 +282,64 @@ export function applyClientCredit(creditId: number, invoiceId: number, amountCen
     invoice_id: invoiceId,
     amount_cents: amountCents,
   })
+}
+
+// --- Manual receivables (ADR 0014) ---
+export interface ManualReceivableQuery {
+  status?: string
+  q?: string
+  dueFrom?: string
+  dueTo?: string
+  sortBy?: string
+  sortDir?: string
+  limit?: number
+  offset?: number
+}
+
+export function listManualReceivables(params: ManualReceivableQuery, signal?: AbortSignal) {
+  const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
+  if (params.status) q.set('status', params.status)
+  if (params.q) q.set('q', params.q)
+  if (params.dueFrom) q.set('due_from', params.dueFrom)
+  if (params.dueTo) q.set('due_to', params.dueTo)
+  if (params.sortBy) q.set('sort_by', params.sortBy)
+  if (params.sortDir) q.set('sort_dir', params.sortDir)
+  return api.get<ListEnvelope<ManualReceivable>>(`${BASE}/manual-receivables?${q}`, signal)
+}
+
+export interface CreateManualReceivableInput {
+  reference_number: string
+  client_name: string
+  total_cents: number
+  recipient_email?: string
+  issued_at?: string
+  due_at?: string
+}
+
+export function createManualReceivable(input: CreateManualReceivableInput) {
+  return api.post<ManualReceivable>(`${BASE}/manual-receivables`, input)
+}
+
+export function cancelManualReceivable(id: number) {
+  return api.post<ManualReceivable>(`${BASE}/manual-receivables/${id}/cancel`)
+}
+
+export async function importManualReceivables(file: File): Promise<ManualReceivableImportResult> {
+  const form = new FormData()
+  form.append('file', file)
+  const token = sessionStorage.getItem('nene_clear_token')
+  const res = await fetch(`${BASE}/manual-receivable-imports`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    const detail = data && typeof data === 'object' && 'detail' in data ? String((data as { detail?: unknown }).detail ?? '') : ''
+    const title = data && typeof data === 'object' && 'title' in data ? String((data as { title?: unknown }).title ?? '') : `Import failed (${res.status})`
+    throw new Error(detail || title)
+  }
+  return data as ManualReceivableImportResult
 }
 
 // --- Upstream invoices ---

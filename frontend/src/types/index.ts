@@ -71,6 +71,34 @@ export interface ClientCredit {
   created_at: string
 }
 
+/**
+ * A receivable entered directly in Clear, not sourced from NeNe Invoice
+ * (ADR 0014). A reconciliation reference — NOT an issued invoice / 適格請求書 /
+ * tax original. `*_cents` are integer cents (yen × 100), like everywhere else.
+ */
+export interface ManualReceivable {
+  manual_receivable_id: number
+  organization_id: number
+  source: 'manual'
+  reference_number: string
+  client_name: string
+  recipient_email: string | null
+  total_cents: number
+  outstanding_cents: number
+  currency: string
+  issued_at: string | null
+  due_at: string | null
+  status: 'open' | 'partially_paid' | 'paid' | 'cancelled'
+  created_at: string
+  updated_at: string
+}
+
+export interface ManualReceivableImportResult {
+  created: number
+  skipped: number
+  errors: { row: number; errors: { field: string; message: string }[] }[]
+}
+
 export interface DunningNotice {
   dunning_notice_id: number
   organization_id: number
