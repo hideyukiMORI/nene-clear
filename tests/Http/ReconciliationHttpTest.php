@@ -360,16 +360,23 @@ final class ReconciliationHttpTest extends TestCase
         self::assertSame(50000, $body['outstanding_cents'] ?? null);
     }
 
-    public function test_upstream_unavailable_returns_503(): void
+    public function test_upstream_unavailable_degrades_to_manual_candidates(): void
     {
+        // Invoice upstream is down, but the operator has a manual receivable that
+        // matches the deposit — propose must still return it (with a flag), not 503.
         $this->invoiceClient->makeUnavailable();
 
         $token = $this->tokenFor('admin@acme.example');
-        $txId = $this->importCsv($token);
+        $txId = $this->importCsv($token); // 110000 deposit
+        $this->seedManualReceivable(110000);
 
         $response = $this->post($token, '/admin/reconciliations/propose', ['bank_transaction_id' => $txId]);
 
-        self::assertSame(503, $response->getStatusCode());
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decode($response);
+        self::assertTrue($body['upstream_unavailable']);
+        $manual = array_values(array_filter($body['suggestions'], static fn (array $s): bool => $s['source'] === 'manual'));
+        self::assertCount(1, $manual);
     }
 
     public function test_double_reverse_returns_409(): void

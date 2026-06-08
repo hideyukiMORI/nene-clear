@@ -141,6 +141,27 @@ final class ProposeMatchUseCaseTest extends TestCase
         self::assertSame(ReceivableSource::InvoiceUpstream, $output->suggestions[0]->source);
     }
 
+    public function test_degraded_returns_manual_with_flag_when_upstream_unavailable(): void
+    {
+        $this->invoiceClient->makeUnavailable();
+        $txId = $this->makeTx(100000);
+        $this->makeManualReceivable('MR-1', 100000);
+
+        $output = $this->useCase->execute(new ProposeMatchInput(7, $txId));
+
+        self::assertTrue($output->upstreamUnavailable);
+        self::assertCount(1, $output->suggestions);
+        self::assertSame(ReceivableSource::Manual, $output->suggestions[0]->source);
+    }
+
+    public function test_upstream_available_sets_flag_false(): void
+    {
+        $txId = $this->makeTx(100000);
+        $this->invoiceClient->addInvoice($this->makeInvoice(1, 'INV-001', 100000));
+
+        self::assertFalse($this->useCase->execute(new ProposeMatchInput(7, $txId))->upstreamUnavailable);
+    }
+
     public function test_exact_amount_match_scores_highest(): void
     {
         $txId = $this->makeTx(100000);

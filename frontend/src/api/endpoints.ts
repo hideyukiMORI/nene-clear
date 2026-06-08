@@ -235,7 +235,7 @@ export interface MatchSuggestion {
 }
 
 export function proposeMatch(bankTransactionId: number) {
-  return api.post<{ bank_transaction_id: number; suggestions: MatchSuggestion[] }>(
+  return api.post<{ bank_transaction_id: number; upstream_unavailable: boolean; suggestions: MatchSuggestion[] }>(
     `${BASE}/reconciliations/propose`,
     { bank_transaction_id: bankTransactionId },
   )
