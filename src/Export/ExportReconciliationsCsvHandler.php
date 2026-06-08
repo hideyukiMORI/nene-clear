@@ -54,6 +54,8 @@ final readonly class ExportReconciliationsCsvHandler
                         $recon->confirmedBy,
                         $recon->reversedAt ?? '',
                         $recon->reversalReason ?? '',
+                        '',
+                        '',
                     ];
                 } else {
                     foreach ($allocations as $alloc) {
@@ -72,6 +74,8 @@ final readonly class ExportReconciliationsCsvHandler
                             $recon->confirmedBy,
                             $recon->reversedAt ?? '',
                             $recon->reversalReason ?? '',
+                            $alloc->source->value,
+                            $alloc->manualReceivableId ?? '',
                         ];
                     }
                 }
@@ -82,7 +86,8 @@ final readonly class ExportReconciliationsCsvHandler
         $csv = $this->buildCsv(
             ['reconciliation_id', 'allocation_id', 'status', 'invoice_id', 'amount_cents',
                 'external_reference', 'bank_transaction_id', 'value_date', 'bank_amount_cents',
-                'counterparty_text', 'confirmed_at', 'confirmed_by', 'reversed_at', 'reversal_reason'],
+                'counterparty_text', 'confirmed_at', 'confirmed_by', 'reversed_at', 'reversal_reason',
+                'source', 'manual_receivable_id'],
             $rows,
         );
 

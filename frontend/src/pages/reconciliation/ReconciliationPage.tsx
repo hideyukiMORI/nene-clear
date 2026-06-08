@@ -4,8 +4,8 @@ import {
   listUnmatchedTransactions, listReconciliations,
   confirmMatch, reverseReconciliation, proposeMatch, downloadCsv, reconciliationsExportPath,
 } from '@/api/endpoints'
-import type { BankTransaction, Reconciliation, UpstreamInvoice } from '@/types'
-import type { AllocationInput } from '@/api/endpoints'
+import type { BankTransaction, Reconciliation } from '@/types'
+import type { AllocationInput, MatchSuggestion } from '@/api/endpoints'
 import { describeApiError } from '@/api/client'
 import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { SortState } from '@/components/ui'
@@ -24,7 +24,7 @@ const RECON_STATUS: Record<Reconciliation['status'], StatusMeta> = {
 function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
-  const [allocs, setAllocs] = useState<AllocationInput[]>([{ invoice_id: 0, amount_cents: 0 }])
+  const [allocs, setAllocs] = useState<AllocationInput[]>([{ source: 'invoice_upstream', invoice_id: 0, amount_cents: 0 }])
   const [reasonCode, setReasonCode] = useState('')
   const [formError, setFormError] = useState('')
 
@@ -34,7 +34,9 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
     retry: false,
   })
 
-  const validAllocs = allocs.filter(a => a.invoice_id > 0 && a.amount_cents > 0)
+  const allocTargeted = (a: AllocationInput): boolean =>
+    a.source === 'manual' ? (a.manual_receivable_id ?? 0) > 0 : (a.invoice_id ?? 0) > 0
+  const validAllocs = allocs.filter(a => allocTargeted(a) && a.amount_cents > 0)
 
   const confirmMut = useMutation({
     mutationFn: () => confirmMatch(tx.bank_transaction_id, validAllocs, reasonCode || undefined),
@@ -51,7 +53,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
   // positive invoice ID and a positive amount.
   function submit() {
     if (validAllocs.length === 0) {
-      const partial = allocs.some(a => a.invoice_id > 0 || a.amount_cents > 0)
+      const partial = allocs.some(a => allocTargeted(a) || a.amount_cents > 0)
       setFormError(partial ? t('reconciliation.error.incompleteAllocation') : t('reconciliation.error.noAllocation'))
       return
     }
@@ -59,8 +61,10 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
     confirmMut.mutate()
   }
 
-  function applySuggestion(inv: UpstreamInvoice) {
-    setAllocs([{ invoice_id: inv.invoice_id, amount_cents: inv.outstanding_cents }])
+  function applySuggestion(s: MatchSuggestion) {
+    setAllocs([s.source === 'manual'
+      ? { source: 'manual', manual_receivable_id: s.manual_receivable_id ?? 0, amount_cents: s.outstanding_cents }
+      : { source: 'invoice_upstream', invoice_id: s.invoice_id ?? 0, amount_cents: s.outstanding_cents }])
   }
 
   function updateAlloc(i: number, field: keyof AllocationInput, raw: string) {
@@ -90,13 +94,13 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
       <div className="sugg">
         <div className="sugg-h"><Icon name="reconcile" size="sm" />{t('reconciliation.suggestions')}</div>
         {suggestQ.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.searchingSuggestions')}</p>}
-        {suggestQ.data?.invoices.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.noSuggestions')}</p>}
-        {suggestQ.data?.invoices.map(inv => (
-          <div key={inv.invoice_id} className="sugg-row">
-            <span className="iv mono">{inv.invoice_number}</span>
-            <span className="amt">{yen(inv.outstanding_cents)}</span>
-            <span className="due">{t('reconciliation.dueLabel')} {inv.due_at}</span>
-            <Button variant="primary" size="sm" onClick={() => applySuggestion(inv)}>{t('reconciliation.useSuggestion')}</Button>
+        {suggestQ.data?.suggestions.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.noSuggestions')}</p>}
+        {suggestQ.data?.suggestions.map((s, i) => (
+          <div key={`${s.source}-${s.invoice_id ?? s.manual_receivable_id}-${i}`} className="sugg-row">
+            <Badge variant={s.source === 'manual' ? 'neut' : 'info'}>{t(s.source === 'manual' ? 'reconciliation.source.manual' : 'reconciliation.source.invoice')}</Badge>
+            <span className="iv mono">{s.invoice_number ?? s.reference_number}</span>
+            <span className="amt">{yen(s.outstanding_cents)}</span>
+            <Button variant="primary" size="sm" onClick={() => applySuggestion(s)}>{t('reconciliation.useSuggestion')}</Button>
           </div>
         ))}
       </div>
@@ -107,9 +111,15 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {allocs.map((a, i) => (
             <div key={i} className="alloc-row">
-              <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.invoiceId')}</label>
-                <input className="inp tnum" type="number" data-autofocus={i === 0 ? true : undefined} value={a.invoice_id || ''} onChange={e => updateAlloc(i, 'invoice_id', e.target.value)} />
-              </div>
+              {a.source === 'manual' ? (
+                <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.target')}</label>
+                  <input className="inp" readOnly value={`${t('reconciliation.source.manual')} #${a.manual_receivable_id ?? ''}`} />
+                </div>
+              ) : (
+                <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.invoiceId')}</label>
+                  <input className="inp tnum" type="number" data-autofocus={i === 0 ? true : undefined} value={a.invoice_id || ''} onChange={e => updateAlloc(i, 'invoice_id', e.target.value)} />
+                </div>
+              )}
               <div className="field"><label style={{ fontSize: 11 }}>{t('reconciliation.allocationAmount')}</label>
                 <input className="inp tnum" type="number" value={a.amount_cents > 0 ? a.amount_cents / 100 : ''} onChange={e => updateAlloc(i, 'amount_cents', e.target.value)} />
               </div>
@@ -120,7 +130,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
               )}
             </div>
           ))}
-          <Button variant="link" onClick={() => setAllocs(p => [...p, { invoice_id: 0, amount_cents: 0 }])}>
+          <Button variant="link" onClick={() => setAllocs(p => [...p, { source: 'invoice_upstream', invoice_id: 0, amount_cents: 0 }])}>
             <Icon name="plus" size="sm" />{t('reconciliation.addAllocation')}
           </Button>
         </div>
