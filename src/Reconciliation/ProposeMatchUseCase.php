@@ -85,7 +85,9 @@ final readonly class ProposeMatchUseCase implements ProposeMatchUseCaseInterface
                 $score += 0.3;
                 $reasons[] = 'invoice number in counterparty';
             }
-            $score += $this->dueSoonBonus($invoice->dueAt, $today, $score > 0.0 || $reasons !== [], $reasons);
+            if ($invoice->dueAt !== null) {
+                $score += $this->dueSoonBonus($invoice->dueAt, $today, $score > 0.0 || $reasons !== [], $reasons);
+            }
 
             if ($score > 0.0) {
                 $out[] = MatchSuggestion::upstream(

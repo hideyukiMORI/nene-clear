@@ -27,7 +27,7 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
       <div className="kv">
         <div className="kv-row"><span className="k">{t('table.invoice')}</span><span className="v mono">{invoice.invoice_number}</span></div>
         <div className="kv-row"><span className="k">{t('table.outstanding')}</span><span className="v">{yen(invoice.outstanding_cents)}</span></div>
-        <div className="kv-row"><span className="k">{t('table.dueDate')}</span><span className="v" style={{ color: 'var(--bad)' }}>{t('dunning.dueElapsed', { date: invoice.due_at, days: daysOverdue(invoice.due_at) })}</span></div>
+        <div className="kv-row"><span className="k">{t('table.dueDate')}</span><span className="v" style={{ color: 'var(--bad)' }}>{t('dunning.dueElapsed', { date: invoice.due_at ?? '—', days: daysOverdue(invoice.due_at) })}</span></div>
       </div>
       <Notice variant="info">{t('dunning.sendInfo')}</Notice>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
@@ -168,7 +168,7 @@ export default function DunningPage() {
                     {inv.status === 'overdue' ? <Badge variant="bad" dot>{t('dunning.status.overdue')}</Badge> : <Badge variant="warn" dot>{t('dunning.status.partial')}</Badge>}
                   </td>
                   <td className="num">{yen(inv.outstanding_cents)}</td>
-                  <td className="muted">{inv.due_at}</td>
+                  <td className="muted">{inv.due_at ?? '—'}</td>
                   <td style={{ color: daysNum > 0 ? (daysNum > 14 ? 'var(--bad)' : 'var(--warn)') : 'var(--muted)', fontWeight: 600 }}>{elap}</td>
                   <td className="row-act">
                     {paused

@@ -17,7 +17,8 @@ final readonly class DunningNotice
         public int $clientId,
         public string $recipientEmail,
         public int $outstandingCents,
-        public string $dueAt,
+        /** Snapshot of the invoice due date; null when the invoice had no due date. */
+        public ?string $dueAt,
         public string $channel,
         public string $templateVersion,
         public int $sentBy,

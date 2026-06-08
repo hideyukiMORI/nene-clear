@@ -107,7 +107,7 @@ export interface DunningNotice {
   client_id: number
   recipient_email: string
   outstanding_at_send_cents: number
-  due_at: string
+  due_at: string | null
   channel: string
   template_version: string
   sent_by: number
@@ -189,7 +189,7 @@ export interface UpstreamInvoice {
   invoice_number: string
   client_id: number
   issued_at: string
-  due_at: string
+  due_at: string | null
   total_cents: number
   outstanding_cents: number
   status: 'issued' | 'partially_paid' | 'paid'

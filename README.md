@@ -69,7 +69,7 @@ Next: Phase 3 (Tier A shared-hosting installer / release ZIP) and Phase 4
 docker compose up -d
 cp .env.example .env            # adjust DB_*, NENE_CLEAR_JWT_SECRET as needed
 
-# 2. Backend (PHP 8.4). NENE2 is a local path dependency (../NENE2).
+# 2. Backend (PHP 8.4 with ext-curl — required by the Invoice upstream client).
 composer install
 composer migrations:migrate     # apply schema
 php -S localhost:8384 -t public_html/    # or your preferred SAPI (NENE_CLEAR_PORT=8384)
@@ -86,6 +86,28 @@ npm --prefix frontend run check # type-check + lint + Vitest
 
 `DB_ADAPTER=sqlite` (the `.env.example` default) needs no container; set
 `DB_ADAPTER=mysql` to use the docker-compose database.
+
+## Invoice integration (optional)
+
+Reconciliation and dunning against **NeNe Invoice** receivables are activated by
+two env vars; without them Clear runs standalone (manual receivables only,
+ADR 0014). `ext-curl` is required for the HTTP client.
+
+```bash
+# In .env (or the environment):
+NENE_INVOICE_API_BASE_URL=https://invoice.example.com
+NENE_INVOICE_BEARER_TOKEN=<service token>
+```
+
+Obtain the service token from the Invoice side (`nene-invoice` →
+`tools/issue-service-token.php`). With both set, the contract suite runs against
+the live Invoice API:
+
+```bash
+NENE_INVOICE_API_BASE_URL=… NENE_INVOICE_BEARER_TOKEN=… vendor/bin/phpunit --filter InvoiceUpstreamContractTest
+```
+
+See [`docs/integrations/invoice-upstream-contract.md`](./docs/integrations/invoice-upstream-contract.md).
 
 ## Ecosystem
 
