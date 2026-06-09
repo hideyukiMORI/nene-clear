@@ -9,6 +9,8 @@ use Nene2\Database\PdoConnectionFactory;
 use Nene2\Database\PdoDatabaseQueryExecutor;
 use Nene2\Database\PdoDatabaseTransactionManager;
 use Nene2\Http\ResponseEmitter;
+use NeneClear\Database\AdapterAwareQueryExecutor;
+use NeneClear\Database\AdapterAwareTransactionManager;
 use NeneClear\Http\ApplicationFactory;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
@@ -32,11 +34,15 @@ $jwtSecret = $env('NENE_CLEAR_JWT_SECRET') ?: null;
 // executor, the transaction manager, and a JWT secret are all available (see
 // ApplicationFactory). The executor and the transaction manager share one
 // connection factory so transactional() can open its own connection (Issue #122).
-$connectionFactory = (static function () use ($env): ?DatabaseConnectionFactoryInterface {
+$adapter = $env('DB_ADAPTER', 'sqlite');
+
+$connectionFactory = (static function () use ($env, $adapter): ?DatabaseConnectionFactoryInterface {
     try {
-        $adapter = $env('DB_ADAPTER', 'sqlite');
-        $config = $adapter === 'mysql'
-            ? new DatabaseConfig(
+        // `charset` is intentionally omitted for pgsql — the DSN ignores it and
+        // PostgreSQL derives the client encoding from server_encoding (UTF-8 by
+        // default). See NENE2 docs/howto/use-postgresql.md.
+        $config = match ($adapter) {
+            'mysql' => new DatabaseConfig(
                 url: $env('DATABASE_URL') ?: null,
                 environment: $env('DB_ENV', 'production'),
                 adapter: 'mysql',
@@ -46,8 +52,22 @@ $connectionFactory = (static function () use ($env): ?DatabaseConnectionFactoryI
                 user: $env('DB_USER', 'nene_clear'),
                 password: $env('DB_PASSWORD'),
                 charset: $env('DB_CHARSET', 'utf8mb4'),
-            )
-            : DatabaseConfig::sqlite($env('DB_NAME') ?: dirname(__DIR__) . '/database/nene_clear.sqlite3');
+            ),
+            'pgsql' => new DatabaseConfig(
+                url: $env('DATABASE_URL') ?: null,
+                environment: $env('DB_ENV', 'production'),
+                adapter: 'pgsql',
+                host: $env('DB_HOST', '127.0.0.1'),
+                port: (int) $env('DB_PORT', '5432'),
+                name: $env('DB_NAME', 'nene_clear'),
+                user: $env('DB_USER', 'nene_clear'),
+                password: $env('DB_PASSWORD'),
+                // Non-empty to satisfy DatabaseConfig validation; the pgsql DSN
+                // ignores it (encoding comes from server_encoding, UTF-8).
+                charset: $env('DB_CHARSET', 'utf8'),
+            ),
+            default => DatabaseConfig::sqlite($env('DB_NAME') ?: dirname(__DIR__) . '/database/nene_clear.sqlite3'),
+        };
 
         return new PdoConnectionFactory($config);
     } catch (\Throwable) {
@@ -55,8 +75,14 @@ $connectionFactory = (static function () use ($env): ?DatabaseConnectionFactoryI
     }
 })();
 
-$query = $connectionFactory !== null ? new PdoDatabaseQueryExecutor($connectionFactory) : null;
-$transactionManager = $connectionFactory !== null ? new PdoDatabaseTransactionManager($connectionFactory) : null;
+// Decorate so INSERT … RETURNING id is used on PostgreSQL (PDO::lastInsertId()
+// returns 0 there). No-op for mysql/sqlite. See NeneClear\Database decorators.
+$query = $connectionFactory !== null
+    ? new AdapterAwareQueryExecutor(new PdoDatabaseQueryExecutor($connectionFactory), $adapter)
+    : null;
+$transactionManager = $connectionFactory !== null
+    ? new AdapterAwareTransactionManager(new PdoDatabaseTransactionManager($connectionFactory), $adapter)
+    : null;
 
 $smtpHost = $env('SMTP_HOST') ?: null;
 $invoiceApiBaseUrl = $env('NENE_INVOICE_API_BASE_URL') ?: null;

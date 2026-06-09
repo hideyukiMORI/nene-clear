@@ -18,6 +18,28 @@ services:
       timeout: 5s
       retries: 20
 
+  # Optional PostgreSQL adapter (DB_ADAPTER=pgsql). MySQL stays the default Tier
+  # A target; start this only when running against PostgreSQL:
+  #   docker compose up -d postgres
+  # then set DB_ADAPTER=pgsql and DB_PORT=5483 in .env.
+  postgres:
+    image: postgres:17
+    container_name: nene-clear-pg
+    ports:
+      - "5483:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nene_clear}
+      POSTGRES_USER: ${DB_USER:-nene_clear}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nene_clear}
+      TZ: Asia/Tokyo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nene_clear} -d ${DB_NAME:-nene_clear}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: nene-clear-mail
@@ -30,3 +52,4 @@ services:
 
 volumes:
   mysql_data:
+  postgres_data:

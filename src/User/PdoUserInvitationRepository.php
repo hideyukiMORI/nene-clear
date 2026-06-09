@@ -17,7 +17,7 @@ final readonly class PdoUserInvitationRepository implements UserInvitationReposi
 
     public function save(UserInvitation $invitation): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO user_invitations (organization_id, user_id, token_hash, expires_at, accepted_at) '
             . 'VALUES (?, ?, ?, ?, ?)',
             [
@@ -28,8 +28,6 @@ final readonly class PdoUserInvitationRepository implements UserInvitationReposi
                 $invitation->acceptedAt,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findByTokenHash(string $tokenHash): ?UserInvitation

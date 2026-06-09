@@ -135,7 +135,11 @@ In compliance with 電子帳簿保存法 and financial record-keeping requiremen
   situation). NeNe Clear does not auto-purge records.
 - **Backup:** Database backup is the operator's responsibility. NeNe Clear does
   not provide built-in backup; use database-level backup (e.g. `mysqldump` for
-  MySQL).
+  MySQL, `pg_dump` for PostgreSQL).
+- **Database adapter:** `DB_ADAPTER` selects the backend — `sqlite` (local/dev),
+  `mysql`, or `pgsql`. All three share one Phinx migration set. The pgsql adapter
+  needs the PHP `pdo_pgsql` extension and ignores `DB_CHARSET` (PostgreSQL derives
+  the client encoding from `server_encoding`).
 
 ---
 

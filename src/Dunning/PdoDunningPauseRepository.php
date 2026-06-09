@@ -18,7 +18,7 @@ final readonly class PdoDunningPauseRepository implements DunningPauseRepository
 
     public function save(DunningPause $pause): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO dunning_pauses (organization_id, invoice_id, paused_by, paused_at, paused_reason) '
             . 'VALUES (?, ?, ?, ?, ?)',
             [
@@ -29,8 +29,6 @@ final readonly class PdoDunningPauseRepository implements DunningPauseRepository
                 $pause->pausedReason,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findActiveByInvoice(int $organizationId, int $invoiceId): ?DunningPause

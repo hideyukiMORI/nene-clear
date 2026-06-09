@@ -19,7 +19,7 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
     public function findById(int $id): ?User
     {
         $row = $this->query->fetchOne(
-            'SELECT ' . self::COLUMNS . ' FROM users WHERE id = ? AND is_deleted = 0',
+            'SELECT ' . self::COLUMNS . ' FROM users WHERE id = ? AND is_deleted = FALSE',
             [$id],
         );
 
@@ -29,7 +29,7 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
     public function findByEmail(string $email): ?User
     {
         $row = $this->query->fetchOne(
-            'SELECT ' . self::COLUMNS . ' FROM users WHERE email = ? AND is_deleted = 0',
+            'SELECT ' . self::COLUMNS . ' FROM users WHERE email = ? AND is_deleted = FALSE',
             [$email],
         );
 
@@ -39,7 +39,7 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
     public function existsByEmail(string $email): bool
     {
         return $this->query->fetchOne(
-            'SELECT 1 FROM users WHERE email = ? AND is_deleted = 0',
+            'SELECT 1 FROM users WHERE email = ? AND is_deleted = FALSE',
             [$email],
         ) !== null;
     }
@@ -48,13 +48,13 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
     {
         if ($organizationId === null) {
             $rows = $this->query->fetchAll(
-                'SELECT ' . self::COLUMNS . ' FROM users WHERE organization_id IS NULL AND is_deleted = 0 '
+                'SELECT ' . self::COLUMNS . ' FROM users WHERE organization_id IS NULL AND is_deleted = FALSE '
                 . 'ORDER BY id ASC LIMIT ? OFFSET ?',
                 [$limit, $offset],
             );
         } else {
             $rows = $this->query->fetchAll(
-                'SELECT ' . self::COLUMNS . ' FROM users WHERE organization_id = ? AND is_deleted = 0 '
+                'SELECT ' . self::COLUMNS . ' FROM users WHERE organization_id = ? AND is_deleted = FALSE '
                 . 'ORDER BY id ASC LIMIT ? OFFSET ?',
                 [$organizationId, $limit, $offset],
             );
@@ -66,8 +66,8 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
     public function countByOrganization(?int $organizationId): int
     {
         $row = $organizationId === null
-            ? $this->query->fetchOne('SELECT COUNT(*) AS c FROM users WHERE organization_id IS NULL AND is_deleted = 0')
-            : $this->query->fetchOne('SELECT COUNT(*) AS c FROM users WHERE organization_id = ? AND is_deleted = 0', [$organizationId]);
+            ? $this->query->fetchOne('SELECT COUNT(*) AS c FROM users WHERE organization_id IS NULL AND is_deleted = FALSE')
+            : $this->query->fetchOne('SELECT COUNT(*) AS c FROM users WHERE organization_id = ? AND is_deleted = FALSE', [$organizationId]);
 
         if ($row === null) {
             return 0;
@@ -87,12 +87,10 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
             return $user->id;
         }
 
-        $this->query->execute(
-            'INSERT INTO users (organization_id, email, role, status, password_hash, is_deleted) VALUES (?, ?, ?, ?, ?, 0)',
+        return $this->query->insert(
+            'INSERT INTO users (organization_id, email, role, status, password_hash, is_deleted) VALUES (?, ?, ?, ?, ?, FALSE)',
             [$user->organizationId, $user->email, $user->role->value, $user->status->value, $user->passwordHash],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function delete(?int $organizationId, int $id, string $deletedAt): void
@@ -102,12 +100,12 @@ final readonly class PdoUserRepository implements UserRepositoryInterface
         // and its audit event share one instant (no wall-clock read here).
         if ($organizationId !== null) {
             $this->query->execute(
-                'UPDATE users SET is_deleted = 1, deleted_at = ? WHERE id = ? AND organization_id = ?',
+                'UPDATE users SET is_deleted = TRUE, deleted_at = ? WHERE id = ? AND organization_id = ?',
                 [$deletedAt, $id, $organizationId],
             );
         } else {
             $this->query->execute(
-                'UPDATE users SET is_deleted = 1, deleted_at = ? WHERE id = ? AND organization_id IS NULL',
+                'UPDATE users SET is_deleted = TRUE, deleted_at = ? WHERE id = ? AND organization_id IS NULL',
                 [$deletedAt, $id],
             );
         }
