@@ -19,7 +19,7 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
     public function findById(int $id): ?ManualReceivable
     {
         $row = $this->query->fetchOne(
-            'SELECT ' . self::COLUMNS . ' FROM manual_receivables WHERE id = ? AND is_deleted = 0',
+            'SELECT ' . self::COLUMNS . ' FROM manual_receivables WHERE id = ? AND is_deleted = FALSE',
             [$id],
         );
 
@@ -53,7 +53,7 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
     {
         $row = $this->query->fetchOne(
             'SELECT ' . self::COLUMNS . ' FROM manual_receivables '
-            . 'WHERE organization_id = ? AND reference_number = ? AND is_deleted = 0',
+            . 'WHERE organization_id = ? AND reference_number = ? AND is_deleted = FALSE',
             [$organizationId, $referenceNumber],
         );
 
@@ -62,7 +62,7 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
 
     public function save(ManualReceivable $receivable): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO manual_receivables (organization_id, reference_number, client_name, recipient_email, '
             . 'total_cents, outstanding_cents, currency, issued_at, due_at, status, created_by, created_at, updated_at) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -82,8 +82,6 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
                 $receivable->updatedAt ?? $receivable->createdAt,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function update(ManualReceivable $receivable): void
@@ -91,7 +89,7 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
         $this->query->execute(
             'UPDATE manual_receivables SET reference_number = ?, client_name = ?, recipient_email = ?, '
             . 'total_cents = ?, outstanding_cents = ?, currency = ?, issued_at = ?, due_at = ?, status = ?, updated_at = ? '
-            . 'WHERE id = ? AND is_deleted = 0',
+            . 'WHERE id = ? AND is_deleted = FALSE',
             [
                 $receivable->referenceNumber,
                 $receivable->clientName,
@@ -111,7 +109,7 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
     public function softDelete(int $id, string $deletedAt): void
     {
         $this->query->execute(
-            'UPDATE manual_receivables SET is_deleted = 1, deleted_at = ? WHERE id = ? AND is_deleted = 0',
+            'UPDATE manual_receivables SET is_deleted = TRUE, deleted_at = ? WHERE id = ? AND is_deleted = FALSE',
             [$deletedAt, $id],
         );
     }
@@ -121,7 +119,7 @@ final readonly class PdoManualReceivableRepository implements ManualReceivableRe
      */
     private function whereClause(int $organizationId, ManualReceivableFilter $filter): array
     {
-        $clauses = ['organization_id = ?', 'is_deleted = 0'];
+        $clauses = ['organization_id = ?', 'is_deleted = FALSE'];
         /** @var list<string|int> $params */
         $params = [$organizationId];
 

@@ -16,7 +16,7 @@ final readonly class PdoOrganizationRepository implements OrganizationRepository
     public function findById(int $id): ?Organization
     {
         $row = $this->query->fetchOne(
-            'SELECT id, slug, name FROM organizations WHERE id = ? AND is_deleted = 0',
+            'SELECT id, slug, name FROM organizations WHERE id = ? AND is_deleted = FALSE',
             [$id],
         );
 
@@ -26,7 +26,7 @@ final readonly class PdoOrganizationRepository implements OrganizationRepository
     public function findBySlug(string $slug): ?Organization
     {
         $row = $this->query->fetchOne(
-            'SELECT id, slug, name FROM organizations WHERE slug = ? AND is_deleted = 0',
+            'SELECT id, slug, name FROM organizations WHERE slug = ? AND is_deleted = FALSE',
             [$slug],
         );
 
@@ -35,13 +35,13 @@ final readonly class PdoOrganizationRepository implements OrganizationRepository
 
     public function existsBySlug(string $slug): bool
     {
-        return $this->query->fetchOne('SELECT 1 FROM organizations WHERE slug = ? AND is_deleted = 0', [$slug]) !== null;
+        return $this->query->fetchOne('SELECT 1 FROM organizations WHERE slug = ? AND is_deleted = FALSE', [$slug]) !== null;
     }
 
     public function findAll(int $limit, int $offset): array
     {
         $rows = $this->query->fetchAll(
-            'SELECT id, slug, name FROM organizations WHERE is_deleted = 0 ORDER BY id ASC LIMIT ? OFFSET ?',
+            'SELECT id, slug, name FROM organizations WHERE is_deleted = FALSE ORDER BY id ASC LIMIT ? OFFSET ?',
             [$limit, $offset],
         );
 
@@ -50,7 +50,7 @@ final readonly class PdoOrganizationRepository implements OrganizationRepository
 
     public function countAll(): int
     {
-        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM organizations WHERE is_deleted = 0');
+        $row = $this->query->fetchOne('SELECT COUNT(*) AS c FROM organizations WHERE is_deleted = FALSE');
 
         if ($row === null) {
             return 0;
@@ -70,12 +70,10 @@ final readonly class PdoOrganizationRepository implements OrganizationRepository
             return $organization->id;
         }
 
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO organizations (slug, name) VALUES (?, ?)',
             [$organization->slug, $organization->name],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function delete(int $id, string $deletedAt): void
@@ -83,7 +81,7 @@ final readonly class PdoOrganizationRepository implements OrganizationRepository
         // Soft delete — auditable tenant history is never hard-deleted.
         // `$deletedAt` comes from the use case's injected clock.
         $this->query->execute(
-            'UPDATE organizations SET is_deleted = 1, deleted_at = ? WHERE id = ?',
+            'UPDATE organizations SET is_deleted = TRUE, deleted_at = ? WHERE id = ?',
             [$deletedAt, $id],
         );
     }

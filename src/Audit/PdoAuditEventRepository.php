@@ -17,7 +17,7 @@ final readonly class PdoAuditEventRepository implements AuditEventRepositoryInte
 
     public function record(AuditEvent $event): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO audit_events (organization_id, event_type, entity_type, entity_id, actor_user_id, occurred_at, payload_json) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
@@ -30,8 +30,6 @@ final readonly class PdoAuditEventRepository implements AuditEventRepositoryInte
                 json_encode($event->payload, JSON_THROW_ON_ERROR),
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findByOrganization(int $organizationId, AuditEventFilter $filter, int $limit, int $offset): array

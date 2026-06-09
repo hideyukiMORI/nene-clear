@@ -24,6 +24,7 @@ All ports are fixed for this project to avoid collisions with sibling apps.
 | Service | Host port | Notes |
 | --- | --- | --- |
 | MySQL | **3383** | `docker-compose.yml` |
+| PostgreSQL | **5483** | `docker-compose.yml`; optional `DB_ADAPTER=pgsql` |
 | Mailpit SMTP | **1383** | `docker-compose.yml`; set `SMTP_HOST=127.0.0.1 SMTP_PORT=1383` |
 | Mailpit Web UI | **8383** | `http://localhost:8383` |
 | PHP backend | **8384** | `NENE_CLEAR_PORT=8384` in `.env` |

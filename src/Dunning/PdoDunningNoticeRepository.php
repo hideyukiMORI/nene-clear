@@ -18,7 +18,7 @@ final readonly class PdoDunningNoticeRepository implements DunningNoticeReposito
 
     public function save(DunningNotice $notice): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO dunning_notices (organization_id, invoice_id, invoice_number, client_id, '
             . 'recipient_email, outstanding_cents, due_at, channel, template_version, sent_by, sent_at) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -36,8 +36,6 @@ final readonly class PdoDunningNoticeRepository implements DunningNoticeReposito
                 $notice->sentAt,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findById(int $organizationId, int $id): ?DunningNotice

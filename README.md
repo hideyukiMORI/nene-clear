@@ -84,8 +84,12 @@ npm --prefix frontend run check # type-check + lint + Vitest
 ( cd tests/e2e && npm install && npx playwright test )   # browser E2E
 ```
 
-`DB_ADAPTER=sqlite` (the `.env.example` default) needs no container; set
-`DB_ADAPTER=mysql` to use the docker-compose database.
+`DB_ADAPTER=sqlite` (the `.env.example` default) needs no container. For a
+server-grade database, set `DB_ADAPTER=mysql` (`docker compose up -d mysql`,
+`DB_PORT=3383`) or `DB_ADAPTER=pgsql` (`docker compose up -d postgres`,
+`DB_PORT=5483`); `DB_CHARSET` is ignored for pgsql. All three share one schema —
+run `composer migrations:migrate` after switching. The PHP `pdo_pgsql` extension
+is required for the pgsql adapter.
 
 ## Invoice integration (optional)
 

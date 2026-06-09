@@ -50,3 +50,49 @@ jobs:
       # Contract tests auto-skip without NENE_INVOICE_API_BASE_URL.
       - name: Run checks
         run: composer check
+
+  # Validates that every Phinx migration applies cleanly on PostgreSQL. The unit
+  # suite builds its own SQLite schema, so this is the regression guard for the
+  # pgsql adapter (DB_ADAPTER=pgsql) and the RETURNING id / boolean SQL paths.
+  postgres-migrate:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: nene_clear
+          POSTGRES_USER: nene_clear
+          POSTGRES_PASSWORD: nene_clear
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nene_clear -d nene_clear"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql, mbstring
+          coverage: none
+
+      - name: Clone NENE2 (local path dependency)
+        run: git clone --depth=1 https://github.com/hideyukiMORI/NENE2.git ../NENE2
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Migrate on PostgreSQL
+        env:
+          DB_ADAPTER: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_NAME: nene_clear
+          DB_USER: nene_clear
+          DB_PASSWORD: nene_clear
+        run: composer migrations:migrate

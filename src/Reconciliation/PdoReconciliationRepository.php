@@ -113,7 +113,7 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
 
     public function save(Reconciliation $reconciliation): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO payment_reconciliations (organization_id, bank_transaction_id, status, reason_code, confirmed_by, confirmed_at, idempotency_key) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
@@ -126,13 +126,11 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
                 $reconciliation->idempotencyKey,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function saveAllocation(ReconciliationAllocation $allocation): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO reconciliation_allocations (organization_id, payment_reconciliation_id, invoice_id, amount_cents, payment_id, external_reference, source, manual_receivable_id) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [
@@ -146,8 +144,6 @@ final readonly class PdoReconciliationRepository implements ReconciliationReposi
                 $allocation->manualReceivableId,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findAllocationsByReconciliation(int $organizationId, int $reconciliationId): array

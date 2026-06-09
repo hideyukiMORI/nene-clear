@@ -33,7 +33,7 @@ final readonly class PdoBankImportBatchRepository implements BankImportBatchRepo
 
     public function save(BankImportBatch $batch): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO bank_import_batches (organization_id, bank_account_id, file_hash, source_filename, '
             . 'row_count, status, imported_by, imported_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [
@@ -47,8 +47,6 @@ final readonly class PdoBankImportBatchRepository implements BankImportBatchRepo
                 $batch->importedAt,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findByOrganization(int $organizationId, BankImportBatchFilter $filter, int $limit, int $offset): array

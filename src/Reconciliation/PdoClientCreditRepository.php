@@ -19,7 +19,7 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
 
     public function save(ClientCredit $credit): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO client_credits (organization_id, client_id, amount_cents, remaining_cents, status, '
             . 'source_bank_transaction_id, reconciliation_id, created_by, created_at, source, manual_receivable_id, client_name) '
             . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -38,8 +38,6 @@ final readonly class PdoClientCreditRepository implements ClientCreditRepository
                 $credit->clientName,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findById(int $organizationId, int $id): ?ClientCredit

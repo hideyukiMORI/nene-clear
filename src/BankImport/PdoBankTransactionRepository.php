@@ -18,7 +18,7 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
 
     public function save(BankTransaction $transaction): int
     {
-        $this->query->execute(
+        return $this->query->insert(
             'INSERT INTO bank_transactions (organization_id, bank_import_batch_id, bank_account_id, value_date, '
             . 'amount_cents, counterparty_text, line_key, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [
@@ -32,8 +32,6 @@ final readonly class PdoBankTransactionRepository implements BankTransactionRepo
                 $transaction->status->value,
             ],
         );
-
-        return $this->query->lastInsertId();
     }
 
     public function findById(int $organizationId, int $id): ?BankTransaction
