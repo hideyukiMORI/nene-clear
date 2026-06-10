@@ -1,0 +1,29 @@
+# Keep the build context lean and avoid shadowing image-built artifacts with
+# host copies (vendor symlinks, node_modules, the host .env).
+.git
+.github
+
+# PHP / Composer — installed inside the image.
+vendor
+
+# Node — installed/built inside the frontend stage.
+node_modules
+frontend/node_modules
+tests/e2e/node_modules
+
+# Built SPA — produced by the frontend stage into public_html/assets.
+public_html/assets
+
+# Local runtime / caches / dev DB.
+var
+.env
+*.cache
+.php-cs-fixer.cache
+.phpstan.cache
+.phpunit.cache
+database/*.sqlite3
+database/nene_clear
+
+# Editor / tooling noise.
+.cursor
+.claude

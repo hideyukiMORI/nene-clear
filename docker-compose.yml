@@ -1,4 +1,40 @@
 services:
+  # NeNe Clear app — builds the SPA + serves it with the PHP API on :8384.
+  # `docker compose up` brings up app + mysql + mailpit (postgres is opt-in via
+  # the `pgsql` profile). The entrypoint waits for MySQL and runs migrations.
+  app:
+    build: .
+    container_name: nene-clear-app
+    ports:
+      - "8384:8384"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_NAME: "NeNe Clear"
+      PROBLEM_DETAILS_BASE_URL: https://nene-clear.dev/problems/
+      # Default DB: the bundled MySQL service (internal port 3306, host 3383).
+      DB_ADAPTER: mysql
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:-nene_clear}
+      DB_USER: ${DB_USER:-nene_clear}
+      DB_PASSWORD: ${DB_PASSWORD:-nene_clear}
+      DB_CHARSET: utf8mb4
+      # CHANGE THIS in any real deployment.
+      NENE_CLEAR_JWT_SECRET: ${NENE_CLEAR_JWT_SECRET:-nene-clear-dev-secret-change-in-production}
+      NENE_CLEAR_APP_URL: http://localhost:8384
+      # Dunning email → bundled Mailpit (internal SMTP 1025, web UI :8383).
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_FROM_ADDRESS: noreply@nene-clear.dev
+      SMTP_FROM_NAME: "NeNe Clear"
+      # Optional NeNe Invoice upstream — set both to activate (else standalone).
+      NENE_INVOICE_API_BASE_URL: ${NENE_INVOICE_API_BASE_URL:-}
+      NENE_INVOICE_BEARER_TOKEN: ${NENE_INVOICE_BEARER_TOKEN:-}
+
   mysql:
     image: mysql:8.4
     container_name: nene-clear-db
@@ -25,6 +61,10 @@ services:
   postgres:
     image: postgres:17
     container_name: nene-clear-pg
+    # Opt-in only: `docker compose --profile pgsql up`. Default up stays minimal
+    # (app + mysql + mailpit). Set DB_ADAPTER=pgsql + DB_HOST=postgres on the app
+    # service to actually use it.
+    profiles: ["pgsql"]
     ports:
       - "5483:5432"
     environment:

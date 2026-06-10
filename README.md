@@ -62,7 +62,33 @@ Next: Phase 3 (Tier A shared-hosting installer / release ZIP) and Phase 4
 
 **Billing documents (見積・請求・入金):** [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice) — not this repo.
 
+## Run with Docker (one command)
+
+Clone and bring the whole stack up — the app image builds the admin SPA,
+installs PHP deps, waits for MySQL, applies migrations, and serves the UI + API
+on a single port:
+
+```bash
+git clone https://github.com/hideyukiMORI/nene-clear.git
+cd nene-clear
+docker compose up            # add --build to force a rebuild after code changes
+```
+
+- **Admin UI + API** → http://localhost:8384
+- **Mailpit (dunning email)** → http://localhost:8383
+
+This starts `app` + `mysql` (`:3383`, persistent volume) + `mailpit`. PostgreSQL
+is opt-in: `docker compose --profile pgsql up` (then set `DB_ADAPTER=pgsql` /
+`DB_HOST=postgres` on the `app` service). Override `NENE_CLEAR_JWT_SECRET`,
+`DB_PASSWORD`, and the optional `NENE_INVOICE_API_BASE_URL` /
+`NENE_INVOICE_BEARER_TOKEN` via the environment for any real deployment — the
+compose defaults are for local use only. No hot reload: rerun with `--build`
+to pick up source changes.
+
 ## Quickstart (local development)
+
+For an active edit/reload loop, run the backend and frontend directly on the
+host instead:
 
 ```bash
 # 1. Infrastructure (MySQL 8.4 on :3383, Mailpit SMTP :1383 / web UI :8383)
