@@ -66,6 +66,9 @@ domain folders are **PascalCase singular**.
 | Manually-entered receivable (Clear-owned; ADR 0014) | `ManualReceivable` (entity); `Receivable` (folder) | `manual_receivables` | `manual_receivable_id` |
 | Dunning send record | `DunningNotice` | `dunning_notices` | `dunning_notice_id` |
 | Audit event | `AuditEvent` | `audit_events` | `audit_event_id` |
+| TOTP MFA enrolment (per user; secret encrypted at rest) | `TotpSecret` | `totp_secrets` | `id` (PK); keyed by `user_id` |
+| Consumed TOTP time step (replay guard) | `UsedTotpStep` | `used_totp_steps` | `id` |
+| MFA recovery code (hashed, one-time) | `RecoveryCode` | `recovery_codes` | `id` |
 
 **Not owned by Clear** (read from Invoice upstream, see §6): `invoice`, `client`,
 `payment`. Clear stores only the upstream id plus reconciliation links; it never
