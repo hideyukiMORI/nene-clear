@@ -24,7 +24,7 @@ Operators who need both install **two sibling apps** connected via HTTP.
 - **Bank reconciliation** — CSV import, human-confirmed match, audit trail
 - **Dunning** — operator-controlled overdue reminders with send history
 - **Compliance** — binding rules for reconciliation and dunning ([compliance doc](./docs/explanation/payment-reconciliation-dunning-compliance.md))
-- **Self-hosted OSS** — MIT; Tier A shared hosting or Tier B Docker/VPS
+- **Self-hosted OSS** — MIT; recommended on **VPS + Docker** (Tier B). Shared hosting is **not recommended** for receivables/bank/PII data (no root, throttled SMTP, limited DKIM & backups); a managed / install-service option is planned
 - **AI-readable** — OpenAPI + MCP; human confirms, AI proposes
 - **Optional upstream: NeNe Invoice** — when connected, invoice/payment truth via HTTP API (not a shared DB); without it, Clear reconciles and duns directly-entered / CSV-imported receivables ([ADR 0014](./docs/adr/0014-accept-manual-receivables.md))
 
@@ -57,8 +57,8 @@ Operators who need both install **two sibling apps** connected via HTTP.
 - Login throttling; security assessment in
   [`docs/security/assessment-2026-05.md`](./docs/security/assessment-2026-05.md).
 
-Next: Phase 3 (Tier A shared-hosting installer / release ZIP) and Phase 4
-(MCP tools, accounting-software CSV export). See [`docs/roadmap.md`](./docs/roadmap.md).
+Next: Phase 3 (distribution — managed / install-service on VPS + Docker) and
+Phase 4 (MCP tools, accounting-software CSV export). See [`docs/roadmap.md`](./docs/roadmap.md).
 
 **Billing documents (見積・請求・入金):** [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice) — not this repo.
 

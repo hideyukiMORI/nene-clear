@@ -40,11 +40,17 @@ Operators self-host Clear beside NeNe Invoice to:
 - Dashboard (unmatched count, recent dunning) ✅
 - React + TypeScript SPA (`frontend/`); Vitest + Playwright E2E; CI ✅
 
-## Phase 3: Tier A Shared Hosting — 🔲 Next
+## Phase 3: Distribution (managed / install-service) — 🔲 Next
 
-- Web installer + release ZIP
-- Operator guide for the Invoice + Clear two-app setup
-- Same-origin or subdomain admin
+Reframed from "Tier A shared hosting": the 2026-06 adoption review
+([`explanation/adoption-review-2026-06.md`](./explanation/adoption-review-2026-06.md))
+found shared hosting unsuitable for receivables / bank / PII data (no root,
+throttled SMTP, limited DKIM and backups). The recommended target is **VPS +
+Docker (Tier B)** with a managed / install-service option for operators without
+ops capacity.
+
+- Official Docker image + managed / install-service offering
+- Operator deployment guide (VPS + Docker; Invoice + Clear as two apps)
 - Operator-editable dunning templates per organization
 
 ## Phase 4: Ecosystem — 🔲
