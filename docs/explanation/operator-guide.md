@@ -66,6 +66,10 @@ a future invoice creates a new upstream payment.
 
 Dunning notices are **immutable** once created. No deletion.
 
+> **A recorded "sent" is not "delivered."** Set up the sending domain (SPF / DKIM
+> / DMARC) and a real SMTP relay so reminders reach the inbox — see
+> [`dunning-email-deliverability.md`](./dunning-email-deliverability.md).
+
 ### 2.5 Audit trail (監査証跡)
 
 Every mutating operation is recorded in `audit_events`:
