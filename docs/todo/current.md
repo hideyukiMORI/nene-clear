@@ -67,37 +67,39 @@ Fixed local ports (see `CLAUDE.md`; do **not** revert to framework defaults).
 
 ## Next steps
 
-**Current milestone — Adoption Readiness (2026-06):**
-[`../milestones/2026-06-adoption-readiness.md`](../milestones/2026-06-adoption-readiness.md).
-Turns the 2026-06 adoption review (#190,
-[`../explanation/adoption-review-2026-06.md`](../explanation/adoption-review-2026-06.md);
-adopt 0 / consider 3 / pass 7 — core validated, distribution/ops blocks adoption)
-into shipped changes. Execution order (working from the top):
+**Adoption Readiness milestone — nearly complete**
+([`../milestones/2026-06-adoption-readiness.md`](../milestones/2026-06-adoption-readiness.md);
+from the 2026-06 adoption review #190,
+[`../explanation/adoption-review-2026-06.md`](../explanation/adoption-review-2026-06.md)).
+Shipped: ✅ UI polish (#196, PR #200) · ✅ account-number masking (#192, PR #201) ·
+✅ standalone receivables — CTA / import aliases / repositioning (#191, PR #202–#204) ·
+✅ dunning hardening — deliverability / preview / test-send / staged templates
+(#194, PR #205/#208/#209/#210) · ✅ encryption-at-rest (#195, PR #207) ·
+✅ retract Tier A (#193, PR #206).
 
-1. **UI polish (#196)** — audit-log label i18n (no raw slugs), dashboard
-   "残高合計取得中" state, neutral sample data, bookkeeping-term tooltips.
-2. **Mask bank account number (#192)** — mask in UI + reveal-on-demand + audit.
-3. **Standalone receivables, first-class (#191, P0)** — surface existing
-   `importManualReceivables`, add per-tool CSV import presets (freee/MF/弥生/MISOCA),
-   reposition copy (usable without NeNe Invoice).
-4. **Dunning hardening (#194)** — staged templates, preview/test send,
-   deliverability, do-not-send mode (within ADR 0011).
-5. **Security (#195)** — MFA (TOTP) + encryption-at-rest for sensitive fields.
-6. **Retract Tier A recommendation (#193)** — recommend Tier B + managed;
-   **owner sign-off required** (intersects Phase 3).
+**The one remaining milestone item — MFA (#195):**
 
-Business/owner levers (not code; see review doc): official managed/SaaS supply,
-pricing (A/B/C), tax-advisor MSP channel.
+1. **Standalone TOTP MFA** — auth is federated (Suite = IdP) and MFA/TOTP is a
+   NENE2-generic capability (nene-suite#341, ADR 0025), so Clear builds standalone
+   TOTP now (NENE2 `totp-authentication` recipe). enroll = user / enforce =
+   deployment operator policy; mandatory recovery codes; secret encrypted via the
+   #207 `Encryptor`; break-glass via an audited CLI. Sequence:
+   (a) TOTP foundation (no login-flow change) → (b) login-flow integration →
+   (c) enroll UI + admin/CLI reset.
+
+**Minor follow-ups** (open on their issues): real dashboard KPI-sub aggregates +
+term tooltips (#196); server-side account-number withholding (#192); column-mapping
+UI (#191); dunning stage persistence + ADR 0011 tone review (#194).
 
 **Then resume prior roadmap:**
-7. **Activate real Invoice upstream** — set env vars, run contract tests live.
-8. **CSV export — tax advisor sign-off** — review column set per compliance §9.
-9. **Phase 4 — Ecosystem** — MCP tools (`listUnmatchedTransactions`,
+2. **Activate real Invoice upstream** — set env vars, run contract tests live.
+3. **CSV export — tax advisor sign-off** — review column set per compliance §9.
+4. **Phase 4 — Ecosystem** — MCP tools (`listUnmatchedTransactions`,
    `proposeMatch`, `sendDunningNotice`).
 
-> Note: **Phase 3 (Tier A shared hosting)** in [`../roadmap.md`](../roadmap.md)
-> is under review per #193 — the adoption review found shared hosting unsuitable
-> for this data. Pending owner decision.
+Business/owner levers (not code; see review doc): managed/SaaS supply, pricing
+(A/B/C), tax-advisor MSP channel. Roadmap **Phase 3** was reframed to
+"Distribution (managed / install-service)" per #193 (PR #206).
 
 ## Recently completed
 
