@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  listDunningNotices, sendDunningNotice, previewDunningNotice, listUpstreamInvoices,
+  listDunningNotices, sendDunningNotice, previewDunningNotice, testSendDunningNotice, listUpstreamInvoices,
   listDunningPauses, pauseDunningNotice, resumeDunningNotice, downloadCsv, dunningNoticesExportPath,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
@@ -24,6 +24,12 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
     queryKey: ['dunning-preview', invoice.invoice_id],
     queryFn: ({ signal }) => previewDunningNotice(invoice.invoice_id, signal),
   })
+  const [testTo, setTestTo] = useState('')
+  const [testSent, setTestSent] = useState(false)
+  const testMut = useMutation({
+    mutationFn: () => testSendDunningNotice(invoice.invoice_id, testTo),
+    onSuccess: () => setTestSent(true),
+  })
   return (
     <Modal open onClose={onClose} title={t('dunning.confirmSend')} size="narrow"
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? t('common.sending') : t('dunning.send')}</Button></>}
@@ -44,6 +50,15 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
             <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, margin: '8px 0 0' }}>{preview.data.body}</pre>
           </div>
         )}
+      </div>
+      <div className="field" style={{ marginTop: 12 }}>
+        <label>{t('dunning.testSendLabel')}</label>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input className="inp" style={{ flex: 1 }} type="email" placeholder={t('dunning.testToPlaceholder')} value={testTo} onChange={e => { setTestTo(e.target.value); setTestSent(false) }} />
+          <Button variant="ghost" disabled={!testTo.includes('@') || testMut.isPending} onClick={() => testMut.mutate()}>{testMut.isPending ? t('common.sending') : t('dunning.testSend')}</Button>
+        </div>
+        {testSent && <p className="muted" style={{ fontSize: 12, margin: '4px 0 0', color: 'var(--ok, #16a34a)' }}>{t('dunning.testSent', { to: testTo })}</p>}
+        {testMut.isError && <Notice variant="bad">{testMut.error.message}</Notice>}
       </div>
       <Notice variant="info">{t('dunning.sendInfo')}</Notice>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}

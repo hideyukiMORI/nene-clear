@@ -111,6 +111,14 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                         ServiceResolver::get($c, DunningPauseRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
                     ),
+                    new TestSendDunningHandler(
+                        new SendTestDunningUseCase(
+                            ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
+                            new DunningMessageRenderer(ServiceResolver::get($c, MessageCatalog::class)),
+                            ServiceResolver::get($c, DunningMailerInterface::class),
+                        ),
+                        ServiceResolver::get($c, JsonResponseFactory::class),
+                    ),
                 ),
             )
             ->set(

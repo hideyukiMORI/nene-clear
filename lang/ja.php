@@ -119,6 +119,7 @@ return [
     // sprintf引数: (invoice_number)
     // -------------------------------------------------------------------------
     'dunning_email.subject' => '【お支払いのご案内】請求書 %s のご入金をお願いいたします',
+    'dunning_email.test_prefix' => '【テスト送信】',
 
     // sprintf引数: (contact_name, invoice_number, due_at, outstanding, due_at, outstanding)
     'dunning_email.body' => "%s 様\n\n"

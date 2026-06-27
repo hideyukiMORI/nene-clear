@@ -264,7 +264,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `proposeMatch`, `confirmMatch`, `reverseReconciliation`, `listReconciliations`, `getReconciliationById` | Reconciliation |
 | `listClientCredits`, `applyClientCredit` | Client credit |
 | `listManualReceivables`, `getManualReceivableById`, `createManualReceivable`, `updateManualReceivable`, `cancelManualReceivable`, `importManualReceivables` | Manual receivable (ADR 0014) |
-| `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice`, `previewDunningNotice` | Dunning |
+| `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice`, `previewDunningNotice`, `sendTestDunningNotice` | Dunning |
 | `listAuditEvents` | Audit trail (admin) |
 
 Extend this list (do not improvise) when adding operations. MCP tool names

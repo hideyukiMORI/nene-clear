@@ -450,6 +450,10 @@ export function previewDunningNotice(invoiceId: number, signal?: AbortSignal) {
   return api.get<DunningPreview>(`${BASE}/dunning-notices/preview?invoice_id=${invoiceId}`, signal)
 }
 
+export function testSendDunningNotice(invoiceId: number, to: string) {
+  return api.post<{ sent_to: string }>(`${BASE}/dunning-notices/test-send`, { invoice_id: invoiceId, to })
+}
+
 export interface DunningPause {
   dunning_pause_id: number | null
   invoice_id: number
