@@ -347,7 +347,7 @@ export const en: Record<MessageKey, string> = {
   'manualReceivables.createSub': 'Register a reference by number, payer, and amount.',
   'manualReceivables.import': 'Import CSV',
   'manualReceivables.importSub': 'Bulk-register receivables from a CSV.',
-  'manualReceivables.importColumns': 'CSV header columns: reference_number, client_name, total_cents (optional: recipient_email, due_at, issued_at, currency). Duplicate reference numbers are skipped.',
+  'manualReceivables.importColumns': 'CSV header columns: reference_number, client_name, total_cents (optional: recipient_email, due_at, issued_at, currency). Common Japanese export headers from freee / MoneyForward / Yayoi / Misoca (請求書番号 / 取引先名 / 金額 / 期日, etc.) are auto-recognized, and Shift-JIS files and ¥/comma-formatted amounts are handled. Duplicate reference numbers are skipped.',
   'manualReceivables.importResult': 'Created {created} / skipped {skipped} / errors {errors}',
   'manualReceivables.csvRow': 'CSV row',
   'manualReceivables.referenceNumber': 'Reference number',
