@@ -332,6 +332,8 @@ export const ja = {
   'audit.event.login_succeeded': 'ログイン成功',
   'audit.event.login_failed': 'ログイン失敗',
   'audit.event.clear_settings_updated': '設定変更',
+  'audit.event.mfa_enabled': '二段階認証 有効化',
+  'audit.event.mfa_disabled': '二段階認証 無効化',
 
   // ── Keyboard shortcuts / command palette ──
   'shortcuts.title': 'キーボードショートカット',

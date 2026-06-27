@@ -336,6 +336,8 @@ export const en: Record<MessageKey, string> = {
   'audit.event.login_succeeded': 'Login succeeded',
   'audit.event.login_failed': 'Login failed',
   'audit.event.clear_settings_updated': 'Settings updated',
+  'audit.event.mfa_enabled': 'Two-factor enabled',
+  'audit.event.mfa_disabled': 'Two-factor disabled',
 
   // ── Keyboard shortcuts / command palette ──
   'shortcuts.title': 'Keyboard shortcuts',

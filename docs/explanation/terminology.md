@@ -125,6 +125,8 @@ follows `{entity}_{past-tense-verb}` in lowercase snake_case.
 | `organization_created` | Tenant created | `after` |
 | `organization_deleted` | Tenant deleted | `before` |
 | `clear_settings_updated` | Upstream/dunning/bank-account settings changed | `before` + `after` |
+| `mfa_enabled` | TOTP MFA enabled for the user | `after` |
+| `mfa_disabled` | TOTP MFA disabled for the user | `before` + `after` |
 | `login_succeeded` | Authentication succeeded | `after` |
 | `login_failed` | Authentication rejected | `after` (attempted `email` + `failure_reason`) |
 
@@ -243,6 +245,10 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `invoice-not-eligible-for-dunning` | Invoice is already paid, voided, or has no outstanding balance |
 | `dunning-too-frequent` | Dunning interval not elapsed; includes next-allowed datetime in detail |
 | `credit-exceeds-remaining` | Credit application amount exceeds the remaining credit balance |
+| `totp-invalid-code` | TOTP code wrong, malformed, or replayed |
+| `totp-locked` | TOTP verification locked after too many failures (423) |
+| `totp-not-enabled` | No enabled TOTP enrolment for the action |
+| `totp-already-enabled` | TOTP is already enabled; disable before re-enrolling |
 
 Add new slugs here before using them. Validation `errors[].field` uses
 snake_case paths (e.g. `body.value_date`); `errors[].code` is snake_case (e.g.
@@ -269,6 +275,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | `listClientCredits`, `applyClientCredit` | Client credit |
 | `listManualReceivables`, `getManualReceivableById`, `createManualReceivable`, `updateManualReceivable`, `cancelManualReceivable`, `importManualReceivables` | Manual receivable (ADR 0014) |
 | `listDunningNotices`, `getDunningNoticeById`, `sendDunningNotice`, `previewDunningNotice`, `sendTestDunningNotice` | Dunning |
+| `setupTotp`, `enableTotp`, `getTotpStatus`, `disableTotp` | MFA / TOTP (self-service enrolment) |
 | `listAuditEvents` | Audit trail (admin) |
 
 Extend this list (do not improvise) when adding operations. MCP tool names

@@ -32,6 +32,8 @@ const EVENT_META: Record<AuditEventType, StatusMeta> = {
   login_succeeded:             { v: 'ok',   labelKey: 'audit.event.login_succeeded' },
   login_failed:                { v: 'bad',  labelKey: 'audit.event.login_failed' },
   clear_settings_updated:      { v: 'info', labelKey: 'audit.event.clear_settings_updated' },
+  mfa_enabled:                 { v: 'ok',   labelKey: 'audit.event.mfa_enabled' },
+  mfa_disabled:                { v: 'warn', labelKey: 'audit.event.mfa_disabled' },
 }
 
 const EVENT_TYPES = Object.keys(EVENT_META) as AuditEventType[]

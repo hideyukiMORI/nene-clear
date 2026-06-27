@@ -39,6 +39,8 @@ final readonly class TotpAuthenticator
     }
 
     /**
+     * Verify against an **enabled** enrolment (login, disable).
+     *
      * @throws TotpNotEnabledException when there is no enabled enrolment
      * @throws TotpLockedException     when locked out (code is not checked)
      * @throws TotpInvalidCodeException when the code is wrong or replayed
@@ -50,6 +52,28 @@ final readonly class TotpAuthenticator
             throw new TotpNotEnabledException();
         }
 
+        $this->verifyAgainst($userId, $secret, $code);
+    }
+
+    /**
+     * Verify against a **pending** (set-up but not yet enabled) enrolment — used
+     * to confirm enrolment. Same lockout/replay protection as {@see self::verify}.
+     *
+     * @throws TotpNotEnabledException when there is no enrolment to confirm
+     * @throws TotpLockedException|TotpInvalidCodeException
+     */
+    public function verifyPending(int $userId, string $code): void
+    {
+        $secret = $this->secrets->findByUser($userId);
+        if ($secret === null) {
+            throw new TotpNotEnabledException();
+        }
+
+        $this->verifyAgainst($userId, $secret, $code);
+    }
+
+    private function verifyAgainst(int $userId, TotpSecret $secret, string $code): void
+    {
         $now = $this->clock->now();
         $lockExpired = $secret->lockedUntil !== null && $now >= new DateTimeImmutable($secret->lockedUntil);
         if ($secret->lockedUntil !== null && !$lockExpired) {

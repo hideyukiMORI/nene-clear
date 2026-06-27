@@ -174,6 +174,8 @@ export type AuditEventType =
   | 'login_succeeded'
   | 'login_failed'
   | 'clear_settings_updated'
+  | 'mfa_enabled'
+  | 'mfa_disabled'
 
 export interface AuditEvent {
   audit_event_id: number
