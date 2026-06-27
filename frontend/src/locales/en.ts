@@ -240,6 +240,8 @@ export const en: Record<MessageKey, string> = {
   'settings.accountType.ordinary': 'Ordinary',
   'settings.accountType.current': 'Current',
   'settings.accountNumber': 'Account number',
+  'settings.revealNumber': 'Show',
+  'settings.hideNumber': 'Hide',
   'settings.csvMapping': 'CSV column mapping',
   'settings.csv.dateCol': 'Date col',
   'settings.csv.amountCol': 'Amount col',

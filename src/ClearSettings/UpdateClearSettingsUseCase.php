@@ -104,9 +104,24 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
             'dunning_min_interval_days' => $settings->dunningMinIntervalDays,
             'fiscal_year_end_month' => $settings->fiscalYearEndMonth,
             'bank_account_numbers' => array_map(
-                static fn ($account): string => $account->accountNumber,
+                static fn ($account): string => self::maskAccountNumber($account->accountNumber),
                 $settings->bankAccounts,
             ),
         ];
+    }
+
+    /**
+     * Mask a bank account number for the audit payload: keep only the last four
+     * digits so the trail still shows *which* account changed without persisting
+     * the full number in plaintext in every settings-change event (#192).
+     */
+    private static function maskAccountNumber(string $number): string
+    {
+        $length = strlen($number);
+        if ($length <= 4) {
+            return $number;
+        }
+
+        return str_repeat('*', $length - 4) . substr($number, -4);
     }
 }

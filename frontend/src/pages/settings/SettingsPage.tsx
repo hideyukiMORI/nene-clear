@@ -17,6 +17,15 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   const [dunningInterval, setDunningInterval] = useState(settings.dunning_min_interval_days)
   const [fiscalMonth, setFiscalMonth] = useState<number | null>(settings.fiscal_year_end_month ?? null)
   const [accounts, setAccounts] = useState<BankAccount[]>(settings.bank_accounts)
+  // Account numbers are masked by default; revealing one is an explicit per-row
+  // action so the number isn't shown in plaintext on screen-share / over a
+  // shoulder (#192). True server-side withholding is tracked separately.
+  const [revealedAccounts, setRevealedAccounts] = useState<Set<number>>(new Set())
+  const toggleReveal = (i: number) => setRevealedAccounts(prev => {
+    const next = new Set(prev)
+    if (next.has(i)) { next.delete(i) } else { next.add(i) }
+    return next
+  })
   const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
   const [testing, setTesting] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -127,7 +136,13 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
                   <option value="current">{t('settings.accountType.current')}</option>
                 </select>
               </div>
-              <div className="field" style={{ flex: 1, minWidth: 140 }}><label>{t('settings.accountNumber')}</label><input className="inp mono" value={acc.account_number} onChange={e => updateAccount(i, 'account_number', e.target.value)} /></div>
+              <div className="field" style={{ flex: 1, minWidth: 140 }}>
+                <label>{t('settings.accountNumber')}</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input className="inp mono" style={{ flex: 1, minWidth: 0 }} type={revealedAccounts.has(i) ? 'text' : 'password'} value={acc.account_number} onChange={e => updateAccount(i, 'account_number', e.target.value)} />
+                  <Button variant="ghost" size="sm" onClick={() => toggleReveal(i)}>{t(revealedAccounts.has(i) ? 'settings.hideNumber' : 'settings.revealNumber')}</Button>
+                </div>
+              </div>
             </div>
             <details style={{ marginTop: 12 }}>
               <summary style={{ cursor: 'pointer', fontSize: 12, color: 'var(--navy-500)', fontWeight: 600 }}>{t('settings.csvMapping')}</summary>
