@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listUnmatchedTransactions, listReconciliations,
@@ -97,7 +98,12 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
         {suggestQ.data?.upstream_unavailable && (
           <Notice variant="warn">{t('reconciliation.upstreamUnavailable')}</Notice>
         )}
-        {suggestQ.data?.suggestions.length === 0 && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.noSuggestions')}</p>}
+        {suggestQ.data?.suggestions.length === 0 && (
+          <p className="muted" style={{ fontSize: 12, margin: 0 }}>
+            {t('reconciliation.noSuggestions')}{' '}
+            <Link to="/admin/manual-receivables">{t('reconciliation.noSuggestionsCta')}</Link>
+          </p>
+        )}
         {suggestQ.data?.suggestions.map((s, i) => (
           <div key={`${s.source}-${s.invoice_id ?? s.manual_receivable_id}-${i}`} className="sugg-row">
             <Badge variant={s.source === 'manual' ? 'neut' : 'info'}>{t(s.source === 'manual' ? 'reconciliation.source.manual' : 'reconciliation.source.invoice')}</Badge>

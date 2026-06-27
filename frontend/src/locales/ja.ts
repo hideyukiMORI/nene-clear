@@ -153,6 +153,7 @@ export const ja = {
   'reconciliation.suggestions': 'マッチ候補',
   'reconciliation.searchingSuggestions': '候補を検索中…',
   'reconciliation.noSuggestions': '候補が見つかりませんでした',
+  'reconciliation.noSuggestionsCta': 'NeNe Invoice 未使用の場合は「手入力売掛」で売掛を登録／CSV取込できます →',
   'reconciliation.useSuggestion': '選択',
   'reconciliation.dueLabel': '期限',
   'reconciliation.allocation': '配賦',
