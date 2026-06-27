@@ -25,7 +25,9 @@ ROOT="$(cd "$HERE" && git rev-parse --show-toplevel 2>/dev/null || true)"
 cd "$ROOT" || { printf '❌ repo ルートに移動できません: %s\n' "$ROOT" >&2; exit 1; }
 
 say() { printf '%s\n' "$*"; }
-http_code() { curl -s -o /dev/null -w '%{http_code}' --max-time 4 "$1" 2>/dev/null || echo 000; }
+# curl prints `000` itself when it can't connect, so do NOT add `|| echo 000`
+# (that would emit `000000` and make is_up treat a dead port as up).
+http_code() { local c; c="$(curl -s -o /dev/null -w '%{http_code}' --max-time 4 "$1" 2>/dev/null)"; printf '%s' "${c:-000}"; }
 is_up() { [ "$(http_code "$1")" != "000" ]; }
 
 # --- .env（無ければ example から作る。dev は .env の DB_ADAPTER=sqlite を前提とする） ---
