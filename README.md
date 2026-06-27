@@ -6,7 +6,7 @@
 
 **Payment reconciliation and dunning — self-hosted for Japan SMB.**
 
-**NeNe Clear** is a **separate product** from [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice). It does **not** issue quotes or invoices. It **clears bank deposits against billed receivables** and **sends professional overdue reminders** — on [NENE2](https://github.com/hideyukiMORI/NENE2), shared hosting or Docker.
+**NeNe Clear** is a **separate product** from [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice). It does **not** issue quotes or invoices. It **clears bank deposits against billed receivables** and **sends professional overdue reminders** — on [NENE2](https://github.com/hideyukiMORI/NENE2), shared hosting or Docker. Receivables come from **NeNe Invoice (optional upstream)** or are **entered / CSV-imported directly** ([manual receivables, ADR 0014](./docs/adr/0014-accept-manual-receivables.md)), so Clear runs **standalone** — no NeNe Invoice required.
 
 > **Not upper compatible with `nene-invoice`.** Different domain, different repo, different database. See [ADR 0009](./docs/adr/0009-separate-from-nene-invoice.md).
 
@@ -26,7 +26,7 @@ Operators who need both install **two sibling apps** connected via HTTP.
 - **Compliance** — binding rules for reconciliation and dunning ([compliance doc](./docs/explanation/payment-reconciliation-dunning-compliance.md))
 - **Self-hosted OSS** — MIT; Tier A shared hosting or Tier B Docker/VPS
 - **AI-readable** — OpenAPI + MCP; human confirms, AI proposes
-- **Upstream: NeNe Invoice** — invoice and payment truth via HTTP API, not shared DB
+- **Optional upstream: NeNe Invoice** — when connected, invoice/payment truth via HTTP API (not a shared DB); without it, Clear reconciles and duns directly-entered / CSV-imported receivables ([ADR 0014](./docs/adr/0014-accept-manual-receivables.md))
 
 ## Documentation
 

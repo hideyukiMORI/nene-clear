@@ -59,10 +59,12 @@ sibling applications**.
 
 ## Target operators
 
-**Primary — Japan SMB office manager** already using NeNe Invoice (or any
-billing source that exposes invoice/payment data via future adapters). They
-receive bank CSV weekly, spend hours in Excel matching deposits, and send
-overdue emails manually.
+**Primary — Japan SMB office manager** using NeNe Invoice **or** another billing
+tool (freee / マネーフォワード / 弥生 / Misoca / spreadsheet). Receivables come
+from the NeNe Invoice upstream API when connected, or are entered / CSV-imported
+directly ([manual receivables, ADR 0014](../adr/0014-accept-manual-receivables.md)),
+so Clear runs standalone. They receive bank CSV weekly, spend hours in Excel
+matching deposits, and send overdue emails manually.
 
 **Secondary — Tier B developers** running Invoice + Clear on Docker Compose on
 one VPS — two apps, HTTP between them, no shared database.
@@ -77,6 +79,11 @@ one VPS — two apps, HTTP between them, no shared database.
 > without moving invoice data out of Invoice.
 
 ## Primary use case
+
+Clear works **with or without NeNe Invoice**. With it, step 1 connects the
+upstream; without it, the operator enters or CSV-imports receivables directly
+([manual receivables, ADR 0014](../adr/0014-accept-manual-receivables.md)) and
+skips straight to bank import.
 
 1. Operator configures **NeNe Invoice API** connection in Clear.
 2. Operator imports **bank CSV** into Clear.
