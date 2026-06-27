@@ -27,7 +27,9 @@ final readonly class PreviewDunningNoticeHandler
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $organizationId = AuthContext::organizationId($request) ?? 0;
-        $invoiceId = (int) (($request->getQueryParams()['invoice_id'] ?? 0));
+        $query = $request->getQueryParams();
+        $invoiceId = (int) ($query['invoice_id'] ?? 0);
+        $stage = DunningStage::fromString(is_string($query['stage'] ?? null) ? $query['stage'] : null);
 
         $invoice = $this->invoiceClient->getInvoice($organizationId, $invoiceId);
         $client = $this->invoiceClient->getClient($organizationId, $invoice->clientId);
@@ -35,8 +37,9 @@ final readonly class PreviewDunningNoticeHandler
         return $this->response->create([
             'invoice_number' => $invoice->invoiceNumber,
             'recipient_email' => $client->recipientEmail,
-            'subject' => $this->renderer->subject($invoice->invoiceNumber),
-            'body' => $this->renderer->body($client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents),
+            'stage' => $stage->value,
+            'subject' => $this->renderer->subject($stage, $invoice->invoiceNumber),
+            'body' => $this->renderer->body($stage, $client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents),
             'template_version' => DunningMessageRenderer::TEMPLATE_VERSION,
         ]);
     }

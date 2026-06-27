@@ -11,6 +11,7 @@ final readonly class SendTestDunningInput
         public int $invoiceId,
         public string $to,
         public int $actorUserId,
+        public DunningStage $stage = DunningStage::Initial,
     ) {
     }
 }

@@ -123,9 +123,9 @@ describe('endpoint request construction', () => {
     expect(JSON.parse(calledInit().body!)).toEqual({ reversal_reason: 'operator error' })
   })
 
-  it('sendDunningNotice posts the invoice id', async () => {
+  it('sendDunningNotice posts the invoice id and stage', async () => {
     await sendDunningNotice(123)
     expect(calledUrl()).toBe('/admin/dunning-notices')
-    expect(JSON.parse(calledInit().body!)).toEqual({ invoice_id: 123 })
+    expect(JSON.parse(calledInit().body!)).toEqual({ invoice_id: 123, stage: 'initial' })
   })
 })

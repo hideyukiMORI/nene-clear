@@ -34,6 +34,7 @@ final readonly class SendDunningHandler
             organizationId: $organizationId,
             invoiceId: $invoiceId,
             actorUserId: AuthContext::userId($request),
+            stage: DunningStage::fromString(is_string($body['stage'] ?? null) ? $body['stage'] : null),
         ));
 
         $notice = $this->notices->findById($organizationId, $output->dunningNoticeId)

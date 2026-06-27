@@ -192,6 +192,23 @@ final class DunningHttpTest extends TestCase
         self::assertSame(0, $this->decode($this->get($token, '/admin/dunning-notices'))['total'] ?? null);
     }
 
+    public function test_preview_with_final_stage_uses_the_final_template(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('viewer@acme.example');
+
+        $response = $this->app->handle(
+            $this->psr17->createServerRequest('GET', '/admin/dunning-notices/preview?invoice_id=1&stage=final')
+                ->withHeader('Authorization', 'Bearer ' . $token)
+                ->withQueryParams(['invoice_id' => 1, 'stage' => 'final']),
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decode($response);
+        self::assertSame('final', $body['stage'] ?? null);
+        self::assertStringContainsString('重要なご案内', (string) $body['subject']);
+    }
+
     public function test_test_send_emails_the_operator_without_recording(): void
     {
         $this->addOpenInvoice();

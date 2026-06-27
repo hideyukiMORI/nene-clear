@@ -68,8 +68,8 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         $client = $this->invoiceClient->getClient($input->organizationId, $invoice->clientId);
 
         $nowStr = $this->clock->now()->format('Y-m-d H:i:s');
-        $subject = $this->renderer->subject($invoice->invoiceNumber);
-        $body = $this->renderer->body($client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents);
+        $subject = $this->renderer->subject($input->stage, $invoice->invoiceNumber);
+        $body = $this->renderer->body($input->stage, $client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents);
 
         $notice = new DunningNotice(
             organizationId: $input->organizationId,
