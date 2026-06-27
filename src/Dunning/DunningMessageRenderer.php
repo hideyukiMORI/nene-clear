@@ -21,23 +21,23 @@ final readonly class DunningMessageRenderer
     ) {
     }
 
-    public function subject(string $invoiceNumber): string
+    public function subject(DunningStage $stage, string $invoiceNumber): string
     {
-        return sprintf($this->catalog->get('dunning_email.subject', Locale::Ja), $invoiceNumber);
+        return sprintf($this->catalog->get($this->key($stage, 'subject'), Locale::Ja), $invoiceNumber);
     }
 
-    public function testSubject(string $invoiceNumber): string
+    public function testSubject(DunningStage $stage, string $invoiceNumber): string
     {
-        return $this->catalog->get('dunning_email.test_prefix', Locale::Ja) . $this->subject($invoiceNumber);
+        return $this->catalog->get('dunning_email.test_prefix', Locale::Ja) . $this->subject($stage, $invoiceNumber);
     }
 
-    public function body(string $contactName, string $invoiceNumber, ?string $dueAt, int $outstandingCents): string
+    public function body(DunningStage $stage, string $contactName, string $invoiceNumber, ?string $dueAt, int $outstandingCents): string
     {
         $dueAtLabel = $dueAt ?? '—';
         $amount = number_format((int) ($outstandingCents / 100));
 
         return sprintf(
-            $this->catalog->get('dunning_email.body', Locale::Ja),
+            $this->catalog->get($this->key($stage, 'body'), Locale::Ja),
             $contactName,
             $invoiceNumber,
             $dueAtLabel,
@@ -45,5 +45,13 @@ final readonly class DunningMessageRenderer
             $dueAtLabel,
             $amount,
         );
+    }
+
+    /** Initial keeps the original keys; reminder/final use the staged keys. */
+    private function key(DunningStage $stage, string $part): string
+    {
+        return $stage === DunningStage::Initial
+            ? "dunning_email.$part"
+            : "dunning_email.{$stage->value}.$part";
     }
 }

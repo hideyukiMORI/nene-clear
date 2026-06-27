@@ -131,4 +131,22 @@ return [
         . "Please arrange payment at your earliest convenience.\n\n"
         . 'If you have already made payment, please disregard this notice.',
 
+    // Staged templates (reminder / final). Tone escalates but must not threaten,
+    // coerce, or mislead (scope X10 / ADR 0011). Conservative DRAFT — confirm the
+    // tone with the ADR 0011 reviewer before production use.
+    'dunning_email.reminder.subject' => '[Second notice] Invoice %s — payment outstanding',
+    'dunning_email.reminder.body' => "Dear %s,\n\n"
+        . "Our records show invoice %s (due: %s) is still outstanding.\n\n"
+        . "Outstanding balance: \xC2\xA5%s (as of %s).\n\n"
+        . "Please arrange payment as soon as possible. If payment is difficult, please contact us.\n\n"
+        . "Outstanding: \xC2\xA5%s.\n\n"
+        . 'If you have already paid, please disregard this notice.',
+    'dunning_email.final.subject' => '[Important] Invoice %s — payment required',
+    'dunning_email.final.body' => "Dear %s,\n\n"
+        . "Invoice %s (due: %s) remains unpaid despite previous notices.\n\n"
+        . "Outstanding balance: \xC2\xA5%s (as of %s).\n\n"
+        . "Please make payment, or contact us about payment, at your earliest convenience.\n\n"
+        . "Outstanding: \xC2\xA5%s.\n\n"
+        . 'If you have already paid, please disregard this notice.',
+
 ];

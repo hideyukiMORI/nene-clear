@@ -41,8 +41,8 @@ final readonly class SendTestDunningUseCase
 
         $this->mailer->send(new DunningMailPayload(
             to: $to,
-            subject: $this->renderer->testSubject($invoice->invoiceNumber),
-            body: $this->renderer->body($client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents),
+            subject: $this->renderer->testSubject($input->stage, $invoice->invoiceNumber),
+            body: $this->renderer->body($input->stage, $client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents),
             organizationId: $input->organizationId,
             invoiceId: $input->invoiceId,
             dunningNoticeId: 0,

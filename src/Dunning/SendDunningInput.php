@@ -10,6 +10,7 @@ final readonly class SendDunningInput
         public int $organizationId,
         public int $invoiceId,
         public int $actorUserId,
+        public DunningStage $stage = DunningStage::Initial,
     ) {
     }
 }

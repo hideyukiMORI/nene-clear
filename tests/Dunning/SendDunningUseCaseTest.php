@@ -7,6 +7,7 @@ namespace NeneClear\Tests\Dunning;
 use NeneClear\Audit\AuditRecorder;
 use NeneClear\ClearSettings\ClearSettings;
 use NeneClear\Dunning\DunningMessageRenderer;
+use NeneClear\Dunning\DunningStage;
 use NeneClear\Dunning\DunningTooFrequentException;
 use NeneClear\Dunning\InvoiceAlreadyPaidException;
 use NeneClear\Dunning\SendDunningInput;
@@ -77,6 +78,17 @@ final class SendDunningUseCaseTest extends TestCase
     private function input(int $invoiceId = 1): SendDunningInput
     {
         return new SendDunningInput(organizationId: 7, invoiceId: $invoiceId, actorUserId: 42);
+    }
+
+    public function test_final_stage_uses_the_final_template(): void
+    {
+        $this->addInvoice(1);
+        $this->addClient();
+
+        $this->useCase->execute(new SendDunningInput(organizationId: 7, invoiceId: 1, actorUserId: 42, stage: DunningStage::Final));
+
+        self::assertNotEmpty($this->mailer->sent);
+        self::assertStringContainsString('重要なご案内', $this->mailer->sent[0]->subject);
     }
 
     public function test_happy_path_records_notice_and_logs_mail(): void

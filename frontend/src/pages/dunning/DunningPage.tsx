@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  listDunningNotices, sendDunningNotice, previewDunningNotice, testSendDunningNotice, listUpstreamInvoices,
+  listDunningNotices, sendDunningNotice, previewDunningNotice, testSendDunningNotice, listUpstreamInvoices, type DunningStage,
   listDunningPauses, pauseDunningNotice, resumeDunningNotice, downloadCsv, dunningNoticesExportPath,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
@@ -16,18 +16,19 @@ import { yen, formatDateTime, daysOverdue } from '@/utils/format'
 function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: () => void }) {
   const { t } = useTranslation()
   const qc = useQueryClient()
+  const [stage, setStage] = useState<DunningStage>('initial')
   const mut = useMutation({
-    mutationFn: () => sendDunningNotice(invoice.invoice_id),
+    mutationFn: () => sendDunningNotice(invoice.invoice_id, stage),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['dunning-notices'] }); void qc.invalidateQueries({ queryKey: ['upstream-invoices'] }); onClose() },
   })
   const preview = useQuery({
-    queryKey: ['dunning-preview', invoice.invoice_id],
-    queryFn: ({ signal }) => previewDunningNotice(invoice.invoice_id, signal),
+    queryKey: ['dunning-preview', invoice.invoice_id, stage],
+    queryFn: ({ signal }) => previewDunningNotice(invoice.invoice_id, stage, signal),
   })
   const [testTo, setTestTo] = useState('')
   const [testSent, setTestSent] = useState(false)
   const testMut = useMutation({
-    mutationFn: () => testSendDunningNotice(invoice.invoice_id, testTo),
+    mutationFn: () => testSendDunningNotice(invoice.invoice_id, testTo, stage),
     onSuccess: () => setTestSent(true),
   })
   return (
@@ -38,6 +39,14 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
         <div className="kv-row"><span className="k">{t('table.invoice')}</span><span className="v mono">{invoice.invoice_number}</span></div>
         <div className="kv-row"><span className="k">{t('table.outstanding')}</span><span className="v">{yen(invoice.outstanding_cents)}</span></div>
         <div className="kv-row"><span className="k">{t('table.dueDate')}</span><span className="v" style={{ color: 'var(--bad)' }}>{t('dunning.dueElapsed', { date: invoice.due_at ?? '—', days: daysOverdue(invoice.due_at) })}</span></div>
+      </div>
+      <div className="field" style={{ marginTop: 12 }}>
+        <label>{t('dunning.stageLabel')}</label>
+        <select className="inp" value={stage} onChange={e => setStage(e.target.value as DunningStage)}>
+          <option value="initial">{t('dunning.stage.initial')}</option>
+          <option value="reminder">{t('dunning.stage.reminder')}</option>
+          <option value="final">{t('dunning.stage.final')}</option>
+        </select>
       </div>
       <div className="field" style={{ marginTop: 12 }}>
         <label>{t('dunning.previewLabel')}</label>

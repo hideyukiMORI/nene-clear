@@ -434,24 +434,27 @@ export function listAuditEvents(params: AuditQuery, signal?: AbortSignal) {
   return api.get<ListEnvelope<AuditEvent>>(`${BASE}/audit-events?${q}`, signal)
 }
 
-export function sendDunningNotice(invoiceId: number) {
-  return api.post<DunningNotice>(`${BASE}/dunning-notices`, { invoice_id: invoiceId })
+export type DunningStage = 'initial' | 'reminder' | 'final'
+
+export function sendDunningNotice(invoiceId: number, stage: DunningStage = 'initial') {
+  return api.post<DunningNotice>(`${BASE}/dunning-notices`, { invoice_id: invoiceId, stage })
 }
 
 export interface DunningPreview {
   invoice_number: string
   recipient_email: string
+  stage: string
   subject: string
   body: string
   template_version: string
 }
 
-export function previewDunningNotice(invoiceId: number, signal?: AbortSignal) {
-  return api.get<DunningPreview>(`${BASE}/dunning-notices/preview?invoice_id=${invoiceId}`, signal)
+export function previewDunningNotice(invoiceId: number, stage: DunningStage = 'initial', signal?: AbortSignal) {
+  return api.get<DunningPreview>(`${BASE}/dunning-notices/preview?invoice_id=${invoiceId}&stage=${stage}`, signal)
 }
 
-export function testSendDunningNotice(invoiceId: number, to: string) {
-  return api.post<{ sent_to: string }>(`${BASE}/dunning-notices/test-send`, { invoice_id: invoiceId, to })
+export function testSendDunningNotice(invoiceId: number, to: string, stage: DunningStage = 'initial') {
+  return api.post<{ sent_to: string }>(`${BASE}/dunning-notices/test-send`, { invoice_id: invoiceId, to, stage })
 }
 
 export interface DunningPause {

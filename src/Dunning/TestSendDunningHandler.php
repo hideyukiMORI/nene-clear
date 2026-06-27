@@ -26,6 +26,7 @@ final readonly class TestSendDunningHandler
             invoiceId: (int) ($body['invoice_id'] ?? 0),
             to: is_string($body['to'] ?? null) ? $body['to'] : '',
             actorUserId: AuthContext::userId($request),
+            stage: DunningStage::fromString(is_string($body['stage'] ?? null) ? $body['stage'] : null),
         ));
 
         return $this->response->create(['sent_to' => $sentTo]);
