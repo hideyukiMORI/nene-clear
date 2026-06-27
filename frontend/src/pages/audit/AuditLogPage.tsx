@@ -18,6 +18,9 @@ const EVENT_META: Record<AuditEventType, StatusMeta> = {
   reconciliation_confirmed:    { v: 'ok',   labelKey: 'audit.event.reconciliation_confirmed' },
   reconciliation_reversed:     { v: 'bad',  labelKey: 'audit.event.reconciliation_reversed' },
   client_credit_applied:       { v: 'ok',   labelKey: 'audit.event.client_credit_applied' },
+  manual_receivable_created:   { v: 'ok',   labelKey: 'audit.event.manual_receivable_created' },
+  manual_receivable_updated:   { v: 'info', labelKey: 'audit.event.manual_receivable_updated' },
+  manual_receivable_cancelled: { v: 'bad',  labelKey: 'audit.event.manual_receivable_cancelled' },
   dunning_sent:                { v: 'info', labelKey: 'audit.event.dunning_sent' },
   dunning_paused:              { v: 'warn', labelKey: 'audit.event.dunning_paused' },
   dunning_resumed:             { v: 'ok',   labelKey: 'audit.event.dunning_resumed' },
@@ -28,6 +31,7 @@ const EVENT_META: Record<AuditEventType, StatusMeta> = {
   organization_deleted:        { v: 'bad',  labelKey: 'audit.event.organization_deleted' },
   login_succeeded:             { v: 'ok',   labelKey: 'audit.event.login_succeeded' },
   login_failed:                { v: 'bad',  labelKey: 'audit.event.login_failed' },
+  clear_settings_updated:      { v: 'info', labelKey: 'audit.event.clear_settings_updated' },
 }
 
 const EVENT_TYPES = Object.keys(EVENT_META) as AuditEventType[]
