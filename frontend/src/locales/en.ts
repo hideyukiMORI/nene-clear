@@ -157,6 +157,7 @@ export const en: Record<MessageKey, string> = {
   'reconciliation.suggestions': 'Match candidates',
   'reconciliation.searchingSuggestions': 'Searching candidates…',
   'reconciliation.noSuggestions': 'No candidates found',
+  'reconciliation.noSuggestionsCta': 'Not using NeNe Invoice? Register receivables under Manual receivables (entry / CSV import) →',
   'reconciliation.useSuggestion': 'Use',
   'reconciliation.dueLabel': 'Due',
   'reconciliation.allocation': 'Allocation',
