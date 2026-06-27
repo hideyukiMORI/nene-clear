@@ -35,6 +35,7 @@ final class BankImportHttpTest extends TestCase
         $kit = DatabaseTestKit::sqlite($this->dbPath);
         $query = $kit->queryExecutor;
         SchemaFixture::createUsers($query);
+        SchemaFixture::createTotpTables($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createBankAccounts($query);
         SchemaFixture::createBankImportBatches($query);

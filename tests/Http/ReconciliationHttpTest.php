@@ -43,6 +43,8 @@ final class ReconciliationHttpTest extends TestCase
         $query = $kit->queryExecutor;
 
         SchemaFixture::createUsers($query);
+
+        SchemaFixture::createTotpTables($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createBankAccounts($query);
         SchemaFixture::createBankImportBatches($query);

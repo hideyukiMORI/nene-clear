@@ -69,6 +69,24 @@ final class TotpEnrollmentHttpTest extends TestCase
         return $token;
     }
 
+    private function login(string $email, string $password): ResponseInterface
+    {
+        $request = $this->psr17->createServerRequest('POST', '/admin/auth/login')
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($this->psr17->createStream((string) json_encode(['email' => $email, 'password' => $password])));
+
+        return $this->app->handle($request);
+    }
+
+    private function loginMfa(string $mfaToken, string $code): ResponseInterface
+    {
+        $request = $this->psr17->createServerRequest('POST', '/admin/auth/login/mfa')
+            ->withHeader('Content-Type', 'application/json')
+            ->withBody($this->psr17->createStream((string) json_encode(['mfa_token' => $mfaToken, 'code' => $code])));
+
+        return $this->app->handle($request);
+    }
+
     /** @param array<string, mixed> $body */
     private function req(string $method, string $path, string $token, array $body = []): ResponseInterface
     {
@@ -130,5 +148,36 @@ final class TotpEnrollmentHttpTest extends TestCase
     public function test_totp_routes_require_authentication(): void
     {
         self::assertSame(401, $this->req('GET', '/admin/auth/totp', 'not-a-valid-token')->getStatusCode());
+    }
+
+    public function test_login_requires_a_second_factor_after_enrolment(): void
+    {
+        // Enrol first — the plain token() works because TOTP is not enabled yet.
+        $token = $this->token();
+        $secret = (string) $this->decode($this->req('POST', '/admin/auth/totp/setup', $token))['secret'];
+        $this->req('POST', '/admin/auth/totp/enable', $token, ['code' => $this->gen->computeCode($secret, $this->gen->currentTimeStep())]);
+
+        // A correct password now yields a challenge, not a session token, and leaks no user details.
+        $challenge = $this->decode($this->login('admin@acme.example', self::PASSWORD));
+        self::assertTrue($challenge['mfa_required'] ?? false);
+        self::assertArrayHasKey('mfa_token', $challenge);
+        self::assertArrayNotHasKey('token', $challenge);
+        $mfaToken = (string) $challenge['mfa_token'];
+
+        // Wrong second factor → 401.
+        self::assertSame(401, $this->loginMfa($mfaToken, 'xxxxxx')->getStatusCode());
+
+        // Correct second factor (a fresh, unused step) → a usable session token.
+        $verify = $this->loginMfa($mfaToken, $this->gen->computeCode($secret, $this->gen->currentTimeStep() + 1));
+        self::assertSame(200, $verify->getStatusCode());
+        $session = (string) $this->decode($verify)['token'];
+        self::assertNotSame('', $session);
+        self::assertSame(200, $this->req('GET', '/admin/auth/totp', $session)->getStatusCode());
+
+        // A challenge token can never itself be used as a session bearer token.
+        self::assertSame(401, $this->req('GET', '/admin/auth/totp', $mfaToken)->getStatusCode());
+
+        // A garbage challenge token → 401.
+        self::assertSame(401, $this->loginMfa('not-a-real-token', '123456')->getStatusCode());
     }
 }

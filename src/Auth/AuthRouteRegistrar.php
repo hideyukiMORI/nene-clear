@@ -13,6 +13,7 @@ final readonly class AuthRouteRegistrar
     public function __construct(
         private LoginHandler $loginHandler,
         private GetCurrentUserHandler $currentUserHandler,
+        private VerifyMfaLoginHandler $verifyMfaLoginHandler,
     ) {
     }
 
@@ -20,8 +21,10 @@ final readonly class AuthRouteRegistrar
     {
         $loginHandler = $this->loginHandler;
         $currentUserHandler = $this->currentUserHandler;
+        $verifyMfaLoginHandler = $this->verifyMfaLoginHandler;
 
         $router->post('/admin/auth/login', static fn (ServerRequestInterface $r): ResponseInterface => $loginHandler->handle($r));
+        $router->post('/admin/auth/login/mfa', static fn (ServerRequestInterface $r): ResponseInterface => $verifyMfaLoginHandler->handle($r));
         $router->get('/admin/auth/me', static fn (ServerRequestInterface $r): ResponseInterface => $currentUserHandler->handle($r));
     }
 }

@@ -34,6 +34,7 @@ final class OrganizationCrudHttpTest extends TestCase
         $this->query = $kit->queryExecutor;
         SchemaFixture::createOrganizations($this->query);
         SchemaFixture::createUsers($this->query);
+        SchemaFixture::createTotpTables($this->query);
         SchemaFixture::createLoginAttempts($this->query);
         SchemaFixture::createAuditEvents($this->query);
 

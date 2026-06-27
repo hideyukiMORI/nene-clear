@@ -17,6 +17,7 @@ use Nene2\Http\RuntimeApplicationFactory;
 use Nene2\Http\UtcClock;
 use NeneClear\Auth\AuthServiceProvider;
 use NeneClear\Auth\JwtTokenService;
+use NeneClear\Auth\MfaChallengeTokens;
 use NeneClear\Auth\TokenIssuerInterface;
 use NeneClear\Dunning\DunningMailerInterface;
 use NeneClear\Dunning\LogOnlyDunningMailer;
@@ -174,6 +175,7 @@ final class ApplicationFactory
             ->set(JwtTokenService::class, static fn (ContainerInterface $c): JwtTokenService => new JwtTokenService($jwtSecret))
             ->set(TokenIssuerInterface::class, static fn (ContainerInterface $c): TokenIssuerInterface => ServiceResolver::get($c, JwtTokenService::class))
             ->set(TokenVerifierInterface::class, static fn (ContainerInterface $c): TokenVerifierInterface => ServiceResolver::get($c, JwtTokenService::class))
+            ->set(MfaChallengeTokens::class, static fn (ContainerInterface $c): MfaChallengeTokens => new MfaChallengeTokens($jwtSecret))
             ->set(InvoiceUpstreamClientInterface::class, static fn (ContainerInterface $c): InvoiceUpstreamClientInterface => $invoiceClient)
             ->set(DunningMailerInterface::class, static fn (ContainerInterface $c): DunningMailerInterface => $mailer)
             ->set(InvitationMailerInterface::class, static fn (ContainerInterface $c): InvitationMailerInterface => $invitationMailer)

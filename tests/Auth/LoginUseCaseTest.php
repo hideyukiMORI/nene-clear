@@ -9,8 +9,14 @@ use NeneClear\Auth\InvalidCredentialsException;
 use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginInput;
 use NeneClear\Auth\LoginUseCase;
+use NeneClear\Auth\MfaChallengeTokens;
 use NeneClear\Auth\Role;
+use NeneClear\Mfa\TotpAuthenticator;
+use NeneClear\Mfa\TotpGenerator;
+use NeneClear\Mfa\TotpSecret;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Mfa\InMemoryTotpSecretRepository;
+use NeneClear\Tests\Mfa\InMemoryUsedTotpStepRepository;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\Tests\User\InMemoryUserRepository;
 use NeneClear\User\User;
@@ -26,13 +32,20 @@ final class LoginUseCaseTest extends TestCase
         $this->audit = new InMemoryAuditEventRepository();
     }
 
-    private function useCase(InMemoryUserRepository $users): LoginUseCase
+    private function useCase(InMemoryUserRepository $users, ?TotpAuthenticator $mfa = null): LoginUseCase
     {
         return new LoginUseCase(
             $users,
             new JwtTokenService(secret: 'test-secret-test-secret-32chars!'),
             new AuditRecorder($this->audit),
             new FixedClock('2026-06-01T10:00:00+00:00'),
+            $mfa ?? new TotpAuthenticator(
+                new InMemoryTotpSecretRepository(),
+                new InMemoryUsedTotpStepRepository(),
+                new TotpGenerator(),
+                new FixedClock('2026-06-01T10:00:00+00:00'),
+            ),
+            new MfaChallengeTokens('test-secret-test-secret-32chars!'),
         );
     }
 
@@ -56,6 +69,31 @@ final class LoginUseCaseTest extends TestCase
         self::assertSame('admin@acme.example', $output->email);
         self::assertSame('admin', $output->role);
         self::assertSame(7, $output->organizationId);
+    }
+
+    public function test_login_with_mfa_enabled_returns_a_challenge_not_a_token(): void
+    {
+        $users = new InMemoryUserRepository([$this->activeUser('correct horse')]);
+        $found = $users->findByEmail('admin@acme.example');
+        self::assertNotNull($found);
+        $userId = (int) $found->id;
+
+        $secrets = new InMemoryTotpSecretRepository();
+        $secrets->byUser[$userId] = new TotpSecret($userId, (new TotpGenerator())->generateSecret(), isEnabled: true);
+        $mfa = new TotpAuthenticator(
+            $secrets,
+            new InMemoryUsedTotpStepRepository(),
+            new TotpGenerator(),
+            new FixedClock('2026-06-01T10:00:00+00:00'),
+        );
+
+        $output = $this->useCase($users, $mfa)->execute(new LoginInput('admin@acme.example', 'correct horse'));
+
+        self::assertTrue($output->mfaRequired);
+        self::assertNotNull($output->mfaToken);
+        self::assertNull($output->token);
+        // login_succeeded is deferred until the second factor is verified.
+        self::assertCount(0, $this->audit->events);
     }
 
     public function test_wrong_password_is_rejected(): void

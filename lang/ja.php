@@ -118,6 +118,8 @@ return [
     'problem.totp-not-enabled.detail' => 'この操作には有効な二段階認証（TOTP）の設定が必要です。',
     'problem.totp-already-enabled.title'  => '二段階認証は既に有効です',
     'problem.totp-already-enabled.detail' => '二段階認証は既に有効化されています。設定し直す場合は一度無効化してください。',
+    'problem.mfa-challenge-invalid.title'  => '二段階認証の確認に失敗しました',
+    'problem.mfa-challenge-invalid.detail' => '二段階認証の確認セッションが無効か、有効期限が切れています。最初からログインし直してください。',
 
     'problem.credit-exceeds-remaining.title'  => '前受金残高超過',
     'problem.credit-exceeds-remaining.detail' => '適用額が前受金の残高を超えています。',
