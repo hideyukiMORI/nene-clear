@@ -56,7 +56,7 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, DunningMailerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
-                    ServiceResolver::get($c, MessageCatalog::class),
+                    new DunningMessageRenderer(ServiceResolver::get($c, MessageCatalog::class)),
                     static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
                 ),
             )
@@ -84,6 +84,11 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                     new SendDunningHandler(
                         ServiceResolver::get($c, SendDunningUseCaseInterface::class),
                         ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
+                        ServiceResolver::get($c, JsonResponseFactory::class),
+                    ),
+                    new PreviewDunningNoticeHandler(
+                        ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
+                        new DunningMessageRenderer(ServiceResolver::get($c, MessageCatalog::class)),
                         ServiceResolver::get($c, JsonResponseFactory::class),
                     ),
                     new ListDunningNoticesHandler(

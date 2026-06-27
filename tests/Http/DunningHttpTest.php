@@ -170,6 +170,28 @@ final class DunningHttpTest extends TestCase
         self::assertSame(0, $this->decode($response)['total'] ?? null);
     }
 
+    public function test_preview_renders_subject_and_body_without_recording(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('viewer@acme.example');
+
+        $response = $this->app->handle(
+            $this->psr17->createServerRequest('GET', '/admin/dunning-notices/preview?invoice_id=1')
+                ->withHeader('Authorization', 'Bearer ' . $token)
+                ->withQueryParams(['invoice_id' => 1]),
+        );
+
+        self::assertSame(200, $response->getStatusCode());
+        $body = $this->decode($response);
+        self::assertSame('INV-001', $body['invoice_number']);
+        self::assertSame('accounts@acme.example', $body['recipient_email']);
+        self::assertStringContainsString('INV-001', (string) $body['subject']);
+        self::assertStringContainsString('ACME Corp', (string) $body['body']);
+
+        // Preview is read-only: no dunning notice is recorded.
+        self::assertSame(0, $this->decode($this->get($token, '/admin/dunning-notices'))['total'] ?? null);
+    }
+
     public function test_list_and_get_by_id(): void
     {
         $this->addOpenInvoice();

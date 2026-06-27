@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  listDunningNotices, sendDunningNotice, listUpstreamInvoices,
+  listDunningNotices, sendDunningNotice, previewDunningNotice, listUpstreamInvoices,
   listDunningPauses, pauseDunningNotice, resumeDunningNotice, downloadCsv, dunningNoticesExportPath,
 } from '@/api/endpoints'
 import type { UpstreamInvoice } from '@/types'
@@ -20,6 +20,10 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
     mutationFn: () => sendDunningNotice(invoice.invoice_id),
     onSuccess: () => { void qc.invalidateQueries({ queryKey: ['dunning-notices'] }); void qc.invalidateQueries({ queryKey: ['upstream-invoices'] }); onClose() },
   })
+  const preview = useQuery({
+    queryKey: ['dunning-preview', invoice.invoice_id],
+    queryFn: ({ signal }) => previewDunningNotice(invoice.invoice_id, signal),
+  })
   return (
     <Modal open onClose={onClose} title={t('dunning.confirmSend')} size="narrow"
       footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? t('common.sending') : t('dunning.send')}</Button></>}
@@ -28,6 +32,18 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
         <div className="kv-row"><span className="k">{t('table.invoice')}</span><span className="v mono">{invoice.invoice_number}</span></div>
         <div className="kv-row"><span className="k">{t('table.outstanding')}</span><span className="v">{yen(invoice.outstanding_cents)}</span></div>
         <div className="kv-row"><span className="k">{t('table.dueDate')}</span><span className="v" style={{ color: 'var(--bad)' }}>{t('dunning.dueElapsed', { date: invoice.due_at ?? '—', days: daysOverdue(invoice.due_at) })}</span></div>
+      </div>
+      <div className="field" style={{ marginTop: 12 }}>
+        <label>{t('dunning.previewLabel')}</label>
+        {preview.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('dunning.previewLoading')}</p>}
+        {preview.isError && <Notice variant="warn">{t('dunning.previewUnavailable')}</Notice>}
+        {preview.data && (
+          <div style={{ border: '1px solid var(--border, #e2e8f0)', borderRadius: 6, padding: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--muted, #64748b)' }}>{t('dunning.previewTo')}: {preview.data.recipient_email}</div>
+            <div style={{ fontWeight: 600, marginTop: 4 }}>{preview.data.subject}</div>
+            <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, margin: '8px 0 0' }}>{preview.data.body}</pre>
+          </div>
+        )}
       </div>
       <Notice variant="info">{t('dunning.sendInfo')}</Notice>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}

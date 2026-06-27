@@ -12,14 +12,11 @@ use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
 use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
-use NeneClear\I18n\Locale;
-use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 
 final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
 {
     private const int DEFAULT_MIN_INTERVAL_DAYS = 7;
-    private const string TEMPLATE_VERSION = '1.0';
 
     /**
      * @param DatabaseQueryExecutorInterface $reader executor for pre-transaction reads
@@ -37,7 +34,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         private DunningMailerInterface $mailer,
         private Closure $auditRecorder,
         private ClockInterface $clock,
-        private MessageCatalog $catalog,
+        private DunningMessageRenderer $renderer,
         private ?Closure $pauses = null,
     ) {
     }
@@ -71,20 +68,8 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
         $client = $this->invoiceClient->getClient($input->organizationId, $invoice->clientId);
 
         $nowStr = $this->clock->now()->format('Y-m-d H:i:s');
-        $subject = sprintf(
-            $this->catalog->get('dunning_email.subject', Locale::Ja),
-            $invoice->invoiceNumber,
-        );
-        $dueAtLabel = $invoice->dueAt ?? '—';
-        $body = sprintf(
-            $this->catalog->get('dunning_email.body', Locale::Ja),
-            $client->contactName,
-            $invoice->invoiceNumber,
-            $dueAtLabel,
-            number_format((int) ($invoice->outstandingCents / 100)),
-            $dueAtLabel,
-            number_format((int) ($invoice->outstandingCents / 100)),
-        );
+        $subject = $this->renderer->subject($invoice->invoiceNumber);
+        $body = $this->renderer->body($client->contactName, $invoice->invoiceNumber, $invoice->dueAt, $invoice->outstandingCents);
 
         $notice = new DunningNotice(
             organizationId: $input->organizationId,
@@ -95,7 +80,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             outstandingCents: $invoice->outstandingCents,
             dueAt: $invoice->dueAt,
             channel: $this->mailer->channel(),
-            templateVersion: self::TEMPLATE_VERSION,
+            templateVersion: DunningMessageRenderer::TEMPLATE_VERSION,
             sentBy: $input->actorUserId,
             sentAt: $nowStr,
         );
@@ -131,7 +116,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
                             'recipient_email' => $client->recipientEmail,
                             'outstanding_at_send_cents' => $invoice->outstandingCents,
                             'channel' => $this->mailer->channel(),
-                            'template_version' => self::TEMPLATE_VERSION,
+                            'template_version' => DunningMessageRenderer::TEMPLATE_VERSION,
                         ],
                     ],
                 );
