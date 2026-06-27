@@ -1,6 +1,6 @@
 # Current Work
 
-Last updated: 2026-06-27
+Last updated: 2026-06-28
 
 ## Status
 
@@ -77,15 +77,21 @@ Shipped: ✅ UI polish (#196, PR #200) · ✅ account-number masking (#192, PR #
 (#194, PR #205/#208/#209/#210) · ✅ encryption-at-rest (#195, PR #207) ·
 ✅ retract Tier A (#193, PR #206).
 
-**The one remaining milestone item — MFA (#195):**
+> **Full project handoff:** [`handoff-2026-06-28.md`](handoff-2026-06-28.md)
+> (snapshot, MFA detail, risks, prioritized TODO).
 
-1. **Standalone TOTP MFA** — auth is federated (Suite = IdP) and MFA/TOTP is a
-   NENE2-generic capability (nene-suite#341, ADR 0025), so Clear builds standalone
-   TOTP now (NENE2 `totp-authentication` recipe). enroll = user / enforce =
-   deployment operator policy; mandatory recovery codes; secret encrypted via the
-   #207 `Encryptor`; break-glass via an audited CLI. Sequence:
-   (a) TOTP foundation (no login-flow change) → (b) login-flow integration →
-   (c) enroll UI + admin/CLI reset.
+**MFA (#195) — backend complete; frontend + CLI remain.** Standalone TOTP, auth
+decoupled from federation (Suite = IdP; nene-suite#341, ADR 0025; NENE2
+`totp-authentication` recipe). Secret encrypted via the #207 `Encryptor`; recovery
+codes hashed.
+
+1. ✅ **Slice 1 — TOTP foundation** (PR #213): RFC 6238 generator, encrypted
+   storage, lockout + replay, recovery codes.
+2. ✅ **Slice 2 — enrolment endpoints** (PR #216): setup / enable / status / disable.
+3. ✅ **Slice 3 — login integration** (PR #217): password → challenge → verify → token.
+4. ⬜ **Slice 4 — frontend + break-glass CLI**: enrol (QR + recovery codes) and
+   login-challenge screens; an audited CLI to disable a user's MFA for lockout
+   recovery. **Do not enable MFA on a sole-admin deployment until the CLI exists.**
 
 **Minor follow-ups** (open on their issues): real dashboard KPI-sub aggregates +
 term tooltips (#196); server-side account-number withholding (#192); column-mapping
