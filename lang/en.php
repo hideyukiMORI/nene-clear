@@ -113,6 +113,15 @@ return [
     'problem.dunning-paused.title'  => 'Dunning Paused',
     'problem.dunning-paused.detail' => 'Dunning is paused for this invoice. Resume dunning before sending.',
 
+    'problem.totp-invalid-code.title'  => 'Invalid Verification Code',
+    'problem.totp-invalid-code.detail' => 'The verification code is invalid or has already been used. Try again with the current code from your authenticator app.',
+    'problem.totp-locked.title'  => 'Verification Temporarily Locked',
+    'problem.totp-locked.detail' => 'Too many incorrect codes. Verification is temporarily locked; please try again later.',
+    'problem.totp-not-enabled.title'  => 'Two-Factor Not Set Up',
+    'problem.totp-not-enabled.detail' => 'This action requires an active two-factor (TOTP) enrolment.',
+    'problem.totp-already-enabled.title'  => 'Two-Factor Already Enabled',
+    'problem.totp-already-enabled.detail' => 'Two-factor authentication is already enabled. Disable it first to set it up again.',
+
     'problem.credit-exceeds-remaining.title'  => 'Credit Exceeds Remaining Balance',
     'problem.credit-exceeds-remaining.detail' => 'The requested amount exceeds the remaining credit balance.',
 

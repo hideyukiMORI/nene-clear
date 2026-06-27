@@ -36,6 +36,12 @@ use NeneClear\InvoiceUpstream\InvoiceUpstreamServiceProvider;
 use NeneClear\InvoiceUpstream\UpstreamClientNotFoundExceptionHandler;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundExceptionHandler;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceUnavailableExceptionHandler;
+use NeneClear\Mfa\MfaRouteRegistrar;
+use NeneClear\Mfa\MfaServiceProvider;
+use NeneClear\Mfa\TotpAlreadyEnabledExceptionHandler;
+use NeneClear\Mfa\TotpInvalidCodeExceptionHandler;
+use NeneClear\Mfa\TotpLockedExceptionHandler;
+use NeneClear\Mfa\TotpNotEnabledExceptionHandler;
 use NeneClear\Organization\OrganizationAlreadyExistsExceptionHandler;
 use NeneClear\Organization\OrganizationNotFoundExceptionHandler;
 use NeneClear\Organization\OrganizationRouteRegistrar;
@@ -89,7 +95,8 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
             ->addProvider(new ReconciliationServiceProvider())
             ->addProvider(new InvoiceUpstreamServiceProvider())
             ->addProvider(new ExportServiceProvider())
-            ->addProvider(new DunningServiceProvider());
+            ->addProvider(new DunningServiceProvider())
+            ->addProvider(new MfaServiceProvider());
 
         $builder
             ->set(self::ROUTE_REGISTRARS, static function (ContainerInterface $c): array {
@@ -107,6 +114,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, InvoiceUpstreamRouteRegistrar::class),
                     ServiceResolver::get($c, ExportRouteRegistrar::class),
                     ServiceResolver::get($c, DunningRouteRegistrar::class),
+                    ServiceResolver::get($c, MfaRouteRegistrar::class),
                 ];
 
                 return $registrars;
@@ -146,6 +154,10 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, DunningTooFrequentExceptionHandler::class),
                     ServiceResolver::get($c, DunningNoticeNotFoundExceptionHandler::class),
                     ServiceResolver::get($c, DunningPausedExceptionHandler::class),
+                    ServiceResolver::get($c, TotpInvalidCodeExceptionHandler::class),
+                    ServiceResolver::get($c, TotpLockedExceptionHandler::class),
+                    ServiceResolver::get($c, TotpNotEnabledExceptionHandler::class),
+                    ServiceResolver::get($c, TotpAlreadyEnabledExceptionHandler::class),
                 ];
 
                 return $handlers;

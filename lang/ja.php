@@ -110,6 +110,15 @@ return [
     'problem.dunning-paused.title'  => '督促一時停止中',
     'problem.dunning-paused.detail' => 'この請求書の督促は一時停止されています。督促を再開してから送信してください。',
 
+    'problem.totp-invalid-code.title'  => '認証コードが正しくありません',
+    'problem.totp-invalid-code.detail' => '入力された認証コードは無効か、既に使用済みです。認証アプリの最新コードで再度お試しください。',
+    'problem.totp-locked.title'  => '認証が一時ロックされています',
+    'problem.totp-locked.detail' => '認証コードの誤りが続いたため、一時的にロックされています。しばらくしてから再度お試しください。',
+    'problem.totp-not-enabled.title'  => '二段階認証が未設定です',
+    'problem.totp-not-enabled.detail' => 'この操作には有効な二段階認証（TOTP）の設定が必要です。',
+    'problem.totp-already-enabled.title'  => '二段階認証は既に有効です',
+    'problem.totp-already-enabled.detail' => '二段階認証は既に有効化されています。設定し直す場合は一度無効化してください。',
+
     'problem.credit-exceeds-remaining.title'  => '前受金残高超過',
     'problem.credit-exceeds-remaining.detail' => '適用額が前受金の残高を超えています。',
 
