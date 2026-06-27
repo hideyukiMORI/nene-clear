@@ -37,7 +37,15 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
         $offset = 0;
 
         for ($page = 0; $page < self::MAX_PAGES; ++$page) {
-            $query = http_build_query(['status' => $statuses, 'limit' => self::PAGE_LIMIT, 'offset' => $offset]);
+            // Invoice's read filter expects `status` as a comma-joined string
+            // (status=issued,partially_paid), parsed via explode(','). A PHP array
+            // (status[]=…) is not a string there, so the filter is silently dropped
+            // and drafts/paid leak in — send the comma form.
+            $params = ['limit' => self::PAGE_LIMIT, 'offset' => $offset];
+            if ($statuses !== []) {
+                $params['status'] = implode(',', $statuses);
+            }
+            $query = http_build_query($params);
             $body = $this->request('GET', '/api/invoices?' . $query);
             $items = (array) ($body['items'] ?? []);
 
@@ -101,12 +109,19 @@ final readonly class InvoiceUpstreamHttpClient implements InvoiceUpstreamClientI
             resourceId: $invoiceId,
         );
 
+        // Invoice returns RecordPaymentResult: the payment is nested under
+        // `payment` (alongside `invoice` + `total_paid_cents`), per service-api.yaml.
+        $payment = $body['payment'] ?? [];
+        if (!is_array($payment)) {
+            $payment = [];
+        }
+
         return new InvoicePaymentCreated(
-            paymentId: (int) $body['payment_id'],
+            paymentId: (int) ($payment['payment_id'] ?? 0),
             invoiceId: $invoiceId,
-            amountCents: (int) $body['amount_cents'],
-            paidAt: (string) $body['paid_at'],
-            externalReference: (string) $body['external_reference'],
+            amountCents: (int) ($payment['amount_cents'] ?? 0),
+            paidAt: (string) ($payment['paid_at'] ?? ''),
+            externalReference: (string) ($payment['external_reference'] ?? ''),
         );
     }
 
