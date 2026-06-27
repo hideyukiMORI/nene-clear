@@ -6,7 +6,9 @@ into shipped changes that remove the **structural adoption blockers** —
 without touching the validated core (immutable audit trail, safety-railed
 dunning, human-confirmed reconciliation, first-class partial/overpayment, UI).
 
-**Status: in progress (started 2026-06-27)**
+**Status: nearly complete (2026-06-27)** — every item shipped except the MFA
+half of #195, which is now unblocked (auth is federated; see below) and in
+progress.
 
 The review's verdict was adopt 0 / consider 3 / pass 7: features and UI are
 validated, but distribution / connectivity / operations block adoption. This
@@ -16,25 +18,27 @@ milestone is the engineering-ownable slice of the fix.
 
 Execution order (quick, high-confidence first; P0 levers interleaved):
 
-- [ ] **UI polish (#196)** — localize all audit-log event-type labels (no raw
-      slugs like `clear_settings_updated`), resolve the dashboard
-      "残高合計取得中" state, neutralize B2B-only sample data, add tooltips for
-      bookkeeping terms (annotate, do not rename).
-- [ ] **Mask bank account number (#192)** — mask `account_number` in the UI;
-      reveal-on-demand; record the reveal as a (newly registered) audit event.
-- [ ] **Standalone receivables, first-class (#191, P0)** — surface the existing
-      `importManualReceivables` path in onboarding/empty states; add per-tool
-      CSV import presets (freee / MF / 弥生 / MISOCA); reposition copy so Clear
-      reads as usable without NeNe Invoice.
-- [ ] **Dunning hardening (#194)** — staged templates (initial/reminder/final),
-      body preview + test send, deliverability (SPF/DKIM/DMARC) guidance,
-      do-not-send / contact-only mode. Stay within the self-collection boundary
-      (ADR 0011).
-- [ ] **Security (#195)** — MFA (TOTP) for admin login; encryption-at-rest for
-      sensitive fields (implement and/or document).
-- [ ] **Retract Tier A recommendation (#193)** — stop recommending shared
-      hosting for this data; recommend Tier B (VPS+Docker) + install-service /
-      managed. **Product-owner sign-off required** (intersects roadmap Phase 3).
+- [x] **UI polish (#196)** — audit-log label i18n + dashboard subtitle fixed
+      (PR #200). Remaining on #196: real KPI-sub aggregates, term tooltips.
+- [x] **Mask bank account number (#192)** — UI masking + reveal toggle +
+      audit-snapshot masking (PR #201). Server-side withholding + an audited
+      reveal endpoint are deferred to the encryption track (noted on #192).
+- [x] **Standalone receivables, first-class (#191, P0)** — discoverability CTA
+      (PR #202), alias-aware CSV import incl. Shift-JIS / ¥ amounts (PR #203),
+      repositioning copy (PR #204). Optional column-mapping UI remains (on #191).
+- [x] **Dunning hardening (#194)** — deliverability guide (PR #205), body preview
+      (PR #208), test send (PR #209), staged templates (PR #210). "Do-not-send"
+      is covered by the existing dunning pause; minor follow-ups remain (stage
+      persistence, ADR 0011 tone review).
+- [~] **Security (#195)** — encryption-at-rest for the bank account number done
+      (libsodium, PR #207). **MFA is unblocked**: auth is federated (Suite = IdP)
+      and MFA/TOTP is a NENE2-generic capability — see nene-suite#341 / ADR 0025.
+      Clear now builds **standalone TOTP MFA** (NENE2 `totp-authentication`
+      recipe; enroll = user / enforce = deployment operator policy; mandatory
+      recovery codes; secret encrypted via the #207 Encryptor; break-glass via an
+      audited CLI). **In progress.**
+- [x] **Retract Tier A recommendation (#193)** — done (PR #206); roadmap Phase 3
+      reframed to "Distribution (managed / install-service)".
 
 ## Out of scope (business / owner, tracked in the review doc — not this milestone)
 
