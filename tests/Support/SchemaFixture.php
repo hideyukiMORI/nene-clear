@@ -288,4 +288,37 @@ final class SchemaFixture
             )'
         );
     }
+
+    public static function createTotpTables(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE totp_secrets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL UNIQUE,
+                secret TEXT NOT NULL,
+                is_enabled INTEGER NOT NULL DEFAULT 0,
+                failed_attempts INTEGER NOT NULL DEFAULT 0,
+                locked_until TEXT,
+                created_at TEXT NOT NULL
+            )'
+        );
+        $query->execute(
+            'CREATE TABLE used_totp_steps (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                time_step INTEGER NOT NULL,
+                used_at TEXT NOT NULL,
+                UNIQUE (user_id, time_step)
+            )'
+        );
+        $query->execute(
+            'CREATE TABLE recovery_codes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                code_hash TEXT NOT NULL,
+                used_at TEXT,
+                created_at TEXT NOT NULL
+            )'
+        );
+    }
 }
