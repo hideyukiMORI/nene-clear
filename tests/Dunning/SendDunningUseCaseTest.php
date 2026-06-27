@@ -6,6 +6,7 @@ namespace NeneClear\Tests\Dunning;
 
 use NeneClear\Audit\AuditRecorder;
 use NeneClear\ClearSettings\ClearSettings;
+use NeneClear\Dunning\DunningMessageRenderer;
 use NeneClear\Dunning\DunningTooFrequentException;
 use NeneClear\Dunning\InvoiceAlreadyPaidException;
 use NeneClear\Dunning\SendDunningInput;
@@ -46,7 +47,7 @@ final class SendDunningUseCaseTest extends TestCase
             $this->mailer,
             fn () => new AuditRecorder($this->audit),
             new FixedClock('2026-05-31T09:00:00+00:00'),
-            new MessageCatalog(dirname(__DIR__, 2) . '/lang'),
+            new DunningMessageRenderer(new MessageCatalog(dirname(__DIR__, 2) . '/lang')),
         );
     }
 

@@ -438,6 +438,18 @@ export function sendDunningNotice(invoiceId: number) {
   return api.post<DunningNotice>(`${BASE}/dunning-notices`, { invoice_id: invoiceId })
 }
 
+export interface DunningPreview {
+  invoice_number: string
+  recipient_email: string
+  subject: string
+  body: string
+  template_version: string
+}
+
+export function previewDunningNotice(invoiceId: number, signal?: AbortSignal) {
+  return api.get<DunningPreview>(`${BASE}/dunning-notices/preview?invoice_id=${invoiceId}`, signal)
+}
+
 export interface DunningPause {
   dunning_pause_id: number | null
   invoice_id: number
