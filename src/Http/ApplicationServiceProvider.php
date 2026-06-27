@@ -11,6 +11,7 @@ use NeneClear\Audit\AuditServiceProvider;
 use NeneClear\Auth\AuthRouteRegistrar;
 use NeneClear\Auth\AuthServiceProvider;
 use NeneClear\Auth\InvalidCredentialsExceptionHandler;
+use NeneClear\Auth\MfaChallengeInvalidExceptionHandler;
 use NeneClear\Auth\TooManyLoginAttemptsExceptionHandler;
 use NeneClear\BankImport\BankAccountNotFoundExceptionHandler;
 use NeneClear\BankImport\BankImportBatchAlreadyReversedExceptionHandler;
@@ -124,6 +125,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                 $handlers = [
                     ServiceResolver::get($c, InvalidCredentialsExceptionHandler::class),
                     ServiceResolver::get($c, TooManyLoginAttemptsExceptionHandler::class),
+                    ServiceResolver::get($c, MfaChallengeInvalidExceptionHandler::class),
                     ServiceResolver::get($c, OrganizationNotFoundExceptionHandler::class),
                     ServiceResolver::get($c, OrganizationAlreadyExistsExceptionHandler::class),
                     ServiceResolver::get($c, UserNotFoundExceptionHandler::class),

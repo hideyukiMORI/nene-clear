@@ -7,15 +7,22 @@ namespace NeneClear\Auth;
 use Nene2\Auth\BearerTokenMiddleware;
 use Nene2\Auth\TokenVerifierInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
+use NeneClear\Audit\AuditRecorder;
 use NeneClear\Audit\AuditRecorderInterface;
+use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
+use NeneClear\Mfa\PdoRecoveryCodeRepository;
+use NeneClear\Mfa\RecoveryCodeRepositoryInterface;
+use NeneClear\Mfa\RecoveryCodeService;
+use NeneClear\Mfa\TotpAuthenticator;
 use NeneClear\User\UserRepositoryInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -37,6 +44,8 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
      */
     private const array PUBLIC_PATHS = [
         '/', '/health', '/machine/health', '/admin/auth/login',
+        // Second leg of MFA login — the user still has no session at this point.
+        '/admin/auth/login/mfa',
         // Invitee has no session yet; the invitation token is the credential.
         '/admin/auth/invitation', '/admin/auth/invitation/accept',
     ];
@@ -58,6 +67,23 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, TokenIssuerInterface::class),
                     ServiceResolver::get($c, AuditRecorderInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
+                    ServiceResolver::get($c, TotpAuthenticator::class),
+                    ServiceResolver::get($c, MfaChallengeTokens::class),
+                ),
+            )
+            ->set(
+                VerifyMfaLoginUseCase::class,
+                static fn (ContainerInterface $c): VerifyMfaLoginUseCase => new VerifyMfaLoginUseCase(
+                    ServiceResolver::get($c, MfaChallengeTokens::class),
+                    ServiceResolver::get($c, UserRepositoryInterface::class),
+                    ServiceResolver::get($c, TotpAuthenticator::class),
+                    ServiceResolver::get($c, RecoveryCodeService::class),
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    ServiceResolver::get($c, TokenIssuerInterface::class),
+                    ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $ex): RecoveryCodeRepositoryInterface => new PdoRecoveryCodeRepository($ex),
+                    static fn (DatabaseQueryExecutorInterface $ex): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($ex)),
+                    ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(
@@ -74,6 +100,10 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                         ServiceResolver::get($c, LocalizedProblemDetailsFactory::class),
                         ServiceResolver::get($c, ClearSettingsRepositoryInterface::class),
                     ),
+                    new VerifyMfaLoginHandler(
+                        ServiceResolver::get($c, VerifyMfaLoginUseCase::class),
+                        ServiceResolver::get($c, JsonResponseFactory::class),
+                    ),
                 ),
             )
             ->set(
@@ -85,6 +115,12 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
             ->set(
                 TooManyLoginAttemptsExceptionHandler::class,
                 static fn (ContainerInterface $c): TooManyLoginAttemptsExceptionHandler => new TooManyLoginAttemptsExceptionHandler(
+                    ServiceResolver::get($c, LocalizedProblemDetailsFactory::class),
+                ),
+            )
+            ->set(
+                MfaChallengeInvalidExceptionHandler::class,
+                static fn (ContainerInterface $c): MfaChallengeInvalidExceptionHandler => new MfaChallengeInvalidExceptionHandler(
                     ServiceResolver::get($c, LocalizedProblemDetailsFactory::class),
                 ),
             )

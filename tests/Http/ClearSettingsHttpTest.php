@@ -34,6 +34,8 @@ final class ClearSettingsHttpTest extends TestCase
         $query = $kit->queryExecutor;
 
         SchemaFixture::createUsers($query);
+
+        SchemaFixture::createTotpTables($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createBankAccounts($query);
         SchemaFixture::createClearSettings($query);

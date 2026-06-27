@@ -31,6 +31,7 @@ final class AuditHttpTest extends TestCase
         $kit = DatabaseTestKit::sqlite($this->dbPath);
         $query = $kit->queryExecutor;
         SchemaFixture::createUsers($query);
+        SchemaFixture::createTotpTables($query);
         SchemaFixture::createLoginAttempts($query);
         SchemaFixture::createAuditEvents($query);
 

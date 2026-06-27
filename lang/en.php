@@ -121,6 +121,8 @@ return [
     'problem.totp-not-enabled.detail' => 'This action requires an active two-factor (TOTP) enrolment.',
     'problem.totp-already-enabled.title'  => 'Two-Factor Already Enabled',
     'problem.totp-already-enabled.detail' => 'Two-factor authentication is already enabled. Disable it first to set it up again.',
+    'problem.mfa-challenge-invalid.title'  => 'Two-Factor Challenge Invalid',
+    'problem.mfa-challenge-invalid.detail' => 'The two-factor challenge is invalid or has expired. Please sign in again.',
 
     'problem.credit-exceeds-remaining.title'  => 'Credit Exceeds Remaining Balance',
     'problem.credit-exceeds-remaining.detail' => 'The requested amount exceeds the remaining credit balance.',

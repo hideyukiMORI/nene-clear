@@ -33,6 +33,7 @@ final class AuthHttpTest extends TestCase
         $kit = DatabaseTestKit::sqlite($this->dbPath);
         $this->query = $kit->queryExecutor;
         SchemaFixture::createUsers($this->query);
+        SchemaFixture::createTotpTables($this->query);
         SchemaFixture::createLoginAttempts($this->query);
         SchemaFixture::createAuditEvents($this->query);
         SchemaFixture::createClearSettings($this->query);

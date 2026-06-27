@@ -218,6 +218,7 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `unauthorized` | Missing or invalid bearer token (framework `BearerTokenMiddleware`) |
 | `invalid-credentials` | Login failed — wrong email or password |
 | `too-many-login-attempts` | Login throttled — too many failed attempts (HTTP 429) |
+| `mfa-challenge-invalid` | MFA challenge token missing, malformed, or expired (HTTP 401) |
 | `insufficient-capability` | Authenticated but lacks required capability |
 | `role-not-assignable` | Caller may not assign the requested role (e.g. org-admin assigning superadmin) |
 | `organization-not-resolved` | Tenant could not be resolved for the request |
@@ -264,7 +265,7 @@ match between OpenAPI, route registration, and `docs/mcp/tools.json`.
 | operationId | Resource |
 | --- | --- |
 | `getHealth` | System |
-| `login`, `getCurrentUser`, `getInvitation`, `acceptInvitation` | Auth |
+| `login`, `verifyMfaLogin`, `getCurrentUser`, `getInvitation`, `acceptInvitation` | Auth |
 | `listOrganizations`, `getOrganizationById`, `createOrganization`, `deleteOrganization` | Organization (superadmin) |
 | `listUsers`, `getUserById`, `createUser`, `updateUser`, `deleteUser` | User (admin) |
 | `getClearSettings`, `updateClearSettings`, `testUpstreamConnection` | Clear settings (admin) |

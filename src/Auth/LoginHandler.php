@@ -56,6 +56,16 @@ final readonly class LoginHandler
 
         $this->throttle?->clear($identifier);
 
+        // Password accepted but the user has TOTP enabled: return a challenge
+        // instead of a session token. No user details are exposed until the
+        // second factor is verified (see /admin/auth/login/mfa).
+        if ($output->mfaRequired) {
+            return $this->response->create([
+                'mfa_required' => true,
+                'mfa_token' => $output->mfaToken,
+            ]);
+        }
+
         return $this->response->create([
             'token' => $output->token,
             'user' => [

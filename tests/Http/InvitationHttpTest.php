@@ -37,6 +37,8 @@ final class InvitationHttpTest extends TestCase
         $this->query = $kit->queryExecutor;
 
         SchemaFixture::createUsers($this->query);
+
+        SchemaFixture::createTotpTables($this->query);
         SchemaFixture::createLoginAttempts($this->query);
         SchemaFixture::createUserInvitations($this->query);
         SchemaFixture::createAuditEvents($this->query);
