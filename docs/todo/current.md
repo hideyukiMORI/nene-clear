@@ -109,6 +109,13 @@ Business/owner levers (not code; see review doc): managed/SaaS supply, pricing
 
 ## Recently completed
 
+- **MFA (TOTP) backend** (slices 1–3, PR #213 / #216 / #217): RFC 6238 generator,
+  encrypted secret + hashed recovery codes, lockout + replay, self-service
+  enrolment endpoints, and a login challenge for enrolled users. Frontend +
+  break-glass CLI remain (slice 4 of #195).
+- **Adoption Readiness milestone** (#191 / #192 / #193 / #194 / #196 + encryption
+  half of #195): PR #200–#210 — see
+  [`../milestones/2026-06-adoption-readiness.md`](../milestones/2026-06-adoption-readiness.md).
 - 2026-06 adoption review (10-persona simulation): findings doc
   [`../explanation/adoption-review-2026-06.md`](../explanation/adoption-review-2026-06.md)
   (#190) + follow-up issues #191–#196, scheduled in the Adoption Readiness milestone.

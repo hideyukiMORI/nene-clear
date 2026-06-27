@@ -6,9 +6,9 @@ into shipped changes that remove the **structural adoption blockers** —
 without touching the validated core (immutable audit trail, safety-railed
 dunning, human-confirmed reconciliation, first-class partial/overpayment, UI).
 
-**Status: nearly complete (2026-06-27)** — every item shipped except the MFA
-half of #195, which is now unblocked (auth is federated; see below) and in
-progress.
+**Status: nearly complete (2026-06-28)** — every item shipped; the MFA backend
+of #195 is now complete too (slices 1–3), leaving only the MFA frontend +
+break-glass CLI (slice 4) as follow-up.
 
 The review's verdict was adopt 0 / consider 3 / pass 7: features and UI are
 validated, but distribution / connectivity / operations block adoption. This
@@ -30,13 +30,12 @@ Execution order (quick, high-confidence first; P0 levers interleaved):
       (PR #208), test send (PR #209), staged templates (PR #210). "Do-not-send"
       is covered by the existing dunning pause; minor follow-ups remain (stage
       persistence, ADR 0011 tone review).
-- [~] **Security (#195)** — encryption-at-rest for the bank account number done
-      (libsodium, PR #207). **MFA is unblocked**: auth is federated (Suite = IdP)
-      and MFA/TOTP is a NENE2-generic capability — see nene-suite#341 / ADR 0025.
-      Clear now builds **standalone TOTP MFA** (NENE2 `totp-authentication`
-      recipe; enroll = user / enforce = deployment operator policy; mandatory
-      recovery codes; secret encrypted via the #207 Encryptor; break-glass via an
-      audited CLI). **In progress.**
+- [x] **Security (#195)** — encryption-at-rest for the bank account number
+      (libsodium, PR #207) **and MFA backend complete**: standalone TOTP, auth
+      decoupled from federation (nene-suite#341 / ADR 0025). Foundation (PR #213),
+      enrolment endpoints (PR #216), login challenge for enrolled users (PR #217).
+      **Remaining (slice 4):** frontend enrol + login-challenge screens and an
+      audited break-glass CLI for lockout recovery.
 - [x] **Retract Tier A recommendation (#193)** — done (PR #206); roadmap Phase 3
       reframed to "Distribution (managed / install-service)".
 

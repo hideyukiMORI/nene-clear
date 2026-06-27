@@ -52,9 +52,12 @@ Operators who need both install **two sibling apps** connected via HTTP.
 - React + TypeScript admin UI (`frontend/`), Japanese + English.
 - Invoice upstream HTTP client + contract tests (activate by setting
   `NENE_INVOICE_API_BASE_URL` / `NENE_INVOICE_BEARER_TOKEN`).
-- Tests: 236 backend (PHPUnit, 6 skipped; PHPStan level 8), 27 frontend (Vitest),
+- Tests: 336 backend (PHPUnit, 6 skipped; PHPStan level 8), 46 frontend (Vitest),
   43 browser E2E (Playwright). CI runs all three on every push/PR.
-- Login throttling; security assessment in
+- Login throttling, optional **TOTP two-factor auth** (per-user enrolment +
+  recovery codes; API-complete, enrolment UI in progress), and
+  **encryption-at-rest** for the bank account number (libsodium, opt-in key);
+  security assessment in
   [`docs/security/assessment-2026-05.md`](./docs/security/assessment-2026-05.md).
 
 Next: Phase 3 (distribution — managed / install-service on VPS + Docker) and
