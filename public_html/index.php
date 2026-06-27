@@ -104,6 +104,9 @@ $application = ApplicationFactory::create(
     // Absolute base for invitation e-mail links. Same-origin in production; the
     // dev frontend (Vite) runs on a separate port, so default to it locally.
     appBaseUrl: $env('NENE_CLEAR_APP_URL', 'http://localhost:5383'),
+    // Optional encryption-at-rest key (base64 of 32 bytes). When unset, sensitive
+    // fields are stored as-is; when set, they are encrypted on write (#192/#195).
+    encryptionKey: $env('NENE_CLEAR_ENCRYPTION_KEY'),
 );
 
 $psr17 = new Psr17Factory();

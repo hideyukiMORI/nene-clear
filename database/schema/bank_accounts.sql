@@ -6,7 +6,7 @@ CREATE TABLE bank_accounts (
     bank_name                VARCHAR(255) NOT NULL,
     bank_branch              VARCHAR(255) NOT NULL DEFAULT '',
     account_type             VARCHAR(32) NOT NULL,
-    account_number           VARCHAR(64) NOT NULL,
+    account_number           VARCHAR(255) NOT NULL,  -- holds encryption-at-rest ciphertext (enc:v1:…) as well as plaintext
     csv_encoding             VARCHAR(32) NOT NULL DEFAULT 'utf8',
     csv_date_format          VARCHAR(32) NOT NULL,
     csv_date_column          INT NOT NULL,

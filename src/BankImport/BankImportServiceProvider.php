@@ -15,6 +15,7 @@ use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
+use NeneClear\Security\Encryptor;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -30,6 +31,7 @@ final readonly class BankImportServiceProvider implements ServiceProviderInterfa
                 BankAccountRepositoryInterface::class,
                 static fn (ContainerInterface $c): BankAccountRepositoryInterface => new PdoBankAccountRepository(
                     ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    ServiceResolver::get($c, Encryptor::class),
                 ),
             )
             ->set(
@@ -48,7 +50,7 @@ final readonly class BankImportServiceProvider implements ServiceProviderInterfa
                 ImportBankCsvUseCaseInterface::class,
                 static fn (ContainerInterface $c): ImportBankCsvUseCaseInterface => new ImportBankCsvUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
-                    static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx, ServiceResolver::get($c, Encryptor::class)),
                     static fn (DatabaseQueryExecutorInterface $tx): BankImportBatchRepositoryInterface => new PdoBankImportBatchRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),

@@ -26,6 +26,7 @@ use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamHttpClient;
+use NeneClear\Security\Encryptor;
 use NeneClear\User\InvitationLinkBuilder;
 use NeneClear\User\InvitationMailerInterface;
 use NeneClear\User\LogOnlyInvitationMailer;
@@ -75,6 +76,7 @@ final class ApplicationFactory
         string $invoiceBearerToken = '',
         string $appBaseUrl = '',
         ?InvitationMailerInterface $invitationMailer = null,
+        string $encryptionKey = '',
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
 
@@ -103,6 +105,7 @@ final class ApplicationFactory
             self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
             $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
             $appBaseUrl,
+            $encryptionKey,
         );
 
         $routeRegistrars = $container->get(ApplicationServiceProvider::ROUTE_REGISTRARS);
@@ -140,6 +143,7 @@ final class ApplicationFactory
         DunningMailerInterface $mailer,
         InvitationMailerInterface $invitationMailer,
         string $appBaseUrl,
+        string $encryptionKey,
     ): ContainerInterface {
         $langDir = dirname(__DIR__, 2) . '/lang';
 
@@ -174,6 +178,7 @@ final class ApplicationFactory
             ->set(DunningMailerInterface::class, static fn (ContainerInterface $c): DunningMailerInterface => $mailer)
             ->set(InvitationMailerInterface::class, static fn (ContainerInterface $c): InvitationMailerInterface => $invitationMailer)
             ->set(InvitationLinkBuilder::class, static fn (ContainerInterface $c): InvitationLinkBuilder => new InvitationLinkBuilder($appBaseUrl))
+            ->set(Encryptor::class, static fn (ContainerInterface $c): Encryptor => new Encryptor($encryptionKey !== '' ? $encryptionKey : null))
             ->addProvider(new ApplicationServiceProvider())
             ->build();
     }

@@ -20,6 +20,7 @@ use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Security\Encryptor;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -50,7 +51,7 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): DunningNoticeRepositoryInterface => new PdoDunningNoticeRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx)),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx, ServiceResolver::get($c, Encryptor::class))),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                     ServiceResolver::get($c, DunningMailerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
