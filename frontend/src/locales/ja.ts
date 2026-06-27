@@ -236,6 +236,8 @@ export const ja = {
   'settings.accountType.ordinary': '普通',
   'settings.accountType.current': '当座',
   'settings.accountNumber': '口座番号',
+  'settings.revealNumber': '表示',
+  'settings.hideNumber': '隠す',
   'settings.csvMapping': 'CSVマッピング設定',
   'settings.csv.dateCol': '日付列',
   'settings.csv.amountCol': '金額列',
