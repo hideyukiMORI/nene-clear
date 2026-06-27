@@ -17,6 +17,7 @@ use NeneClear\BankImport\BankAccountRepositoryInterface;
 use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Security\Encryptor;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -39,8 +40,8 @@ final readonly class ClearSettingsServiceProvider implements ServiceProviderInte
                 UpdateClearSettingsUseCaseInterface::class,
                 static fn (ContainerInterface $c): UpdateClearSettingsUseCaseInterface => new UpdateClearSettingsUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
-                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx)),
-                    static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx, ServiceResolver::get($c, Encryptor::class))),
+                    static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx, ServiceResolver::get($c, Encryptor::class)),
                     static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),

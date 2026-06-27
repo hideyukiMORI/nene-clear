@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\BankImport;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
+use NeneClear\Security\Encryptor;
 
 final readonly class PdoBankAccountRepository implements BankAccountRepositoryInterface
 {
@@ -13,6 +14,7 @@ final readonly class PdoBankAccountRepository implements BankAccountRepositoryIn
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
+        private ?Encryptor $encryptor = null,
     ) {
     }
 
@@ -54,7 +56,7 @@ final readonly class PdoBankAccountRepository implements BankAccountRepositoryIn
                 $account->bankName,
                 $account->bankBranch,
                 $account->accountType->value,
-                $account->accountNumber,
+                $this->encryptor?->encrypt($account->accountNumber) ?? $account->accountNumber,
                 $account->csvEncoding,
                 $account->csvDateFormat,
                 $account->csvDateColumn,
@@ -75,7 +77,7 @@ final readonly class PdoBankAccountRepository implements BankAccountRepositoryIn
             bankName: (string) $row['bank_name'],
             bankBranch: (string) $row['bank_branch'],
             accountType: AccountType::from((string) $row['account_type']),
-            accountNumber: (string) $row['account_number'],
+            accountNumber: $this->encryptor?->decrypt((string) $row['account_number']) ?? (string) $row['account_number'],
             csvEncoding: (string) $row['csv_encoding'],
             csvDateFormat: (string) $row['csv_date_format'],
             csvDateColumn: (int) $row['csv_date_column'],
