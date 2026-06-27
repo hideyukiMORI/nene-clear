@@ -98,7 +98,7 @@ export const ja = {
   'dashboard.title': 'ダッシュボード',
   'dashboard.subtitle': '入金消込・債権状況の概況',
   'dashboard.kpi.unmatched': '未消込の取引',
-  'dashboard.kpi.unmatchedSub': '残高合計取得中',
+  'dashboard.kpi.unmatchedSub': '消込待ち',
   'dashboard.kpi.overdue': '延滞請求（督促対象）',
   'dashboard.kpi.overdueSub': '最長 31 日経過',
   'dashboard.kpi.cleared': '今月の消込済',
@@ -303,6 +303,9 @@ export const ja = {
   'audit.event.reconciliation_confirmed': '消込確定',
   'audit.event.reconciliation_reversed': '消込取消',
   'audit.event.client_credit_applied': '前受金充当',
+  'audit.event.manual_receivable_created': '手入力売掛 作成',
+  'audit.event.manual_receivable_updated': '手入力売掛 更新',
+  'audit.event.manual_receivable_cancelled': '手入力売掛 取消',
   'audit.event.dunning_sent': '督促送信',
   'audit.event.dunning_paused': '督促停止',
   'audit.event.dunning_resumed': '督促再開',
@@ -313,6 +316,7 @@ export const ja = {
   'audit.event.organization_deleted': '組織削除',
   'audit.event.login_succeeded': 'ログイン成功',
   'audit.event.login_failed': 'ログイン失敗',
+  'audit.event.clear_settings_updated': '設定変更',
 
   // ── Keyboard shortcuts / command palette ──
   'shortcuts.title': 'キーボードショートカット',

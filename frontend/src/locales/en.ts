@@ -102,7 +102,7 @@ export const en: Record<MessageKey, string> = {
   'dashboard.title': 'Dashboard',
   'dashboard.subtitle': 'Overview of reconciliation and receivables',
   'dashboard.kpi.unmatched': 'Unmatched transactions',
-  'dashboard.kpi.unmatchedSub': 'Total balance loading',
+  'dashboard.kpi.unmatchedSub': 'Awaiting reconciliation',
   'dashboard.kpi.overdue': 'Overdue invoices (dunning)',
   'dashboard.kpi.overdueSub': 'Up to 31 days overdue',
   'dashboard.kpi.cleared': 'Cleared this month',
@@ -307,6 +307,9 @@ export const en: Record<MessageKey, string> = {
   'audit.event.reconciliation_confirmed': 'Match confirmed',
   'audit.event.reconciliation_reversed': 'Match reversed',
   'audit.event.client_credit_applied': 'Client credit applied',
+  'audit.event.manual_receivable_created': 'Receivable created',
+  'audit.event.manual_receivable_updated': 'Receivable updated',
+  'audit.event.manual_receivable_cancelled': 'Receivable cancelled',
   'audit.event.dunning_sent': 'Dunning sent',
   'audit.event.dunning_paused': 'Dunning paused',
   'audit.event.dunning_resumed': 'Dunning resumed',
@@ -317,6 +320,7 @@ export const en: Record<MessageKey, string> = {
   'audit.event.organization_deleted': 'Organization deleted',
   'audit.event.login_succeeded': 'Login succeeded',
   'audit.event.login_failed': 'Login failed',
+  'audit.event.clear_settings_updated': 'Settings updated',
 
   // ── Keyboard shortcuts / command palette ──
   'shortcuts.title': 'Keyboard shortcuts',

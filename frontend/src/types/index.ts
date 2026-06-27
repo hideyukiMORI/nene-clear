@@ -160,6 +160,9 @@ export type AuditEventType =
   | 'reconciliation_confirmed'
   | 'reconciliation_reversed'
   | 'client_credit_applied'
+  | 'manual_receivable_created'
+  | 'manual_receivable_updated'
+  | 'manual_receivable_cancelled'
   | 'dunning_sent'
   | 'dunning_paused'
   | 'dunning_resumed'
@@ -170,6 +173,7 @@ export type AuditEventType =
   | 'organization_deleted'
   | 'login_succeeded'
   | 'login_failed'
+  | 'clear_settings_updated'
 
 export interface AuditEvent {
   audit_event_id: number
