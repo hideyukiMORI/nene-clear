@@ -192,6 +192,39 @@ final class DunningHttpTest extends TestCase
         self::assertSame(0, $this->decode($this->get($token, '/admin/dunning-notices'))['total'] ?? null);
     }
 
+    public function test_test_send_emails_the_operator_without_recording(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('member@acme.example');
+
+        $response = $this->post($token, '/admin/dunning-notices/test-send', ['invoice_id' => 1, 'to' => 'me@operator.example']);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('me@operator.example', $this->decode($response)['sent_to'] ?? null);
+        // A test send records no dunning notice.
+        self::assertSame(0, $this->decode($this->get($token, '/admin/dunning-notices'))['total'] ?? null);
+    }
+
+    public function test_test_send_rejects_an_invalid_recipient(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('member@acme.example');
+
+        $response = $this->post($token, '/admin/dunning-notices/test-send', ['invoice_id' => 1, 'to' => '']);
+
+        self::assertSame(422, $response->getStatusCode());
+    }
+
+    public function test_viewer_cannot_test_send(): void
+    {
+        $this->addOpenInvoice();
+        $token = $this->tokenFor('viewer@acme.example');
+
+        $response = $this->post($token, '/admin/dunning-notices/test-send', ['invoice_id' => 1, 'to' => 'me@operator.example']);
+
+        self::assertSame(403, $response->getStatusCode());
+    }
+
     public function test_list_and_get_by_id(): void
     {
         $this->addOpenInvoice();

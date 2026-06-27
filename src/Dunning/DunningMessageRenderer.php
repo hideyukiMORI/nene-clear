@@ -26,6 +26,11 @@ final readonly class DunningMessageRenderer
         return sprintf($this->catalog->get('dunning_email.subject', Locale::Ja), $invoiceNumber);
     }
 
+    public function testSubject(string $invoiceNumber): string
+    {
+        return $this->catalog->get('dunning_email.test_prefix', Locale::Ja) . $this->subject($invoiceNumber);
+    }
+
     public function body(string $contactName, string $invoiceNumber, ?string $dueAt, int $outstandingCents): string
     {
         $dueAtLabel = $dueAt ?? '—';

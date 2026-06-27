@@ -18,6 +18,7 @@ final readonly class DunningRouteRegistrar
         private PauseDunningHandler $pauseHandler,
         private ResumeDunningHandler $resumeHandler,
         private ListDunningPausesHandler $listPausesHandler,
+        private TestSendDunningHandler $testSendHandler,
     ) {
     }
 
@@ -30,8 +31,10 @@ final readonly class DunningRouteRegistrar
         $pauseHandler = $this->pauseHandler;
         $resumeHandler = $this->resumeHandler;
         $listPausesHandler = $this->listPausesHandler;
+        $testSendHandler = $this->testSendHandler;
 
         $router->post('/admin/dunning-notices', static fn (ServerRequestInterface $r): ResponseInterface => $sendHandler->handle($r));
+        $router->post('/admin/dunning-notices/test-send', static fn (ServerRequestInterface $r): ResponseInterface => $testSendHandler->handle($r));
         $router->get('/admin/dunning-notices', static fn (ServerRequestInterface $r): ResponseInterface => $listHandler->handle($r));
         // Registered before /{id} so "preview" is not captured as an id.
         $router->get('/admin/dunning-notices/preview', static fn (ServerRequestInterface $r): ResponseInterface => $previewHandler->handle($r));

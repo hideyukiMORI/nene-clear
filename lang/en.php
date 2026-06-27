@@ -122,6 +122,7 @@ return [
     // sprintf args: (invoice_number)
     // -------------------------------------------------------------------------
     'dunning_email.subject' => '[Reminder] Invoice %s is overdue',
+    'dunning_email.test_prefix' => '[Test] ',
 
     // sprintf args: (contact_name, invoice_number, due_at, outstanding, due_at, outstanding)
     'dunning_email.body' => "Dear %s,\n\n"
