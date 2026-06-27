@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![PHP 8.4](https://img.shields.io/badge/PHP-8.4-777BB4?logo=php)](https://www.php.net/)
-[![Private](https://img.shields.io/badge/status-private-red)]()
+[![Public](https://img.shields.io/badge/status-public-brightgreen)]()
 
 **Payment reconciliation and dunning — self-hosted for Japan SMB.**
 

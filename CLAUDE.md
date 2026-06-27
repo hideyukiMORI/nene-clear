@@ -1,6 +1,6 @@
 # CLAUDE.md — NeNe Clear
 
-Private repo for **NeNe Clear** — **入金消込・督促管理 only**.
+Public repo for **NeNe Clear** — **入金消込・督促管理 only**.
 
 **Not** `nene-invoice`. Invoice = 見積・請求・入金管理. **Separate domain. Not upper compatible.**
 

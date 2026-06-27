@@ -1,6 +1,6 @@
 # Agent / AI Guide
 
-Entry point for AI agents working on **NeNe Clear** (private repo `nene-clear`).
+Entry point for AI agents working on **NeNe Clear** (public repo `nene-clear`).
 
 ## Domain split (read first)
 

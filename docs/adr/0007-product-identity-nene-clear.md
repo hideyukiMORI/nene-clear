@@ -21,7 +21,7 @@ Strategy lives in
 - **Tagline (EN):** Clear deposits. Collect with confidence.
 - **Tagline (JA, marketing):** 入金を消込し、未収を見える化する。
 - **Domain:** Payment reconciliation & dunning — **not** quote or invoice issuance
-- **Repository:** `hideyukiMORI/nene-clear` (private until public launch)
+- **Repository:** `hideyukiMORI/nene-clear` (public)
 - **PHP namespace:** `NeneClear\`
 - **Problem Details base:** `https://nene-clear.dev/problems/`
 
