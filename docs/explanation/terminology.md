@@ -40,7 +40,7 @@ See: [`glossary.md`](./glossary.md), [`../development/naming-conventions.md`](..
 | Concept | Canonical | Notes |
 | --- | --- | --- |
 | Public product name | **NeNe Clear** | ADR 0007 |
-| Repository slug | `nene-clear` | Private until public launch |
+| Repository slug | `nene-clear` | Public |
 | PHP namespace | `NeneClear\` | ADR 0007 |
 | Problem Details base | `https://nene-clear.dev/problems/` | Until branding domain Issue |
 

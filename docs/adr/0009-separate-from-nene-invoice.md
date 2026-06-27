@@ -12,7 +12,7 @@ often conflate because both touch "money after billing":
 | Product | Repository | Domain |
 | --- | --- | --- |
 | **NeNe Invoice** (working title) | `nene-invoice` (public) | **Quote, invoice, and payment management** — 見積・請求・入金管理 |
-| **NeNe Clear** | `nene-clear` (private) | **Payment reconciliation and dunning** — 入金消込・督促管理 |
+| **NeNe Clear** | `nene-clear` (public) | **Payment reconciliation and dunning** — 入金消込・督促管理 |
 
 These are **not** the same product, **not** upper/lower layers of one stack,
 and **not** a migration path (`invoice` → `clear`). They are **separate
