@@ -4,4 +4,5 @@ parameters:
     - src
     - tests
     - public_html
+    - tools
   tmpDir: .phpstan.cache
