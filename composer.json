@@ -8,13 +8,14 @@
         "ext-curl": "*",
         "firebase/php-jwt": "^7",
         "hideyukimori/nene2": "@dev",
+        "robmorgan/phinx": "^0.16.11",
+        "symfony/console": "^8.0",
         "symfony/mailer": "^8.1"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.95",
         "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^13.1",
-        "robmorgan/phinx": "^0.16.11",
         "symfony/yaml": "^8.0"
     },
     "autoload": {
@@ -52,6 +53,7 @@
         "migrations:status": "phinx status -c phinx.php",
         "migrations:migrate": "phinx migrate -c phinx.php",
         "migrations:rollback": "phinx rollback -c phinx.php",
+        "release:zip": "bash tools/build-release.sh",
         "check": [
             "@test",
             "@analyse",
