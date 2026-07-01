@@ -156,6 +156,14 @@ composer install
 composer migrations:migrate
 ```
 
+次に、最初の組織と管理者ユーザーを作成します（初回のみ）。これで管理 UI にログインできるようになります。
+
+```bash
+php tools/create-admin.php --org-name "サンプル商事" --org-slug sample --email admin@example.com
+```
+
+パスワードは対話式（非表示）で入力します（`--password` や環境変数 `ADMIN_PASSWORD` でも指定可）。`--org-slug` は英数字の名前なら自動導出されますが、日本語名などでは明示してください。`--help` で全オプションを確認できます。
+
 開発用サーバーを起動します。
 
 ```bash
@@ -170,7 +178,7 @@ curl http://localhost:8384/health
 
 API 仕様は OpenAPI で管理されており、リポジトリ内の `docs/openapi/openapi.yaml` で確認できます。この記事の時点では、実行時に OpenAPI を配信するエンドポイントはありません。
 
-> 現時点では、公開リポジトリの quickstart は開発者向けです。初期管理ユーザー作成や本番向け installer は今後の配布整備で磨き込む予定です。管理 UI のフル操作を試す場合は、開発用データやシード済み環境を用意してください。
+> 現時点では、公開リポジトリの quickstart は開発者・評価者向けです。本番向けの installer やワンコマンド配布は今後の配布整備で磨き込む予定です。
 
 <!--
 スクリーンショット 2（必須）:
@@ -213,7 +221,7 @@ http://localhost:5383
 <!--
 スクリーンショット 3（必須）:
 掲載場所: このセクション末尾。
-画面: NeNe Clear のログイン画面、またはシード済み環境でログイン後の Dashboard。
+画面: NeNe Clear のログイン画面、または作成した管理者でログイン後の Dashboard。
 目的: APIだけでなく、React 管理UIがあることを見せる。
 写す要素: 左ナビ、Dashboard KPI、未消込・督促などのカード。
 注意: 実データのメールアドレス、取引先名、口座番号は必ずマスクする。
