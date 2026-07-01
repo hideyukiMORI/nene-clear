@@ -1,0 +1,63 @@
+name: Release Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  release-zip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_sqlite, pdo_mysql, curl, zip
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Clone NENE2 (sibling path for Composer)
+        run: |
+          if [ ! -f ../NENE2/composer.json ]; then
+            git clone --depth=1 https://github.com/hideyukiMORI/NENE2.git ../NENE2
+          fi
+          test -f ../NENE2/composer.json
+
+      - name: Build release ZIP
+        run: composer release:zip
+
+      - name: Verify ZIP contents
+        run: |
+          ZIP=$(ls build/release/nene-clear-*.zip)
+          echo "verifying $ZIP"
+          unzip -l "$ZIP" | grep -E 'nene-clear/vendor/autoload.php'
+          unzip -l "$ZIP" | grep -E 'nene-clear/vendor/robmorgan/phinx/src/Phinx/Migration/Manager.php'
+          unzip -l "$ZIP" | grep -E 'nene-clear/vendor/hideyukimori/nene2/src/'
+          unzip -l "$ZIP" | grep -E 'nene-clear/public_html/install.php'
+          unzip -l "$ZIP" | grep -E 'nene-clear/public_html/index.php'
+          unzip -l "$ZIP" | grep -E 'nene-clear/public_html/assets/index.html'
+          unzip -l "$ZIP" | grep -E 'nene-clear/database/migrations/'
+          # The dev SQLite DB and dev-only configs must NOT ship
+          ! unzip -l "$ZIP" | grep -E 'nene-clear/database/.*\.sqlite3'
+          ! unzip -l "$ZIP" | grep -E 'nene-clear/tests/'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nene-clear-release
+          path: build/release/nene-clear-*.zip
+          if-no-files-found: error
