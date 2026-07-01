@@ -24,7 +24,7 @@ Operators who need both install **two sibling apps** connected via HTTP.
 - **Bank reconciliation** — CSV import, human-confirmed match, audit trail
 - **Dunning** — operator-controlled overdue reminders with send history
 - **Compliance** — binding rules for reconciliation and dunning ([compliance doc](./docs/explanation/payment-reconciliation-dunning-compliance.md))
-- **Self-hosted OSS** — MIT; recommended on **VPS + Docker** (Tier B). Shared hosting is **not recommended** for receivables/bank/PII data (no root, throttled SMTP, limited DKIM & backups); a managed / install-service option is planned
+- **Self-hosted OSS** — MIT; recommended on **VPS + Docker** (Tier B). Shared hosting (Tier A) is **possible** via the web installer (`public_html/install.php`) but **not recommended** for receivables/bank/PII data (no root, throttled SMTP, limited DKIM & backups) — **use at your own risk**; a managed / install-service option is planned
 - **AI-readable** — OpenAPI + MCP; human confirms, AI proposes
 - **Optional upstream: NeNe Invoice** — when connected, invoice/payment truth via HTTP API (not a shared DB); without it, Clear reconciles and duns directly-entered / CSV-imported receivables ([ADR 0014](./docs/adr/0014-accept-manual-receivables.md))
 

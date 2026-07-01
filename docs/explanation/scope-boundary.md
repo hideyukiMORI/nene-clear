@@ -38,7 +38,7 @@ Clear MVP = Phase 1–3 in [`roadmap.md`](../roadmap.md):
 1. Bank import + Invoice upstream integration
 2. Human-confirmed matching + audit
 3. Dunning + send log
-4. Tier A installer
+4. Tier A installer (available; not recommended for bank/PII — at your own risk)
 
 Post-MVP Clear improvements (same domain only): additional bank CSV formats,
 stronger match suggestions, optional postal dunning log — each via Issue + ADR

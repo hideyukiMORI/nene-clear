@@ -99,9 +99,11 @@ skips straight to bank import.
 | --- | --- | --- |
 | **VPS + Docker (Tier B, recommended)** | `docker compose up` | Run receivables / bank / PII data on infrastructure you control |
 | **Managed / install-service** | Hosted, or set up for you | For operators without ops capacity (see adoption review) |
+| **Shared hosting (Tier A, discouraged)** | `public_html/install.php` | Possible but **not recommended** for bank/PII — at your own risk |
 
-> Shared hosting (Tier A) is **not recommended** for this data — no root,
-> throttled SMTP, limited DKIM/backup. See
+> Shared hosting (Tier A) is **possible** via the web installer
+> (`public_html/install.php`) but **not recommended** for this data — no root,
+> throttled SMTP, limited DKIM/backup; **use at your own risk**. See
 > [`adoption-review-2026-06.md`](./adoption-review-2026-06.md).
 
 ## Philosophy (summary)
