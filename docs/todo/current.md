@@ -1,6 +1,14 @@
 # Current Work
 
-Last updated: 2026-06-28
+Last updated: 2026-07-02
+
+> **Latest handoff: [`handoff-2026-07-02.md`](handoff-2026-07-02.md)** — this
+> session shipped the bootstrap `create-admin` CLI (#228), a `phinx` `.env` fix
+> (#226), the Qiita article (#224), the **Tier A web-installer PoC** (#232) and
+> its **release-build** (#236), and reconciled the Tier A stance (#234). The
+> installer effort is mid-flight: Slices 1–2 done, **Slice 3 (install.php fetches
+> the release from `nene-origin.dev`) is next** — see the handoff §3. Cross-repo
+> and business context: `_work/discussion-log/2026-07-01.md` (議題2).
 
 ## Status
 
