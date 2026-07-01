@@ -44,7 +44,7 @@ Canonical English terms for NeNe Clear public docs, OpenAPI, and code comments.
 | **cents** | Integer amount in the **smallest currency unit**. For JPY (the only Phase 1–3 currency) one "cent" is one 円, so `amount_cents = 1000` means ¥1,000. The suffix is a fixed internal convention, not a sub-yen unit | float or DECIMAL money; reading `_cents` as 1/100 yen |
 | **overdue** | An upstream invoice past `due_at` with unpaid balance — a computed flag owned by Invoice, mirrored read-only for dunning eligibility | treating it as a Clear-owned stored status |
 | **audit event** | An immutable record of an import, match, reversal, dunning send, or credit creation (who / when / what) | "log line" without actor/timestamp |
-| **Tier A** | Shared hosting deployment (ZIP + web installer + MySQL), beside NeNe Invoice on the same server | "rental server" in code |
+| **Tier A** | Shared hosting deployment (ZIP + web installer + MySQL), beside NeNe Invoice on the same server — available but **not recommended** for bank/PII data (at your own risk) | "rental server" in code |
 | **Tier B** | Docker / VPS deployment — Invoice + Clear as two services | "cloud tier" |
 | **handler** | HTTP entry point class | "controller" |
 | **use case** | Business logic class with `execute()` | "service" (UseCase sense) |

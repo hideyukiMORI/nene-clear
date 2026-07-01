@@ -89,10 +89,10 @@ Binding detail: [`payment-reconciliation-dunning-compliance.md`](./payment-recon
 - [x] ja + en admin UI (ADR 0005)
 - [x] Dashboard: unmatched count, recent dunning
 
-### Phase 3 — Tier A 🔲
+### Phase 3 — Tier A 🔲 (possible but not recommended for bank/PII — at your own risk)
 
-- [ ] Web installer (MySQL, admin user, Invoice API config)
-- [ ] Release ZIP
+- [x] Web installer PoC (MySQL/SQLite, tenancy, admin) — #232, at-your-own-risk warning
+- [ ] Release ZIP + GitHub-download acquire
 - [ ] Operator guide
 
 ---

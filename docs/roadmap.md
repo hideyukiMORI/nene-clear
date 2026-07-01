@@ -44,10 +44,12 @@ Operators self-host Clear beside NeNe Invoice to:
 
 Reframed from "Tier A shared hosting": the 2026-06 adoption review
 ([`explanation/adoption-review-2026-06.md`](./explanation/adoption-review-2026-06.md))
-found shared hosting unsuitable for receivables / bank / PII data (no root,
+found shared hosting a poor fit for receivables / bank / PII data (no root,
 throttled SMTP, limited DKIM and backups). The recommended target is **VPS +
 Docker (Tier B)** with a managed / install-service option for operators without
-ops capacity.
+ops capacity. Tier A is **possible but not recommended** — a web installer
+(`public_html/install.php`) ships as a PoC (#232) with an explicit
+at-your-own-risk warning; it is not the recommended path for this data.
 
 - Official Docker image + managed / install-service offering
 - Operator deployment guide (VPS + Docker; Invoice + Clear as two apps)
