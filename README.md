@@ -75,6 +75,11 @@ cp .env.example .env            # adjust DB_*, NENE_CLEAR_JWT_SECRET as needed
 # 2. Backend (PHP 8.4 with ext-curl — required by the Invoice upstream client).
 composer install
 composer migrations:migrate     # apply schema
+
+# First run only: create the first organization + admin so you can log in
+# (prompts for a password; or pass --password / ADMIN_PASSWORD). See --help.
+php tools/create-admin.php --org-name "My Company" --email admin@example.com
+
 php -S localhost:8384 -t public_html/    # or your preferred SAPI (NENE_CLEAR_PORT=8384)
 
 # 3. Frontend admin UI (Node 22)

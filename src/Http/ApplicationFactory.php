@@ -133,6 +133,45 @@ final class ApplicationFactory
     }
 
     /**
+     * Builds and returns the fully-wired DI container, without the HTTP runtime.
+     *
+     * This is the composition root reused by non-HTTP entry points (e.g. the
+     * `tools/create-admin.php` bootstrap CLI) so they resolve the exact same
+     * use cases the HTTP app does, instead of hand-wiring a partial container
+     * that would drift. Domain services are lazy factories, so only what the
+     * caller resolves is constructed.
+     */
+    public static function container(
+        DatabaseQueryExecutorInterface $query,
+        DatabaseTransactionManagerInterface $transactionManager,
+        string $jwtSecret,
+        ?InvoiceUpstreamClientInterface $invoiceClient = null,
+        ?string $smtpHost = null,
+        int $smtpPort = 1025,
+        string $smtpUsername = '',
+        string $smtpPassword = '',
+        string $smtpFromAddress = 'noreply@nene-clear.dev',
+        string $smtpFromName = 'NeNe Clear',
+        ?string $invoiceApiBaseUrl = null,
+        string $invoiceBearerToken = '',
+        string $appBaseUrl = '',
+        ?InvitationMailerInterface $invitationMailer = null,
+        string $encryptionKey = '',
+    ): ContainerInterface {
+        return self::buildContainer(
+            $query,
+            $transactionManager,
+            $jwtSecret,
+            new Psr17Factory(),
+            self::resolveInvoiceClient($invoiceClient, $invoiceApiBaseUrl, $invoiceBearerToken),
+            self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
+            $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
+            $appBaseUrl,
+            $encryptionKey,
+        );
+    }
+
+    /**
      * Registers framework + config-derived services, then every domain provider.
      */
     private static function buildContainer(
