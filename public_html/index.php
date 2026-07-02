@@ -87,6 +87,12 @@ $transactionManager = $connectionFactory !== null
 $smtpHost = $env('SMTP_HOST') ?: null;
 $invoiceApiBaseUrl = $env('NENE_INVOICE_API_BASE_URL') ?: null;
 
+// Machine surface (issue #182): the repo VERSION file is this app's release
+// version, surfaced on the auth-gated GET /machine/health so deployment tooling
+// (e.g. NeNe Suite update tracking) can read the installed version.
+$machineApiKey = $env('NENE2_MACHINE_API_KEY') ?: null;
+$appVersion = is_file($root . '/VERSION') ? trim((string) file_get_contents($root . '/VERSION')) : '';
+
 $application = ApplicationFactory::create(
     debug: $debug,
     allowedOrigins: [],
@@ -107,6 +113,8 @@ $application = ApplicationFactory::create(
     // Optional encryption-at-rest key (base64 of 32 bytes). When unset, sensitive
     // fields are stored as-is; when set, they are encrypted on write (#192/#195).
     encryptionKey: $env('NENE_CLEAR_ENCRYPTION_KEY'),
+    machineApiKey: $machineApiKey,
+    appVersion: $appVersion !== '' ? $appVersion : null,
 );
 
 $psr17 = new Psr17Factory();

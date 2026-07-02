@@ -1,6 +1,6 @@
 # Current Work
 
-Last updated: 2026-07-02
+Last updated: 2026-07-03
 
 > **Latest handoff: [`handoff-2026-07-02.md`](handoff-2026-07-02.md)** — this
 > session shipped the bootstrap `create-admin` CLI (#228), a `phinx` `.env` fix
@@ -23,7 +23,7 @@ Last updated: 2026-07-02
 
 | Layer | Count | Tool |
 | --- | --- | --- |
-| Backend | 236 (6 skipped) | PHPUnit; PHPStan level 8; PHP-CS-Fixer |
+| Backend | 342 (6 skipped) | PHPUnit; PHPStan level 8; PHP-CS-Fixer |
 | Frontend unit | 27 | Vitest |
 | Browser E2E | 43 | Playwright (API mocked) |
 
@@ -117,6 +117,12 @@ Business/owner levers (not code; see review doc): managed/SaaS supply, pricing
 
 ## Recently completed
 
+- **Machine surface: installed version on `GET /machine/health`** (#182): the
+  repo `VERSION` is injected as `appVersion` into both `RuntimeApplicationFactory`
+  sites (health-only and full), `NENE2_MACHINE_API_KEY` gates the machine surface
+  (`.env.example` documented; NeNe Suite pairs it as
+  `NENE_SUITE_APP_NENE_CLEAR_MACHINE_KEY`), and the public `/health` stays
+  version-free. HTTP tests cover key gating and version reporting.
 - **MFA (TOTP) backend** (slices 1–3, PR #213 / #216 / #217): RFC 6238 generator,
   encrypted secret + hashed recovery codes, lockout + replay, self-service
   enrolment endpoints, and a login challenge for enrolled users. Frontend +

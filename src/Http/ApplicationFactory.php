@@ -59,6 +59,12 @@ final class ApplicationFactory
 {
     /**
      * @param list<string> $allowedOrigins CORS allowlist; empty disables CORS (set explicitly in production).
+     * @param string|null $machineApiKey When set, auth-gates the NENE2 machine surface
+     *        (`GET /machine/health`) via `X-NENE2-API-Key`. Suite update tracking pairs this
+     *        value as `NENE_SUITE_APP_NENE_CLEAR_MACHINE_KEY` (issue #182).
+     * @param string|null $appVersion This application's own release version (the repo `VERSION`
+     *        file), surfaced as `version` on the auth-gated `GET /machine/health` — distinct from
+     *        the framework version. Null omits the field (consumers treat it as unknown).
      */
     public static function create(
         bool $debug = false,
@@ -78,16 +84,22 @@ final class ApplicationFactory
         string $appBaseUrl = '',
         ?InvitationMailerInterface $invitationMailer = null,
         string $encryptionKey = '',
+        ?string $machineApiKey = null,
+        ?string $appVersion = null,
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
 
         // Public/health-only surface: no database or JWT secret → no admin routes.
+        // The machine surface stays available so deployment tooling can read the
+        // app version even before the database is configured.
         if ($query === null || $jwtSecret === null || $jwtSecret === '') {
             return (new RuntimeApplicationFactory(
                 responseFactory: $psr17,
                 streamFactory: $psr17,
+                machineApiKey: $machineApiKey,
                 debug: $debug,
                 allowedOrigins: $allowedOrigins,
+                appVersion: $appVersion,
             ))->create();
         }
 
@@ -124,11 +136,13 @@ final class ApplicationFactory
         return (new RuntimeApplicationFactory(
             responseFactory: $psr17,
             streamFactory: $psr17,
+            machineApiKey: $machineApiKey,
             domainExceptionHandlers: $exceptionHandlers,
             routeRegistrars: $routeRegistrars,
             authMiddleware: $authMiddleware,
             debug: $debug,
             allowedOrigins: $allowedOrigins,
+            appVersion: $appVersion,
         ))->create();
     }
 
