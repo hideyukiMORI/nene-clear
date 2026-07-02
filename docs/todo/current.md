@@ -2,13 +2,17 @@
 
 Last updated: 2026-07-03
 
-> **Latest handoff: [`handoff-2026-07-02.md`](handoff-2026-07-02.md)** — this
-> session shipped the bootstrap `create-admin` CLI (#228), a `phinx` `.env` fix
-> (#226), the Qiita article (#224), the **Tier A web-installer PoC** (#232) and
-> its **release-build** (#236), and reconciled the Tier A stance (#234). The
-> installer effort is mid-flight: Slices 1–2 done, **Slice 3 (install.php fetches
-> the release from `nene-origin.dev`) is next** — see the handoff §3. Cross-repo
-> and business context: `_work/discussion-log/2026-07-01.md` (議題2).
+> **Latest handoff: [`handoff-2026-07-03.md`](handoff-2026-07-03.md)** — a
+> screenshot-production session for the Qiita article (#224): shots 1, 2, 6
+> done (assets + reusable pipeline in `_work/assets/`), **shots 3, 4, 5, 7
+> remaining**, and the local env is deliberately non-default (upstream stub on
+> 8390 + `.env` pointing at it — **read the handoff §3 revert checklist before
+> running backend tests**). No code changes. Dev work still resumes at
+> **installer Slice 3 (install.php fetches the release from `nene-origin.dev`)**
+> — actionable spec in [handoff-2026-07-02 §3](handoff-2026-07-02.md); that
+> session shipped `create-admin` (#228), the phinx `.env` fix (#226), the
+> installer PoC (#232), the release build (#236) and the Tier A stance (#234).
+> Cross-repo / business context: `_work/discussion-log/2026-07-01.md` (議題2).
 
 ## Status
 
