@@ -8,6 +8,8 @@ use LogicException;
 use Nene2\Auth\TokenVerifierInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
+use Nene2\Database\Preflight\CandidateProfile;
+use Nene2\Database\Preflight\DatabaseCandidateInspector;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\Error\DomainExceptionHandlerInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
@@ -65,6 +67,11 @@ final class ApplicationFactory
      * @param string|null $appVersion This application's own release version (the repo `VERSION`
      *        file), surfaced as `version` on the auth-gated `GET /machine/health` — distinct from
      *        the framework version. Null omits the field (consumers treat it as unknown).
+     * @param DatabaseCandidateInspector|null $databaseCandidateInspector Opt-in candidate-database
+     *        preflight (issue #183): when provided, registers the auth-gated
+     *        `POST /machine/database/preflight`. Null keeps the endpoint absent (404).
+     * @param array<string, CandidateProfile> $databaseCandidateProfiles Env-declared candidates the
+     *        preflight may inspect, keyed by id ({@see \NeneClear\Database\CandidateProfiles}).
      */
     public static function create(
         bool $debug = false,
@@ -86,6 +93,8 @@ final class ApplicationFactory
         string $encryptionKey = '',
         ?string $machineApiKey = null,
         ?string $appVersion = null,
+        ?DatabaseCandidateInspector $databaseCandidateInspector = null,
+        array $databaseCandidateProfiles = [],
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
 
@@ -100,6 +109,8 @@ final class ApplicationFactory
                 debug: $debug,
                 allowedOrigins: $allowedOrigins,
                 appVersion: $appVersion,
+                databaseCandidateInspector: $databaseCandidateInspector,
+                databaseCandidateProfiles: $databaseCandidateProfiles,
             ))->create();
         }
 
@@ -143,6 +154,8 @@ final class ApplicationFactory
             debug: $debug,
             allowedOrigins: $allowedOrigins,
             appVersion: $appVersion,
+            databaseCandidateInspector: $databaseCandidateInspector,
+            databaseCandidateProfiles: $databaseCandidateProfiles,
         ))->create();
     }
 
