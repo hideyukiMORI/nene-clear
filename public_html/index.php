@@ -8,9 +8,13 @@ use Nene2\Database\DatabaseConnectionFactoryInterface;
 use Nene2\Database\PdoConnectionFactory;
 use Nene2\Database\PdoDatabaseQueryExecutor;
 use Nene2\Database\PdoDatabaseTransactionManager;
+use Nene2\Database\Preflight\DefaultDatabaseCandidateInspector;
 use Nene2\Http\ResponseEmitter;
 use NeneClear\Database\AdapterAwareQueryExecutor;
 use NeneClear\Database\AdapterAwareTransactionManager;
+use NeneClear\Database\ApplicationDatabaseIdentity;
+use NeneClear\Database\CandidateProfiles;
+use NeneClear\Database\MigrationVersions;
 use NeneClear\Http\ApplicationFactory;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
@@ -93,6 +97,18 @@ $invoiceApiBaseUrl = $env('NENE_INVOICE_API_BASE_URL') ?: null;
 $machineApiKey = $env('NENE2_MACHINE_API_KEY') ?: null;
 $appVersion = is_file($root . '/VERSION') ? trim((string) file_get_contents($root . '/VERSION')) : '';
 
+// Candidate-database preflight (issue #183): the inspector knows this app's
+// migration versions + identity; candidates come only from the env allowlist
+// (NENE_CLEAR_DB_CANDIDATE_*), never from the request body (SSRF prevention).
+$candidateInspector = new DefaultDatabaseCandidateInspector(
+    applicationMigrationVersions: MigrationVersions::fromDirectory($root . '/database/migrations'),
+    // This app's Phinx ledger is `phinxlog` (phinx.php default_migration_table),
+    // not the inspector's `phinx_log` default — required for schema recognition.
+    ledgerTable: 'phinxlog',
+    applicationIdentity: ApplicationDatabaseIdentity::identity(),
+);
+$candidateProfiles = CandidateProfiles::fromEnv($_ENV);
+
 $application = ApplicationFactory::create(
     debug: $debug,
     allowedOrigins: [],
@@ -115,6 +131,8 @@ $application = ApplicationFactory::create(
     encryptionKey: $env('NENE_CLEAR_ENCRYPTION_KEY'),
     machineApiKey: $machineApiKey,
     appVersion: $appVersion !== '' ? $appVersion : null,
+    databaseCandidateInspector: $candidateInspector,
+    databaseCandidateProfiles: $candidateProfiles,
 );
 
 $psr17 = new Psr17Factory();

@@ -23,7 +23,7 @@ Last updated: 2026-07-03
 
 | Layer | Count | Tool |
 | --- | --- | --- |
-| Backend | 342 (6 skipped) | PHPUnit; PHPStan level 8; PHP-CS-Fixer |
+| Backend | 352 (6 skipped) | PHPUnit; PHPStan level 8; PHP-CS-Fixer |
 | Frontend unit | 27 | Vitest |
 | Browser E2E | 43 | Playwright (API mocked) |
 
@@ -117,6 +117,15 @@ Business/owner levers (not code; see review doc): managed/SaaS supply, pricing
 
 ## Recently completed
 
+- **Candidate-database preflight adopted** (#183): opt-in
+  `POST /machine/database/preflight` is live — `DefaultDatabaseCandidateInspector`
+  wired with this app's Phinx versions (`MigrationVersions`), the **`phinxlog`**
+  ledger name, and `ApplicationDatabaseIdentity` (`nene-clear`, single-tenant DB
+  lineage). Migration `20260703000000` stamps / backfills the
+  `nene2_app_identity` marker idempotently. Candidates come only from the
+  `NENE_CLEAR_DB_CANDIDATE_*` env allowlist (SSRF-safe; documented in
+  `.env.example`). Tests cover fresh / migrated-own-DB (compatible + identity
+  match) / unknown-id 422 / key gating / endpoint absent without the inspector.
 - **Machine surface: installed version on `GET /machine/health`** (#182): the
   repo `VERSION` is injected as `appVersion` into both `RuntimeApplicationFactory`
   sites (health-only and full), `NENE2_MACHINE_API_KEY` gates the machine surface
