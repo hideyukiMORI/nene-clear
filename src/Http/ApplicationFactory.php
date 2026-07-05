@@ -17,6 +17,8 @@ use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\RuntimeApplicationFactory;
 use Nene2\Http\UtcClock;
+use Nene2\Log\MonologLoggerFactory;
+use Nene2\Log\RequestIdHolder;
 use NeneClear\Auth\AuthServiceProvider;
 use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\MfaChallengeTokens;
@@ -40,6 +42,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Builds the NeNe Clear HTTP application on top of the NENE2 runtime.
@@ -50,6 +53,12 @@ use Psr\Http\Server\RequestHandlerInterface;
  * via {@see ApplicationServiceProvider}. This factory only assembles the
  * container and hands the resolved route registrars, exception handlers and
  * auth middleware to {@see RuntimeApplicationFactory}.
+ *
+ * A {@see MonologLoggerFactory}-built PSR-3 logger (channel `nene-clear`, JSON to
+ * `php://stderr`, correlated to the request via {@see RequestIdHolder}) is always
+ * passed to {@see RuntimeApplicationFactory}, in both the health-only and the full
+ * branch below — without it the framework silently falls back to `NullLogger` and
+ * `RequestLoggingMiddleware`/`ErrorHandlerMiddleware` discard everything.
  *
  * The framework baseline pipeline (error handling, request id, security headers,
  * CORS, request size limit) and the built-in `/health` route are always present.
@@ -97,6 +106,8 @@ final class ApplicationFactory
         array $databaseCandidateProfiles = [],
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
+        $requestIdHolder = new RequestIdHolder();
+        $logger = (new MonologLoggerFactory())->create('nene-clear', $debug, $requestIdHolder);
 
         // Public/health-only surface: no database or JWT secret → no admin routes.
         // The machine surface stays available so deployment tooling can read the
@@ -105,7 +116,9 @@ final class ApplicationFactory
             return (new RuntimeApplicationFactory(
                 responseFactory: $psr17,
                 streamFactory: $psr17,
+                logger: $logger,
                 machineApiKey: $machineApiKey,
+                requestIdHolder: $requestIdHolder,
                 debug: $debug,
                 allowedOrigins: $allowedOrigins,
                 appVersion: $appVersion,
@@ -130,6 +143,8 @@ final class ApplicationFactory
             $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
             $appBaseUrl,
             $encryptionKey,
+            $logger,
+            $requestIdHolder,
         );
 
         $routeRegistrars = $container->get(ApplicationServiceProvider::ROUTE_REGISTRARS);
@@ -147,8 +162,10 @@ final class ApplicationFactory
         return (new RuntimeApplicationFactory(
             responseFactory: $psr17,
             streamFactory: $psr17,
+            logger: $logger,
             machineApiKey: $machineApiKey,
             domainExceptionHandlers: $exceptionHandlers,
+            requestIdHolder: $requestIdHolder,
             routeRegistrars: $routeRegistrars,
             authMiddleware: $authMiddleware,
             debug: $debug,
@@ -184,7 +201,11 @@ final class ApplicationFactory
         string $appBaseUrl = '',
         ?InvitationMailerInterface $invitationMailer = null,
         string $encryptionKey = '',
+        bool $debug = false,
     ): ContainerInterface {
+        $requestIdHolder = new RequestIdHolder();
+        $logger = (new MonologLoggerFactory())->create('nene-clear', $debug, $requestIdHolder);
+
         return self::buildContainer(
             $query,
             $transactionManager,
@@ -195,6 +216,8 @@ final class ApplicationFactory
             $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
             $appBaseUrl,
             $encryptionKey,
+            $logger,
+            $requestIdHolder,
         );
     }
 
@@ -211,11 +234,15 @@ final class ApplicationFactory
         InvitationMailerInterface $invitationMailer,
         string $appBaseUrl,
         string $encryptionKey,
+        LoggerInterface $logger,
+        RequestIdHolder $requestIdHolder,
     ): ContainerInterface {
         $langDir = dirname(__DIR__, 2) . '/lang';
 
         return (new ContainerBuilder())
             ->set(Psr17Factory::class, static fn (ContainerInterface $c): Psr17Factory => $psr17)
+            ->set(LoggerInterface::class, static fn (ContainerInterface $c): LoggerInterface => $logger)
+            ->set(RequestIdHolder::class, static fn (ContainerInterface $c): RequestIdHolder => $requestIdHolder)
             ->set(ResponseFactoryInterface::class, static fn (ContainerInterface $c): ResponseFactoryInterface => $psr17)
             ->set(StreamFactoryInterface::class, static fn (ContainerInterface $c): StreamFactoryInterface => $psr17)
             ->set(JsonResponseFactory::class, static fn (ContainerInterface $c): JsonResponseFactory => new JsonResponseFactory($psr17, $psr17))
