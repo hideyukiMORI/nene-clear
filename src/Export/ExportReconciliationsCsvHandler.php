@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Export;
 
+use Nene2\Export\CsvWriter;
 use NeneClear\Auth\AuthContext;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\Reconciliation\ReconciliationFilter;
@@ -83,31 +84,30 @@ final readonly class ExportReconciliationsCsvHandler
             $offset += self::BATCH;
         } while (count($batch) === self::BATCH);
 
-        $csv = $this->buildCsv(
-            ['reconciliation_id', 'allocation_id', 'status', 'invoice_id', 'amount_cents',
-                'external_reference', 'bank_transaction_id', 'value_date', 'bank_amount_cents',
-                'counterparty_text', 'confirmed_at', 'confirmed_by', 'reversed_at', 'reversal_reason',
-                'source', 'manual_receivable_id'],
-            $rows,
+        return $this->csvResponse(
+            $this->render(
+                ['reconciliation_id', 'allocation_id', 'status', 'invoice_id', 'amount_cents',
+                    'external_reference', 'bank_transaction_id', 'value_date', 'bank_amount_cents',
+                    'counterparty_text', 'confirmed_at', 'confirmed_by', 'reversed_at', 'reversal_reason',
+                    'source', 'manual_receivable_id'],
+                $rows,
+            ),
+            'reconciliations.csv',
         );
-
-        return $this->csvResponse($csv, 'reconciliations.csv');
     }
 
     /**
+     * Renders rows to a CSV string via the framework writer, which neutralises
+     * formula injection in string cells and prepends a UTF-8 BOM by default.
+     *
      * @param list<string> $headers
-     * @param list<list<mixed>> $rows
+     * @param iterable<list<string|int|float|bool|null>> $rows
      */
-    private function buildCsv(array $headers, array $rows): string
+    private function render(array $headers, iterable $rows): string
     {
         $handle = fopen('php://temp', 'r+');
         assert($handle !== false);
-        // UTF-8 BOM for Excel compatibility
-        fwrite($handle, "\xEF\xBB\xBF");
-        fputcsv($handle, $headers);
-        foreach ($rows as $row) {
-            fputcsv($handle, array_map(static fn ($v): string => (string) $v, $row));
-        }
+        (new CsvWriter($handle, $headers))->writeAll($rows);
         rewind($handle);
         $content = stream_get_contents($handle);
         fclose($handle);
