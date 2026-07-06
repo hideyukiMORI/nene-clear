@@ -27,6 +27,7 @@ use Nene2\Config\DatabaseConfig;
 use Nene2\Database\PdoConnectionFactory;
 use Nene2\Database\PdoDatabaseQueryExecutor;
 use Nene2\Database\PdoDatabaseTransactionManager;
+use Nene2\Install\EnvironmentWriter;
 use NeneClear\Auth\Role;
 use NeneClear\Database\AdapterAwareQueryExecutor;
 use NeneClear\Database\AdapterAwareTransactionManager;
@@ -205,7 +206,7 @@ function run_install(string $root, string $envFile, string $marker): void
     migrate($root, $adapter, $db, $sqlitePath);
 
     // 2) Persist config so the app connects to the same database.
-    $jwtSecret = bin2hex(random_bytes(32));
+    $jwtSecret = EnvironmentWriter::generateSecret(32);
     write_env($envFile, $adapter, $db, $sqlitePath, $jwtSecret);
 
     // 3) Create the first organization + admin via the app's own use cases.
@@ -249,27 +250,28 @@ function migrate(string $root, string $adapter, array $db, string $sqlitePath): 
  */
 function write_env(string $envFile, string $adapter, array $db, string $sqlitePath, string $jwtSecret): void
 {
-    $lines = [
-        'APP_ENV=production',
-        'APP_DEBUG=false',
-        'DB_ADAPTER=' . $adapter,
+    // .env は toolkit の EnvironmentWriter で原子書き込みする（chmod 0640 で fail-closed・
+    // 値を \\ " $ escape・改行/NUL 拒否）。従来の生連結 + rename と違い、DB パスワードに
+    // " $ # 空白・改行が含まれても .env が壊れず、同ホスト全ユーザからの読み取り（穴 #1）と
+    // .env インジェクション（穴 #2）を塞ぐ。KEY 順序と名前は既存のまま維持する。
+    $values = [
+        'APP_ENV' => 'production',
+        'APP_DEBUG' => 'false',
+        'DB_ADAPTER' => $adapter,
     ];
     if ($adapter === 'mysql') {
-        $lines[] = 'DB_HOST=' . (string) $db['host'];
-        $lines[] = 'DB_PORT=' . (string) $db['port'];
-        $lines[] = 'DB_NAME=' . (string) $db['name'];
-        $lines[] = 'DB_USER=' . (string) $db['user'];
-        $lines[] = 'DB_PASSWORD=' . (string) $db['pass'];
-        $lines[] = 'DB_CHARSET=utf8mb4';
+        $values['DB_HOST'] = (string) $db['host'];
+        $values['DB_PORT'] = (string) $db['port'];
+        $values['DB_NAME'] = (string) $db['name'];
+        $values['DB_USER'] = (string) $db['user'];
+        $values['DB_PASSWORD'] = (string) $db['pass'];
+        $values['DB_CHARSET'] = 'utf8mb4';
     } else {
-        $lines[] = 'DB_NAME=' . $sqlitePath;
+        $values['DB_NAME'] = $sqlitePath;
     }
-    $lines[] = 'NENE_CLEAR_JWT_SECRET=' . $jwtSecret;
+    $values['NENE_CLEAR_JWT_SECRET'] = $jwtSecret;
 
-    $tmp = $envFile . '.tmp';
-    if (file_put_contents($tmp, implode("\n", $lines) . "\n") === false || !rename($tmp, $envFile)) {
-        throw new RuntimeException('.env の書き込みに失敗しました。パーミッションを確認してください。');
-    }
+    (new EnvironmentWriter())->write($envFile, $values);
 }
 
 /**
