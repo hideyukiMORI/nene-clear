@@ -139,8 +139,8 @@ final class ApplicationFactory
             $jwtSecret,
             $psr17,
             self::resolveInvoiceClient($invoiceClient, $invoiceApiBaseUrl, $invoiceBearerToken),
-            self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
-            $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
+            self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName, $logger),
+            $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName, $logger),
             $appBaseUrl,
             $encryptionKey,
             $logger,
@@ -212,8 +212,8 @@ final class ApplicationFactory
             $jwtSecret,
             new Psr17Factory(),
             self::resolveInvoiceClient($invoiceClient, $invoiceApiBaseUrl, $invoiceBearerToken),
-            self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
-            $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName),
+            self::resolveMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName, $logger),
+            $invitationMailer ?? self::resolveInvitationMailer($smtpHost, $smtpPort, $smtpUsername, $smtpPassword, $smtpFromAddress, $smtpFromName, $logger),
             $appBaseUrl,
             $encryptionKey,
             $logger,
@@ -301,12 +301,13 @@ final class ApplicationFactory
         string $smtpPassword,
         string $smtpFromAddress,
         string $smtpFromName,
+        LoggerInterface $logger,
     ): DunningMailerInterface {
         if ($smtpHost !== null && $smtpHost !== '') {
             return new SmtpDunningMailer($smtpHost, $smtpPort, $smtpFromAddress, $smtpFromName, $smtpUsername, $smtpPassword);
         }
 
-        return new LogOnlyDunningMailer();
+        return new LogOnlyDunningMailer($logger);
     }
 
     private static function resolveInvitationMailer(
@@ -316,11 +317,12 @@ final class ApplicationFactory
         string $smtpPassword,
         string $smtpFromAddress,
         string $smtpFromName,
+        LoggerInterface $logger,
     ): InvitationMailerInterface {
         if ($smtpHost !== null && $smtpHost !== '') {
             return new SmtpInvitationMailer($smtpHost, $smtpPort, $smtpFromAddress, $smtpFromName, $smtpUsername, $smtpPassword);
         }
 
-        return new LogOnlyInvitationMailer();
+        return new LogOnlyInvitationMailer($logger);
     }
 }
