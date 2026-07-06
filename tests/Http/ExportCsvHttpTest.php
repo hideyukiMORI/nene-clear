@@ -192,6 +192,37 @@ final class ExportCsvHttpTest extends TestCase
         self::assertStringContainsString('110000', $body);
     }
 
+    public function test_export_neutralizes_formula_injection_in_counterparty(): void
+    {
+        // A bank statement whose memo (counterparty) column carries an attacker
+        // controlled spreadsheet formula. The export must render it as text.
+        $csv = "date,deposit,withdrawal,memo\n2026/04/20,110000,,=SUM(1+2)\n";
+        $token = $this->tokenFor('admin@acme.example');
+
+        $file = $this->psr17->createUploadedFile(
+            $this->psr17->createStream($csv),
+            strlen($csv),
+            UPLOAD_ERR_OK,
+            'april.csv',
+            'text/csv',
+        );
+        $this->app->handle(
+            $this->psr17->createServerRequest('POST', '/admin/bank-import-batches')
+                ->withHeader('Authorization', 'Bearer ' . $token)
+                ->withUploadedFiles(['file' => $file])
+                ->withParsedBody(['bank_account_id' => 1]),
+        );
+
+        $body = (string) $this->get($token, '/admin/export/bank-transactions')->getBody();
+
+        // Neutralised: the formula cell is prefixed with a single quote so a
+        // spreadsheet treats it as text rather than executing it.
+        self::assertStringContainsString("'=SUM(1+2)", $body);
+        self::assertStringNotContainsString(',=SUM(1+2)', $body);
+        // Numeric column stays numeric (type-based sanitisation, not quoted).
+        self::assertStringContainsString('110000', $body);
+    }
+
     public function test_export_reconciliations_returns_csv(): void
     {
         $this->importCsvAndConfirm();
