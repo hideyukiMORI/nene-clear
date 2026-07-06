@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\Mfa;
 
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
-use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\Security\Encryptor;
@@ -67,7 +65,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $ex): TotpSecretRepositoryInterface => new PdoTotpSecretRepository($ex, ServiceResolver::get($c, Encryptor::class)),
                     static fn (DatabaseQueryExecutorInterface $ex): RecoveryCodeRepositoryInterface => new PdoRecoveryCodeRepository($ex),
-                    static fn (DatabaseQueryExecutorInterface $ex): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($ex)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, RecoveryCodeService::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
@@ -81,7 +79,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
                     static fn (DatabaseQueryExecutorInterface $ex): TotpSecretRepositoryInterface => new PdoTotpSecretRepository($ex, ServiceResolver::get($c, Encryptor::class)),
                     static fn (DatabaseQueryExecutorInterface $ex): UsedTotpStepRepositoryInterface => new PdoUsedTotpStepRepository($ex),
                     static fn (DatabaseQueryExecutorInterface $ex): RecoveryCodeRepositoryInterface => new PdoRecoveryCodeRepository($ex),
-                    static fn (DatabaseQueryExecutorInterface $ex): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($ex)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, RecoveryCodeService::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),

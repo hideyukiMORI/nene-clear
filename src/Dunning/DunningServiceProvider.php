@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\Dunning;
 
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
-use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
 use NeneClear\ClearSettings\PdoClearSettingsRepository;
@@ -54,7 +52,7 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                     static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx, ServiceResolver::get($c, Encryptor::class))),
                     ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                     ServiceResolver::get($c, DunningMailerInterface::class),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                     new DunningMessageRenderer(ServiceResolver::get($c, MessageCatalog::class)),
                     static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
@@ -65,7 +63,7 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                 static fn (ContainerInterface $c): PauseDunningUseCase => new PauseDunningUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -74,7 +72,7 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                 static fn (ContainerInterface $c): ResumeDunningUseCase => new ResumeDunningUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

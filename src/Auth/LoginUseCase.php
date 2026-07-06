@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace NeneClear\Auth;
 
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Mfa\TotpAuthenticator;
 use NeneClear\User\UserRepositoryInterface;
 use NeneClear\User\UserStatus;
@@ -40,20 +41,18 @@ final readonly class LoginUseCase implements LoginUseCaseInterface
             // not tenant-scoped (organization 0): recording the would-be org —
             // like recording the password — could leak whether the account
             // exists. Only the attempted email and a coarse reason are kept.
-            $this->auditRecorder->record(
-                0,
-                0,
-                $this->clock->now()->format('Y-m-d H:i:s'),
-                'login_failed',
-                'user',
-                null,
-                [
-                    'after' => [
-                        'email' => $input->email,
-                        'failure_reason' => 'invalid_credentials',
-                    ],
+            $this->auditRecorder->record(new AuditEvent(
+                action: 'login_failed',
+                entityType: 'user',
+                entityId: null,
+                actorId: 0,
+                organizationId: 0,
+                occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
+                after: [
+                    'email' => $input->email,
+                    'failure_reason' => 'invalid_credentials',
                 ],
-            );
+            ));
 
             throw new InvalidCredentialsException();
         }
@@ -76,20 +75,18 @@ final readonly class LoginUseCase implements LoginUseCaseInterface
             );
         }
 
-        $this->auditRecorder->record(
-            $user->organizationId ?? 0,
-            $userId,
-            $this->clock->now()->format('Y-m-d H:i:s'),
-            'login_succeeded',
-            'user',
-            $userId,
-            [
-                'after' => [
-                    'user_id' => $userId,
-                    'email' => $user->email,
-                ],
+        $this->auditRecorder->record(new AuditEvent(
+            action: 'login_succeeded',
+            entityType: 'user',
+            entityId: $userId,
+            actorId: $userId,
+            organizationId: $user->organizationId ?? 0,
+            occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
+            after: [
+                'user_id' => $userId,
+                'email' => $user->email,
             ],
-        );
+        ));
 
         return new LoginOutput(
             token: $this->tokens->issueForUser($user),

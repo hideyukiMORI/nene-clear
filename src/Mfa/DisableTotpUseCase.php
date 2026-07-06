@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace NeneClear\Mfa;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 /**
  * Disables a user's TOTP, after proving control with either a current TOTP code
@@ -22,7 +23,6 @@ final readonly class DisableTotpUseCase
      * @param Closure(DatabaseQueryExecutorInterface): TotpSecretRepositoryInterface $secrets
      * @param Closure(DatabaseQueryExecutorInterface): UsedTotpStepRepositoryInterface $usedSteps
      * @param Closure(DatabaseQueryExecutorInterface): RecoveryCodeRepositoryInterface $recovery
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private TotpAuthenticator $authenticator,
@@ -31,7 +31,7 @@ final readonly class DisableTotpUseCase
         private Closure $secrets,
         private Closure $usedSteps,
         private Closure $recovery,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private RecoveryCodeService $recoveryService,
         private ClockInterface $clock,
     ) {
@@ -58,15 +58,16 @@ final readonly class DisableTotpUseCase
             ($this->usedSteps)($ex)->deleteByUser($userId);
             ($this->recovery)($ex)->deleteByUser($userId);
             ($this->secrets)($ex)->deleteByUser($userId);
-            ($this->auditRecorder)($ex)->record(
-                $organizationId,
-                $userId,
-                $now,
-                'mfa_disabled',
-                'user',
-                $userId,
-                ['before' => ['mfa_enabled' => true], 'after' => ['mfa_enabled' => false]],
-            );
+            $this->auditFactory->forExecutor($ex)->record(new AuditEvent(
+                action: 'mfa_disabled',
+                entityType: 'user',
+                entityId: $userId,
+                actorId: $userId,
+                organizationId: $organizationId,
+                occurredAt: $now,
+                before: ['mfa_enabled' => true],
+                after: ['mfa_enabled' => false],
+            ));
         });
     }
 }

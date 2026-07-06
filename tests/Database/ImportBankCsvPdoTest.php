@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Database;
 
+use Nene2\Audit\AuditRecorderFactory;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\PdoAuditEventRepository;
+use NeneClear\Audit\AuditServiceProvider;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
 use NeneClear\BankImport\BankCsvParser;
@@ -57,11 +57,11 @@ final class ImportBankCsvPdoTest extends TestCase
         $transactions = new PdoBankTransactionRepository($this->query);
 
         $this->useCase = new ImportBankCsvUseCase(
-            new FakeTransactionManager(),
+            new FakeTransactionManager($this->query),
             fn () => $accounts,
             fn () => $batches,
             fn () => $transactions,
-            fn () => new AuditRecorder(new PdoAuditEventRepository($this->query)),
+            new AuditRecorderFactory(new FixedClock(), AuditServiceProvider::tableConfig()),
             new BankCsvParser(),
             new FixedClock(),
         );

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Reconciliation;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use NeneClear\InvoiceUpstream\InvoiceItem;
 use NeneClear\Reconciliation\ApplyCreditInput;
@@ -14,7 +13,9 @@ use NeneClear\Reconciliation\ClientCreditNotFoundException;
 use NeneClear\Reconciliation\ClientCreditStatus;
 use NeneClear\Reconciliation\CreditExceedsRemainingException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
+use NeneClear\Tests\Support\FixedClock;
 use NeneClear\Tests\Support\NullQueryExecutor;
 use PHPUnit\Framework\TestCase;
 
@@ -35,7 +36,7 @@ final class ApplyCreditUseCaseTest extends TestCase
             new NullQueryExecutor(),
             fn () => $this->clientCredits,
             $this->invoiceClient,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
         );
     }
 
@@ -94,7 +95,7 @@ final class ApplyCreditUseCaseTest extends TestCase
         self::assertSame(50000, $payments[0]['amountCents']);
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('client_credit_applied', $this->audit->events[0]->eventType);
+        self::assertSame('client_credit_applied', $this->audit->events[0]->action);
     }
 
     public function test_partial_apply_reduces_remaining(): void

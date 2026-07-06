@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Organization;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\Organization\CreateOrganizationInput;
 use NeneClear\Organization\CreateOrganizationUseCase;
 use NeneClear\Organization\Organization;
 use NeneClear\Organization\OrganizationAlreadyExistsException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +25,7 @@ final class CreateOrganizationUseCaseTest extends TestCase
 
     private function useCase(InMemoryOrganizationRepository $repo): CreateOrganizationUseCase
     {
-        return new CreateOrganizationUseCase(new FakeTransactionManager(), fn () => $repo, fn () => new AuditRecorder($this->audit), new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new CreateOrganizationUseCase(new FakeTransactionManager(), fn () => $repo, new InMemoryAuditRecorderFactory($this->audit, new FixedClock()), new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     public function test_creates_organization_and_returns_output_with_id(): void
@@ -50,10 +50,11 @@ final class CreateOrganizationUseCaseTest extends TestCase
 
         self::assertCount(1, $this->audit->events);
         $event = $this->audit->events[0];
-        self::assertSame('organization_created', $event->eventType);
+        self::assertSame('organization_created', $event->action);
         self::assertSame($output->id, $event->organizationId);
-        self::assertSame(1, $event->actorUserId);
-        self::assertSame('acme', $event->payload['after']['slug']);
+        self::assertSame(1, $event->actorId);
+        self::assertIsArray($event->after);
+        self::assertSame('acme', $event->after['slug']);
     }
 
     public function test_rejects_duplicate_slug(): void

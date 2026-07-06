@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Dunning;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\Dunning\PauseDunningUseCase;
 use NeneClear\Dunning\ResumeDunningUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
@@ -25,8 +25,8 @@ final class PauseDunningUseCaseTest extends TestCase
         $this->pauses = new InMemoryDunningPauseRepository();
         $this->audit = new InMemoryAuditEventRepository();
         $this->clock = new FixedClock('2026-06-01T10:00:00+00:00');
-        $this->pauseUseCase = new PauseDunningUseCase(new FakeTransactionManager(), fn () => $this->pauses, fn () => new AuditRecorder($this->audit), $this->clock);
-        $this->resumeUseCase = new ResumeDunningUseCase(new FakeTransactionManager(), fn () => $this->pauses, fn () => new AuditRecorder($this->audit), $this->clock);
+        $this->pauseUseCase = new PauseDunningUseCase(new FakeTransactionManager(), fn () => $this->pauses, new InMemoryAuditRecorderFactory($this->audit, new FixedClock()), $this->clock);
+        $this->resumeUseCase = new ResumeDunningUseCase(new FakeTransactionManager(), fn () => $this->pauses, new InMemoryAuditRecorderFactory($this->audit, new FixedClock()), $this->clock);
     }
 
     public function test_pause_creates_record_and_audit_event(): void
@@ -40,7 +40,7 @@ final class PauseDunningUseCaseTest extends TestCase
         self::assertTrue($pause->isActive());
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('dunning_paused', $this->audit->events[0]->eventType);
+        self::assertSame('dunning_paused', $this->audit->events[0]->action);
     }
 
     public function test_pause_is_idempotent_when_already_active(): void
@@ -72,7 +72,7 @@ final class PauseDunningUseCaseTest extends TestCase
         self::assertNull($active);
 
         self::assertCount(2, $this->audit->events);
-        self::assertSame('dunning_resumed', $this->audit->events[1]->eventType);
+        self::assertSame('dunning_resumed', $this->audit->events[1]->action);
     }
 
     public function test_resume_different_org_does_not_affect(): void

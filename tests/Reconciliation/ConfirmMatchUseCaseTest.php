@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Reconciliation;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionStatus;
@@ -20,6 +19,7 @@ use NeneClear\Reconciliation\ConfirmMatchInput;
 use NeneClear\Reconciliation\ConfirmMatchUseCase;
 use NeneClear\Reconciliation\ReconciliationStatus;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\BankImport\InMemoryBankTransactionRepository;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
@@ -52,7 +52,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
             fn () => $this->clientCredits,
             fn () => $this->manualReceivables,
             $this->invoiceClient,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             new FixedClock(),
         );
     }
@@ -202,7 +202,7 @@ final class ConfirmMatchUseCaseTest extends TestCase
         self::assertSame(ReconciliationStatus::Confirmed, $recon?->status);
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('reconciliation_confirmed', $this->audit->events[0]->eventType);
+        self::assertSame('reconciliation_confirmed', $this->audit->events[0]->action);
 
         self::assertEmpty($this->clientCredits->all());
     }

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\User;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\Auth\Role;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\User\DeleteUserUseCase;
@@ -26,7 +26,7 @@ final class DeleteUserUseCaseTest extends TestCase
 
     private function useCase(InMemoryUserRepository $repo): DeleteUserUseCase
     {
-        return new DeleteUserUseCase(new FakeTransactionManager(), fn () => $repo, fn () => new AuditRecorder($this->audit), new FixedClock('2026-06-01T10:00:00+00:00'));
+        return new DeleteUserUseCase(new FakeTransactionManager(), fn () => $repo, new InMemoryAuditRecorderFactory($this->audit, new FixedClock()), new FixedClock('2026-06-01T10:00:00+00:00'));
     }
 
     private function seedUser(int $orgId = 7): InMemoryUserRepository
@@ -62,10 +62,11 @@ final class DeleteUserUseCaseTest extends TestCase
 
         self::assertCount(1, $this->audit->events);
         $event = $this->audit->events[0];
-        self::assertSame('user_deleted', $event->eventType);
-        self::assertSame(42, $event->actorUserId);
-        self::assertSame('member@acme.example', $event->payload['before']['email']);
-        self::assertSame('member', $event->payload['before']['role']);
+        self::assertSame('user_deleted', $event->action);
+        self::assertSame(42, $event->actorId);
+        self::assertIsArray($event->before);
+        self::assertSame('member@acme.example', $event->before['email']);
+        self::assertSame('member', $event->before['role']);
     }
 
     public function test_cross_tenant_delete_throws_not_found_and_keeps_user(): void

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\BankImport;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
 use NeneClear\BankImport\BankAccountNotFoundException;
@@ -13,6 +12,7 @@ use NeneClear\BankImport\DuplicateBankImportException;
 use NeneClear\BankImport\ImportBankCsvInput;
 use NeneClear\BankImport\ImportBankCsvUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
@@ -53,7 +53,7 @@ final class ImportBankCsvUseCaseTest extends TestCase
             fn () => $this->accounts,
             fn () => $this->batches,
             fn () => $this->transactions,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             new BankCsvParser(),
             new FixedClock(),
         );
@@ -79,8 +79,8 @@ final class ImportBankCsvUseCaseTest extends TestCase
         self::assertSame(2, $this->transactions->countByBatch($output->bankImportBatchId));
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('bank_import', $this->audit->events[0]->eventType);
-        self::assertSame(42, $this->audit->events[0]->actorUserId);
+        self::assertSame('bank_import', $this->audit->events[0]->action);
+        self::assertSame(42, $this->audit->events[0]->actorId);
     }
 
     public function test_duplicate_file_hash_is_rejected(): void

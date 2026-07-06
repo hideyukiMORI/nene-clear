@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace NeneClear\Mfa;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 /**
  * Confirms a TOTP enrolment: verifies a code against the pending secret, enables
@@ -22,14 +23,13 @@ final readonly class EnableTotpUseCase
     /**
      * @param Closure(DatabaseQueryExecutorInterface): TotpSecretRepositoryInterface $secrets
      * @param Closure(DatabaseQueryExecutorInterface): RecoveryCodeRepositoryInterface $recovery
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private TotpAuthenticator $authenticator,
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $secrets,
         private Closure $recovery,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private RecoveryCodeService $recoveryService,
         private ClockInterface $clock,
     ) {
@@ -55,15 +55,15 @@ final readonly class EnableTotpUseCase
         $this->transactionManager->transactional(function (DatabaseQueryExecutorInterface $ex) use ($userId, $organizationId, $codes, $now): void {
             ($this->secrets)($ex)->setEnabled($userId, true);
             ($this->recovery)($ex)->replaceForUser($userId, $codes['hashes'], $now);
-            ($this->auditRecorder)($ex)->record(
-                $organizationId,
-                $userId,
-                $now,
-                'mfa_enabled',
-                'user',
-                $userId,
-                ['after' => ['mfa_enabled' => true]],
-            );
+            $this->auditFactory->forExecutor($ex)->record(new AuditEvent(
+                action: 'mfa_enabled',
+                entityType: 'user',
+                entityId: $userId,
+                actorId: $userId,
+                organizationId: $organizationId,
+                occurredAt: $now,
+                after: ['mfa_enabled' => true],
+            ));
         });
 
         return $codes['plain'];
