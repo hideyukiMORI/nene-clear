@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Audit;
 
-use NeneClear\Audit\AuditEvent;
-use NeneClear\Audit\AuditEventFilter;
-use NeneClear\Audit\AuditEventRepositoryInterface;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditEventRepositoryInterface;
+use Nene2\Audit\AuditQuery;
 use RuntimeException;
 
 /**
- * Audit repository double whose {@see record()} always throws.
+ * Audit repository double whose {@see append()} always throws.
  *
  * Used to prove transactional atomicity: when the audit write fails, the
  * surrounding `transactional()` must roll back the business writes too, so no
@@ -18,17 +18,20 @@ use RuntimeException;
  */
 final class ThrowingAuditEventRepository implements AuditEventRepositoryInterface
 {
-    public function record(AuditEvent $event): int
+    public function append(AuditEvent $event): void
     {
         throw new RuntimeException('audit write failed (simulated)');
     }
 
-    public function findByOrganization(int $organizationId, AuditEventFilter $filter, int $limit, int $offset): array
+    /**
+     * @return list<AuditEvent>
+     */
+    public function query(AuditQuery $query, int $limit, int $offset): array
     {
         return [];
     }
 
-    public function countByOrganization(int $organizationId, AuditEventFilter $filter): int
+    public function count(AuditQuery $query): int
     {
         return 0;
     }

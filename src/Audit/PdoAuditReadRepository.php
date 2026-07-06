@@ -6,30 +6,23 @@ namespace NeneClear\Audit;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
 
-final readonly class PdoAuditEventRepository implements AuditEventRepositoryInterface
+/**
+ * Read side of the audit trail (write is the framework recorder, ADR 0014).
+ *
+ * Reads `audit_events` directly so Clear keeps its own tenant scoping and sort
+ * whitelist (including `actor_user_id`). The raw `payload_json` is normalized on
+ * hydration: a framework-folded row `{before, after, metadata:{…}}` is flattened
+ * back to Clear's historical flat shape `{…context, before, after}`, so folded
+ * (post-adoption) and legacy flat rows return an identical payload to the API and
+ * the frontend's before/after + context-key rendering.
+ */
+final readonly class PdoAuditReadRepository implements AuditReadRepositoryInterface
 {
     private const string COLUMNS = 'id, organization_id, event_type, entity_type, entity_id, actor_user_id, occurred_at, payload_json';
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
     ) {
-    }
-
-    public function record(AuditEvent $event): int
-    {
-        return $this->query->insert(
-            'INSERT INTO audit_events (organization_id, event_type, entity_type, entity_id, actor_user_id, occurred_at, payload_json) '
-            . 'VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [
-                $event->organizationId,
-                $event->eventType,
-                $event->entityType,
-                $event->entityId,
-                $event->actorUserId,
-                $event->occurredAt,
-                json_encode($event->payload, JSON_THROW_ON_ERROR),
-            ],
-        );
     }
 
     public function findByOrganization(int $organizationId, AuditEventFilter $filter, int $limit, int $offset): array
@@ -122,8 +115,32 @@ final readonly class PdoAuditEventRepository implements AuditEventRepositoryInte
             entityId: $row['entity_id'] !== null ? (int) $row['entity_id'] : null,
             actorUserId: (int) $row['actor_user_id'],
             occurredAt: (string) $row['occurred_at'],
-            payload: $payload,
+            payload: self::normalize($payload),
             id: (int) $row['id'],
         );
+    }
+
+    /**
+     * Flattens a framework-folded payload back to Clear's flat shape.
+     *
+     * The framework's SinglePayload writer stores `{before, after, metadata:{…}}`;
+     * Clear's historical rows are flat `{…context, before, after}`. Lifting the
+     * `metadata` object's keys to the top level makes both indistinguishable to
+     * the API and the frontend (which reads any non-before/after key as context).
+     * Legacy flat rows have no top-level `metadata` key and pass through unchanged.
+     *
+     * @param array<string, mixed> $payload
+     * @return array<string, mixed>
+     */
+    private static function normalize(array $payload): array
+    {
+        if (isset($payload['metadata']) && is_array($payload['metadata'])) {
+            /** @var array<string, mixed> $metadata */
+            $metadata = $payload['metadata'];
+            unset($payload['metadata']);
+            $payload = array_merge($metadata, $payload);
+        }
+
+        return $payload;
     }
 }

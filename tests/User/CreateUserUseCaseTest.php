@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\User;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\Auth\Role;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\User\CreateUserInput;
@@ -35,7 +35,7 @@ final class CreateUserUseCaseTest extends TestCase
         return new CreateUserUseCase(
             new FakeTransactionManager(),
             fn () => $repo,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             fn () => $this->invitations,
             $this->mailer,
             new InvitationLinkBuilder('https://app.example'),
@@ -77,13 +77,14 @@ final class CreateUserUseCaseTest extends TestCase
 
         self::assertCount(1, $this->audit->events);
         $event = $this->audit->events[0];
-        self::assertSame('user_created', $event->eventType);
-        self::assertSame(42, $event->actorUserId);
+        self::assertSame('user_created', $event->action);
+        self::assertSame(42, $event->actorId);
         self::assertSame(7, $event->organizationId);
-        self::assertSame('member@acme.example', $event->payload['after']['email']);
-        self::assertSame('active', $event->payload['after']['status']);
+        self::assertIsArray($event->after);
+        self::assertSame('member@acme.example', $event->after['email']);
+        self::assertSame('active', $event->after['status']);
         // The password / hash must never appear anywhere in the audit payload.
-        $encoded = json_encode($event->payload, JSON_THROW_ON_ERROR);
+        $encoded = json_encode($event->after, JSON_THROW_ON_ERROR);
         self::assertStringNotContainsStringIgnoringCase('secret-pass', $encoded);
         self::assertStringNotContainsStringIgnoringCase('password', $encoded);
     }

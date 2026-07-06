@@ -5,22 +5,22 @@ declare(strict_types=1);
 namespace NeneClear\User;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Auth\Role;
 
 final readonly class UpdateUserUseCase implements UpdateUserUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): UserRepositoryInterface $users
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $users,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -32,7 +32,7 @@ final readonly class UpdateUserUseCase implements UpdateUserUseCaseInterface
         return $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $tx) use ($input): User {
                 $users = ($this->users)($tx);
-                $auditRecorder = ($this->auditRecorder)($tx);
+                $auditRecorder = $this->auditFactory->forExecutor($tx);
 
                 $existing = $users->findById($input->id);
 
@@ -59,26 +59,26 @@ final readonly class UpdateUserUseCase implements UpdateUserUseCaseInterface
 
                 // Audit: in-place change carries both the prior and the resulting role
                 // and status, so a role escalation or deactivation is fully reconstructable.
-                $auditRecorder->record(
-                    $existing->organizationId ?? 0,
-                    $input->actorUserId,
-                    $this->clock->now()->format('Y-m-d H:i:s'),
-                    'user_updated',
-                    'user',
-                    $existing->id,
-                    [
+                $auditRecorder->record(new AuditEvent(
+                    action: 'user_updated',
+                    entityType: 'user',
+                    entityId: $existing->id,
+                    actorId: $input->actorUserId,
+                    organizationId: $existing->organizationId ?? 0,
+                    occurredAt: $this->clock->now()->format('Y-m-d H:i:s'),
+                    before: [
+                        'role' => $existing->role->value,
+                        'status' => $existing->status->value,
+                    ],
+                    after: [
+                        'role' => $updated->role->value,
+                        'status' => $updated->status->value,
+                    ],
+                    metadata: [
                         'user_id' => $existing->id,
                         'email' => $existing->email,
-                        'before' => [
-                            'role' => $existing->role->value,
-                            'status' => $existing->status->value,
-                        ],
-                        'after' => [
-                            'role' => $updated->role->value,
-                            'status' => $updated->status->value,
-                        ],
                     ],
-                );
+                ));
 
                 return $updated;
             },

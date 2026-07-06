@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Auth;
 
-use NeneClear\Audit\AuditRecorder;
+use Nene2\Audit\AuditRecorder;
 use NeneClear\Auth\InvalidCredentialsException;
 use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginInput;
@@ -37,7 +37,7 @@ final class LoginUseCaseTest extends TestCase
         return new LoginUseCase(
             $users,
             new JwtTokenService(secret: 'test-secret-test-secret-32chars!'),
-            new AuditRecorder($this->audit),
+            new AuditRecorder($this->audit, new FixedClock('2026-06-01T10:00:00+00:00')),
             new FixedClock('2026-06-01T10:00:00+00:00'),
             $mfa ?? new TotpAuthenticator(
                 new InMemoryTotpSecretRepository(),
@@ -133,8 +133,9 @@ final class LoginUseCaseTest extends TestCase
         $this->useCase($users)->execute(new LoginInput('admin@acme.example', 'correct horse'));
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('login_succeeded', $this->audit->events[0]->eventType);
-        self::assertSame('admin@acme.example', $this->audit->events[0]->payload['after']['email']);
+        self::assertSame('login_succeeded', $this->audit->events[0]->action);
+        self::assertIsArray($this->audit->events[0]->after);
+        self::assertSame('admin@acme.example', $this->audit->events[0]->after['email']);
     }
 
     public function test_failed_login_is_audited_without_leaking_password(): void
@@ -150,9 +151,10 @@ final class LoginUseCaseTest extends TestCase
 
         self::assertCount(1, $this->audit->events);
         $event = $this->audit->events[0];
-        self::assertSame('login_failed', $event->eventType);
-        self::assertSame(0, $event->actorUserId);
-        self::assertSame('invalid_credentials', $event->payload['after']['failure_reason']);
-        self::assertStringNotContainsStringIgnoringCase('wrong-secret', json_encode($event->payload, JSON_THROW_ON_ERROR));
+        self::assertSame('login_failed', $event->action);
+        self::assertSame(0, $event->actorId);
+        self::assertIsArray($event->after);
+        self::assertSame('invalid_credentials', $event->after['failure_reason']);
+        self::assertStringNotContainsStringIgnoringCase('wrong-secret', json_encode($event->after, JSON_THROW_ON_ERROR));
     }
 }

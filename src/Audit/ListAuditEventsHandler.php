@@ -14,7 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
 final readonly class ListAuditEventsHandler
 {
     public function __construct(
-        private AuditEventRepositoryInterface $auditEvents,
+        private AuditReadRepositoryInterface $auditEvents,
         private JsonResponseFactory $response,
     ) {
     }

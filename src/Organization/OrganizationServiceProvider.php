@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\Organization;
 
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
-use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Container\ContainerInterface;
@@ -49,7 +47,7 @@ final readonly class OrganizationServiceProvider implements ServiceProviderInter
                 static fn (ContainerInterface $c): CreateOrganizationUseCaseInterface => new CreateOrganizationUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): OrganizationRepositoryInterface => new PdoOrganizationRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -58,7 +56,7 @@ final readonly class OrganizationServiceProvider implements ServiceProviderInter
                 static fn (ContainerInterface $c): DeleteOrganizationUseCaseInterface => new DeleteOrganizationUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): OrganizationRepositoryInterface => new PdoOrganizationRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

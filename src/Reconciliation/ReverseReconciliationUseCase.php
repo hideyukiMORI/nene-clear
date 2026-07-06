@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
@@ -25,7 +26,6 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
      * @param Closure(DatabaseQueryExecutorInterface): ManualReceivableRepositoryInterface $manualReceivables
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
@@ -35,7 +35,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
         private Closure $transactions,
         private Closure $manualReceivables,
         private InvoiceUpstreamClientInterface $invoiceClient,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -78,7 +78,7 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                 $transactions = ($this->transactions)($ex);
                 $clientCredits = ($this->clientCredits)($ex);
                 $manualReceivables = ($this->manualReceivables)($ex);
-                $auditRecorder = ($this->auditRecorder)($ex);
+                $auditRecorder = $this->auditFactory->forExecutor($ex);
 
                 $reconciliations->reverseById($input->reconciliationId, $now, $input->reversalReason);
                 $transactions->updateStatusById($input->organizationId, $reconciliation->bankTransactionId, BankTransactionStatus::Unmatched);
@@ -91,37 +91,35 @@ final readonly class ReverseReconciliationUseCase implements ReverseReconciliati
                     }
                 }
 
-                $auditRecorder->record(
-                    $input->organizationId,
-                    $input->actorUserId,
-                    $now,
-                    'reconciliation_reversed',
-                    'payment_reconciliation',
-                    $input->reconciliationId,
-                    [
-                        'payment_reconciliation_id' => $input->reconciliationId,
-                        'before' => [
-                            'status' => 'confirmed',
-                            'bank_transaction_id' => $reconciliation->bankTransactionId,
-                            'confirmed_at' => $reconciliation->confirmedAt,
-                            'allocations' => array_map(
-                                static fn (ReconciliationAllocation $a): array => [
-                                    'source' => $a->source->value,
-                                    'invoice_id' => $a->invoiceId,
-                                    'manual_receivable_id' => $a->manualReceivableId,
-                                    'amount_cents' => $a->amountCents,
-                                    'payment_id' => $a->paymentId,
-                                ],
-                                $allocations,
-                            ),
-                        ],
-                        'after' => [
-                            'status' => 'reversed',
-                            'bank_transaction_status' => 'unmatched',
-                            'reversal_reason' => $input->reversalReason,
-                        ],
+                $auditRecorder->record(new AuditEvent(
+                    action: 'reconciliation_reversed',
+                    entityType: 'payment_reconciliation',
+                    entityId: $input->reconciliationId,
+                    actorId: $input->actorUserId,
+                    organizationId: $input->organizationId,
+                    occurredAt: $now,
+                    before: [
+                        'status' => 'confirmed',
+                        'bank_transaction_id' => $reconciliation->bankTransactionId,
+                        'confirmed_at' => $reconciliation->confirmedAt,
+                        'allocations' => array_map(
+                            static fn (ReconciliationAllocation $a): array => [
+                                'source' => $a->source->value,
+                                'invoice_id' => $a->invoiceId,
+                                'manual_receivable_id' => $a->manualReceivableId,
+                                'amount_cents' => $a->amountCents,
+                                'payment_id' => $a->paymentId,
+                            ],
+                            $allocations,
+                        ),
                     ],
-                );
+                    after: [
+                        'status' => 'reversed',
+                        'bank_transaction_status' => 'unmatched',
+                        'reversal_reason' => $input->reversalReason,
+                    ],
+                    metadata: ['payment_reconciliation_id' => $input->reconciliationId],
+                ));
 
                 return new ReverseReconciliationOutput(reconciliationId: $input->reconciliationId);
             },

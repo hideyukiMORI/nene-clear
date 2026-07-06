@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace NeneClear\Receivable;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class CreateManualReceivableUseCase implements CreateManualReceivableUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): ManualReceivableRepositoryInterface $receivables
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $receivables,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -59,15 +59,15 @@ final readonly class CreateManualReceivableUseCase implements CreateManualReceiv
                     throw new ManualReceivableNotFoundException($id);
                 }
 
-                ($this->auditRecorder)($tx)->record(
-                    $input->organizationId,
-                    $input->actorUserId,
-                    $now,
-                    'manual_receivable_created',
-                    'manual_receivable',
-                    $created->id,
-                    ['after' => ManualReceivableResponse::toArray($created)],
-                );
+                $this->auditFactory->forExecutor($tx)->record(new AuditEvent(
+                    action: 'manual_receivable_created',
+                    entityType: 'manual_receivable',
+                    entityId: $created->id,
+                    actorId: $input->actorUserId,
+                    organizationId: $input->organizationId,
+                    occurredAt: $now,
+                    after: ManualReceivableResponse::toArray($created),
+                ));
 
                 return $created;
             },

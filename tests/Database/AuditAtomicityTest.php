@@ -6,8 +6,6 @@ namespace NeneClear\Tests\Database;
 
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
 use NeneClear\BankImport\BankAccountRepositoryInterface;
@@ -19,6 +17,7 @@ use NeneClear\BankImport\ImportBankCsvUseCase;
 use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\BankImport\PdoBankImportBatchRepository;
 use NeneClear\BankImport\PdoBankTransactionRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Audit\ThrowingAuditEventRepository;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\Tests\Support\SchemaFixture;
@@ -72,7 +71,7 @@ final class AuditAtomicityTest extends TestCase
             static fn (DatabaseQueryExecutorInterface $tx): BankAccountRepositoryInterface => new PdoBankAccountRepository($tx),
             static fn (DatabaseQueryExecutorInterface $tx): BankImportBatchRepositoryInterface => new PdoBankImportBatchRepository($tx),
             static fn (DatabaseQueryExecutorInterface $tx): BankTransactionRepositoryInterface => new PdoBankTransactionRepository($tx),
-            static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new ThrowingAuditEventRepository()),
+            new InMemoryAuditRecorderFactory(new ThrowingAuditEventRepository(), new FixedClock()),
             new BankCsvParser(),
             new FixedClock(),
         );

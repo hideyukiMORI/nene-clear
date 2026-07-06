@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace NeneClear\Receivable;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class UpdateManualReceivableUseCase implements UpdateManualReceivableUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): ManualReceivableRepositoryInterface $receivables
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $receivables,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -70,18 +70,16 @@ final readonly class UpdateManualReceivableUseCase implements UpdateManualReceiv
 
                 $receivables->update($updated);
 
-                ($this->auditRecorder)($tx)->record(
-                    $existing->organizationId,
-                    $input->actorUserId,
-                    $now,
-                    'manual_receivable_updated',
-                    'manual_receivable',
-                    $existing->id,
-                    [
-                        'before' => ManualReceivableResponse::toArray($existing),
-                        'after' => ManualReceivableResponse::toArray($updated),
-                    ],
-                );
+                $this->auditFactory->forExecutor($tx)->record(new AuditEvent(
+                    action: 'manual_receivable_updated',
+                    entityType: 'manual_receivable',
+                    entityId: $existing->id,
+                    actorId: $input->actorUserId,
+                    organizationId: $existing->organizationId,
+                    occurredAt: $now,
+                    before: ManualReceivableResponse::toArray($existing),
+                    after: ManualReceivableResponse::toArray($updated),
+                ));
 
                 return $updated;
             },

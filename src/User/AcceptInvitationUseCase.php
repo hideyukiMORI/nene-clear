@@ -5,23 +5,23 @@ declare(strict_types=1);
 namespace NeneClear\User;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class AcceptInvitationUseCase implements AcceptInvitationUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): UserRepositoryInterface $users
      * @param Closure(DatabaseQueryExecutorInterface): UserInvitationRepositoryInterface $invitations
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $users,
         private Closure $invitations,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -38,7 +38,7 @@ final readonly class AcceptInvitationUseCase implements AcceptInvitationUseCaseI
             function (DatabaseQueryExecutorInterface $tx) use ($input, $now, $hash): User {
                 $invitations = ($this->invitations)($tx);
                 $users = ($this->users)($tx);
-                $auditRecorder = ($this->auditRecorder)($tx);
+                $auditRecorder = $this->auditFactory->forExecutor($tx);
 
                 $invitation = $invitations->findByTokenHash(InvitationToken::hash($input->rawToken));
                 if ($invitation === null || $invitation->acceptedAt !== null) {
@@ -67,18 +67,16 @@ final readonly class AcceptInvitationUseCase implements AcceptInvitationUseCaseI
                 // Audit: in-place activation carries before + after. UserResponse
                 // never exposes the password hash. The actor is the invitee
                 // themselves (the only party holding the token).
-                $auditRecorder->record(
-                    $existing->organizationId ?? 0,
-                    $existing->id ?? 0,
-                    $now,
-                    'invitation_accepted',
-                    'user',
-                    $existing->id,
-                    [
-                        'before' => UserResponse::toArray($existing),
-                        'after' => UserResponse::toArray($activated),
-                    ],
-                );
+                $auditRecorder->record(new AuditEvent(
+                    action: 'invitation_accepted',
+                    entityType: 'user',
+                    entityId: $existing->id,
+                    actorId: $existing->id ?? 0,
+                    organizationId: $existing->organizationId ?? 0,
+                    occurredAt: $now,
+                    before: UserResponse::toArray($existing),
+                    after: UserResponse::toArray($activated),
+                ));
 
                 return $activated;
             },

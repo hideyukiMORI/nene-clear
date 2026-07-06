@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace NeneClear\Organization;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class DeleteOrganizationUseCase implements DeleteOrganizationUseCaseInterface
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): OrganizationRepositoryInterface $organizations
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $organizations,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -31,7 +31,7 @@ final readonly class DeleteOrganizationUseCase implements DeleteOrganizationUseC
         $this->transactionManager->transactional(
             function (DatabaseQueryExecutorInterface $tx) use ($id, $actorUserId): void {
                 $organizations = ($this->organizations)($tx);
-                $auditRecorder = ($this->auditRecorder)($tx);
+                $auditRecorder = $this->auditFactory->forExecutor($tx);
 
                 $organization = $organizations->findById($id);
 
@@ -44,21 +44,19 @@ final readonly class DeleteOrganizationUseCase implements DeleteOrganizationUseC
 
                 // Audit: deletion carries the prior state (`before` only), scoped to the
                 // now-removed tenant.
-                $auditRecorder->record(
-                    $id,
-                    $actorUserId,
-                    $now,
-                    'organization_deleted',
-                    'organization',
-                    $id,
-                    [
-                        'before' => [
-                            'organization_id' => $id,
-                            'slug' => $organization->slug,
-                            'name' => $organization->name,
-                        ],
+                $auditRecorder->record(new AuditEvent(
+                    action: 'organization_deleted',
+                    entityType: 'organization',
+                    entityId: $id,
+                    actorId: $actorUserId,
+                    organizationId: $id,
+                    occurredAt: $now,
+                    before: [
+                        'organization_id' => $id,
+                        'slug' => $organization->slug,
+                        'name' => $organization->name,
                     ],
-                );
+                ));
             },
         );
     }

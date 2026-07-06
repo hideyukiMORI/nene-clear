@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\User;
 
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
-use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Container\ContainerInterface;
@@ -55,7 +53,7 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
                 static fn (ContainerInterface $c): CreateUserUseCaseInterface => new CreateUserUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): UserInvitationRepositoryInterface => new PdoUserInvitationRepository($tx),
                     ServiceResolver::get($c, InvitationMailerInterface::class),
                     ServiceResolver::get($c, InvitationLinkBuilder::class),
@@ -76,7 +74,7 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
                     static fn (DatabaseQueryExecutorInterface $tx): UserInvitationRepositoryInterface => new PdoUserInvitationRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -85,7 +83,7 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
                 static fn (ContainerInterface $c): UpdateUserUseCaseInterface => new UpdateUserUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -94,7 +92,7 @@ final readonly class UserServiceProvider implements ServiceProviderInterface
                 static fn (ContainerInterface $c): DeleteUserUseCaseInterface => new DeleteUserUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): UserRepositoryInterface => new PdoUserRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

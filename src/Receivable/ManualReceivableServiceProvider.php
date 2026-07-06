@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\Receivable;
 
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
-use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use Psr\Container\ContainerInterface;
@@ -50,7 +48,7 @@ final readonly class ManualReceivableServiceProvider implements ServiceProviderI
                 static fn (ContainerInterface $c): CreateManualReceivableUseCaseInterface => new CreateManualReceivableUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): ManualReceivableRepositoryInterface => new PdoManualReceivableRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -59,7 +57,7 @@ final readonly class ManualReceivableServiceProvider implements ServiceProviderI
                 static fn (ContainerInterface $c): UpdateManualReceivableUseCaseInterface => new UpdateManualReceivableUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): ManualReceivableRepositoryInterface => new PdoManualReceivableRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -68,7 +66,7 @@ final readonly class ManualReceivableServiceProvider implements ServiceProviderI
                 static fn (ContainerInterface $c): CancelManualReceivableUseCaseInterface => new CancelManualReceivableUseCase(
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $tx): ManualReceivableRepositoryInterface => new PdoManualReceivableRepository($tx),
-                    static fn (DatabaseQueryExecutorInterface $tx): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($tx)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

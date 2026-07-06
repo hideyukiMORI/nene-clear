@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace NeneClear\Auth;
 
+use Nene2\Audit\AuditRecorderFactoryInterface;
+use Nene2\Audit\AuditRecorderInterface;
 use Nene2\Auth\BearerTokenMiddleware;
 use Nene2\Auth\TokenVerifierInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
@@ -13,9 +15,6 @@ use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Audit\AuditRecorder;
-use NeneClear\Audit\AuditRecorderInterface;
-use NeneClear\Audit\PdoAuditEventRepository;
 use NeneClear\ClearSettings\ClearSettingsRepositoryInterface;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
@@ -82,7 +81,7 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, TokenIssuerInterface::class),
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $ex): RecoveryCodeRepositoryInterface => new PdoRecoveryCodeRepository($ex),
-                    static fn (DatabaseQueryExecutorInterface $ex): AuditRecorderInterface => new AuditRecorder(new PdoAuditEventRepository($ex)),
+                    ServiceResolver::get($c, AuditRecorderFactoryInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )

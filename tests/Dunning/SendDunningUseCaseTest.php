@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Dunning;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\ClearSettings\ClearSettings;
 use NeneClear\Dunning\DunningMessageRenderer;
 use NeneClear\Dunning\DunningStage;
@@ -18,6 +17,7 @@ use NeneClear\InvoiceUpstream\InvoiceClientInfo;
 use NeneClear\InvoiceUpstream\InvoiceItem;
 use NeneClear\InvoiceUpstream\UpstreamInvoiceNotFoundException;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use NeneClear\Tests\Support\NullQueryExecutor;
@@ -46,7 +46,7 @@ final class SendDunningUseCaseTest extends TestCase
             fn () => $this->clearSettings,
             $this->invoiceClient,
             $this->mailer,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             new FixedClock('2026-05-31T09:00:00+00:00'),
             new DunningMessageRenderer(new MessageCatalog(dirname(__DIR__, 2) . '/lang')),
         );
@@ -113,7 +113,7 @@ final class SendDunningUseCaseTest extends TestCase
         self::assertStringContainsString('INV-001', $this->mailer->sent[0]->subject);
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('dunning_sent', $this->audit->events[0]->eventType);
+        self::assertSame('dunning_sent', $this->audit->events[0]->action);
     }
 
     public function test_paid_invoice_throws(): void

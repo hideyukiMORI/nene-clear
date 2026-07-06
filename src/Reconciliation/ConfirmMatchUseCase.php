@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace NeneClear\Reconciliation;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\BankImport\BankTransactionNotFoundException;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\BankImport\BankTransactionStatus;
@@ -28,7 +29,6 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
      * @param Closure(DatabaseQueryExecutorInterface): ReconciliationRepositoryInterface $reconciliations
      * @param Closure(DatabaseQueryExecutorInterface): ClientCreditRepositoryInterface $clientCredits
      * @param Closure(DatabaseQueryExecutorInterface): ManualReceivableRepositoryInterface $manualReceivables
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
@@ -38,7 +38,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
         private Closure $clientCredits,
         private Closure $manualReceivables,
         private InvoiceUpstreamClientInterface $invoiceClient,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -138,7 +138,7 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                 $transactions = ($this->transactions)($ex);
                 $clientCredits = ($this->clientCredits)($ex);
                 $manualReceivables = ($this->manualReceivables)($ex);
-                $auditRecorder = ($this->auditRecorder)($ex);
+                $auditRecorder = $this->auditFactory->forExecutor($ex);
 
                 $reconciliationId = $reconciliations->save(new Reconciliation(
                     organizationId: $input->organizationId,
@@ -205,42 +205,40 @@ final readonly class ConfirmMatchUseCase implements ConfirmMatchUseCaseInterface
                     ));
                 }
 
-                $auditRecorder->record(
-                    $input->organizationId,
-                    $input->actorUserId,
-                    $now,
-                    'reconciliation_confirmed',
-                    'payment_reconciliation',
-                    $reconciliationId,
-                    [
-                        'before' => [
-                            'bank_transaction_status' => $tx->status->value,
-                            'bank_transaction_amount_cents' => $tx->amountCents,
-                            'allocations' => array_map(self::auditTarget(...), $prepared),
-                        ],
-                        'after' => [
-                            'payment_reconciliation_id' => $reconciliationId,
-                            'bank_transaction_status' => $newStatus->value,
-                            'total_allocated_cents' => $totalAllocated,
-                            'remainder_cents' => $remainder,
-                            'allocations' => array_map(
-                                static function (array $e): array {
-                                    /** @var AllocationInput $a */
-                                    $a = $e['allocation'];
-
-                                    return [
-                                        'source' => $e['source']->value,
-                                        'invoice_id' => $a->invoiceId,
-                                        'manual_receivable_id' => $e['manualReceivableId'],
-                                        'amount_cents' => $a->amountCents,
-                                        'payment_id' => $e['payment']?->paymentId,
-                                    ];
-                                },
-                                $prepared,
-                            ),
-                        ],
+                $auditRecorder->record(new AuditEvent(
+                    action: 'reconciliation_confirmed',
+                    entityType: 'payment_reconciliation',
+                    entityId: $reconciliationId,
+                    actorId: $input->actorUserId,
+                    organizationId: $input->organizationId,
+                    occurredAt: $now,
+                    before: [
+                        'bank_transaction_status' => $tx->status->value,
+                        'bank_transaction_amount_cents' => $tx->amountCents,
+                        'allocations' => array_map(self::auditTarget(...), $prepared),
                     ],
-                );
+                    after: [
+                        'payment_reconciliation_id' => $reconciliationId,
+                        'bank_transaction_status' => $newStatus->value,
+                        'total_allocated_cents' => $totalAllocated,
+                        'remainder_cents' => $remainder,
+                        'allocations' => array_map(
+                            static function (array $e): array {
+                                /** @var AllocationInput $a */
+                                $a = $e['allocation'];
+
+                                return [
+                                    'source' => $e['source']->value,
+                                    'invoice_id' => $a->invoiceId,
+                                    'manual_receivable_id' => $e['manualReceivableId'],
+                                    'amount_cents' => $a->amountCents,
+                                    'payment_id' => $e['payment']?->paymentId,
+                                ];
+                            },
+                            $prepared,
+                        ),
+                    ],
+                ));
 
                 return new ConfirmMatchOutput(reconciliationId: $reconciliationId);
             },

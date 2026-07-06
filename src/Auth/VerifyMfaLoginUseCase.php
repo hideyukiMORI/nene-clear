@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace NeneClear\Auth;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 use NeneClear\Mfa\RecoveryCodeRepositoryInterface;
 use NeneClear\Mfa\RecoveryCodeService;
 use NeneClear\Mfa\TotpAuthenticator;
@@ -25,7 +26,6 @@ final readonly class VerifyMfaLoginUseCase
 {
     /**
      * @param Closure(DatabaseQueryExecutorInterface): RecoveryCodeRepositoryInterface $recovery
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private MfaChallengeTokens $challenges,
@@ -36,7 +36,7 @@ final readonly class VerifyMfaLoginUseCase
         private TokenIssuerInterface $tokens,
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $recovery,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private ClockInterface $clock,
     ) {
     }
@@ -61,15 +61,15 @@ final readonly class VerifyMfaLoginUseCase
             if ($recoveryId !== null) {
                 ($this->recovery)($ex)->markUsed($recoveryId, $now);
             }
-            ($this->auditRecorder)($ex)->record(
-                $user->organizationId ?? 0,
-                $userId,
-                $now,
-                'login_succeeded',
-                'user',
-                $userId,
-                ['after' => ['user_id' => $userId, 'email' => $user->email, 'mfa' => true]],
-            );
+            $this->auditFactory->forExecutor($ex)->record(new AuditEvent(
+                action: 'login_succeeded',
+                entityType: 'user',
+                entityId: $userId,
+                actorId: $userId,
+                organizationId: $user->organizationId ?? 0,
+                occurredAt: $now,
+                after: ['user_id' => $userId, 'email' => $user->email, 'mfa' => true],
+            ));
         });
 
         return new LoginOutput(

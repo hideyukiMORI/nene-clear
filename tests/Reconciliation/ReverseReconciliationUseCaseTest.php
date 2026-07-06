@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Reconciliation;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\BankTransaction;
 use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
@@ -21,6 +20,7 @@ use NeneClear\Reconciliation\ReconciliationStatus;
 use NeneClear\Reconciliation\ReverseReconciliationInput;
 use NeneClear\Reconciliation\ReverseReconciliationUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\BankImport\InMemoryBankTransactionRepository;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
@@ -56,7 +56,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             fn () => $this->clientCredits,
             fn () => $this->manualReceivables,
             $this->invoiceClient,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             $clock,
         );
         $this->reverseUseCase = new ReverseReconciliationUseCase(
@@ -67,7 +67,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
             fn () => $this->transactions,
             fn () => $this->manualReceivables,
             $this->invoiceClient,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             $clock,
         );
     }
@@ -178,7 +178,7 @@ final class ReverseReconciliationUseCaseTest extends TestCase
         $payments = $this->invoiceClient->paymentsFor(1);
         self::assertTrue($payments[0]['voided']);
 
-        $auditTypes = array_column($this->audit->events, 'eventType');
+        $auditTypes = array_column($this->audit->events, 'action');
         self::assertContains('reconciliation_reversed', $auditTypes);
     }
 

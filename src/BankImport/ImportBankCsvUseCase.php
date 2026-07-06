@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace NeneClear\BankImport;
 
 use Closure;
+use Nene2\Audit\AuditEvent;
+use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
-use NeneClear\Audit\AuditRecorderInterface;
 
 final readonly class ImportBankCsvUseCase implements ImportBankCsvUseCaseInterface
 {
@@ -16,14 +17,13 @@ final readonly class ImportBankCsvUseCase implements ImportBankCsvUseCaseInterfa
      * @param Closure(DatabaseQueryExecutorInterface): BankAccountRepositoryInterface $bankAccounts
      * @param Closure(DatabaseQueryExecutorInterface): BankImportBatchRepositoryInterface $batches
      * @param Closure(DatabaseQueryExecutorInterface): BankTransactionRepositoryInterface $transactions
-     * @param Closure(DatabaseQueryExecutorInterface): AuditRecorderInterface $auditRecorder
      */
     public function __construct(
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $bankAccounts,
         private Closure $batches,
         private Closure $transactions,
-        private Closure $auditRecorder,
+        private AuditRecorderFactoryInterface $auditFactory,
         private BankCsvParser $parser,
         private ClockInterface $clock,
     ) {
@@ -39,7 +39,7 @@ final readonly class ImportBankCsvUseCase implements ImportBankCsvUseCaseInterfa
                 $bankAccounts = ($this->bankAccounts)($tx);
                 $batches = ($this->batches)($tx);
                 $transactions = ($this->transactions)($tx);
-                $auditRecorder = ($this->auditRecorder)($tx);
+                $auditRecorder = $this->auditFactory->forExecutor($tx);
 
                 $account = $bankAccounts->findById($input->bankAccountId);
 
@@ -80,22 +80,20 @@ final readonly class ImportBankCsvUseCase implements ImportBankCsvUseCaseInterfa
                     ));
                 }
 
-                $auditRecorder->record(
-                    $input->organizationId,
-                    $input->actorUserId,
-                    $now,
-                    'bank_import',
-                    'bank_import_batch',
-                    $batchId,
-                    [
-                        'after' => [
-                            'bank_import_batch_id' => $batchId,
-                            'file_hash' => $fileHash,
-                            'row_count' => count($lines),
-                            'source_filename' => $input->sourceFilename,
-                        ],
+                $auditRecorder->record(new AuditEvent(
+                    action: 'bank_import',
+                    entityType: 'bank_import_batch',
+                    entityId: $batchId,
+                    actorId: $input->actorUserId,
+                    organizationId: $input->organizationId,
+                    occurredAt: $now,
+                    after: [
+                        'bank_import_batch_id' => $batchId,
+                        'file_hash' => $fileHash,
+                        'row_count' => count($lines),
+                        'source_filename' => $input->sourceFilename,
                     ],
-                );
+                ));
 
                 return new ImportBankCsvOutput(
                     bankImportBatchId: $batchId,

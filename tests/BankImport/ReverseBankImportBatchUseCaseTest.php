@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\BankImport;
 
-use NeneClear\Audit\AuditRecorder;
 use NeneClear\BankImport\BankImportBatch;
 use NeneClear\BankImport\BankImportBatchAlreadyReversedException;
 use NeneClear\BankImport\BankImportBatchHasMatchedLinesException;
@@ -15,6 +14,7 @@ use NeneClear\BankImport\BankTransactionStatus;
 use NeneClear\BankImport\ReverseBankImportBatchInput;
 use NeneClear\BankImport\ReverseBankImportBatchUseCase;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
+use NeneClear\Tests\Audit\InMemoryAuditRecorderFactory;
 use NeneClear\Tests\Support\FakeTransactionManager;
 use NeneClear\Tests\Support\FixedClock;
 use PHPUnit\Framework\TestCase;
@@ -35,7 +35,7 @@ final class ReverseBankImportBatchUseCaseTest extends TestCase
             new FakeTransactionManager(),
             fn () => $this->batches,
             fn () => $this->transactions,
-            fn () => new AuditRecorder($this->audit),
+            new InMemoryAuditRecorderFactory($this->audit, new FixedClock()),
             new FixedClock(),
         );
     }
@@ -99,7 +99,7 @@ final class ReverseBankImportBatchUseCaseTest extends TestCase
         self::assertSame(BankTransactionStatus::Voided, $this->transactions->findById(7, $txId2)?->status);
 
         self::assertCount(1, $this->audit->events);
-        self::assertSame('bank_import_batch_reversed', $this->audit->events[0]->eventType);
+        self::assertSame('bank_import_batch_reversed', $this->audit->events[0]->action);
     }
 
     public function test_unknown_or_cross_tenant_batch_throws_not_found(): void
