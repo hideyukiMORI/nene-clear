@@ -14,12 +14,14 @@ final readonly class AuditEventResponse
         return [
             'audit_event_id' => $event->id,
             'organization_id' => $event->organizationId,
-            'event_type' => $event->eventType,
+            'action' => $event->action,
             'entity_type' => $event->entityType,
             'entity_id' => $event->entityId,
-            'actor_user_id' => $event->actorUserId,
+            'actor_id' => $event->actorId,
             'occurred_at' => $event->occurredAt,
-            'payload' => $event->payload,
+            'before' => $event->before,
+            'after' => $event->after,
+            'metadata' => $event->metadata,
         ];
     }
 }

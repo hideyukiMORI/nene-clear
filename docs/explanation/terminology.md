@@ -98,14 +98,16 @@ Stored and transmitted **exactly** as written (lowercase snake_case).
 Do not invent `cancelled`, `void`, `pending`, `unpaid`, etc. without registering
 them here first.
 
-### Audit event types (`audit_events.event_type`, exact strings)
+### Audit actions (`audit_events.action`, exact strings)
 
 Append-only audit trail (`AuditEvent`, compliance §6). Every state-changing
 operation records exactly one event from this closed set. New mutating
-operations MUST register their `event_type` here **before** first use; spelling
-follows `{entity}_{past-tense-verb}` in lowercase snake_case.
+operations MUST register their `action` here **before** first use; spelling
+follows `{entity}_{past-tense-verb}` in lowercase snake_case. (The column was
+renamed from `event_type` in the stage-2 canonicalization, Issue #258; the
+action strings themselves are unchanged.)
 
-| `event_type` | Operation | Payload shape |
+| `action` | Operation | Snapshots |
 | --- | --- | --- |
 | `bank_import` | Bank CSV imported | `after` |
 | `bank_import_batch_reversed` | Import batch reversed | `before` + `after` |
@@ -131,8 +133,10 @@ follows `{entity}_{past-tense-verb}` in lowercase snake_case.
 | `login_failed` | Authentication rejected | `after` (attempted `email` + `failure_reason`) |
 
 Mutations that create a resource carry only `after`; deletions carry only
-`before`; in-place changes carry both. Payload keys reuse canonical field names
-(§3); booleans follow the `is_` rule (e.g. `is_paused`).
+`before`; in-place changes carry both. Context beyond the snapshots (e.g. the
+`invoice_id` a dunning pause targets) is recorded in `metadata`. Snapshot and
+metadata keys reuse canonical field names (§3); booleans follow the `is_` rule
+(e.g. `is_paused`).
 
 ### Audit entity types (`audit_events.entity_type`, exact strings)
 
@@ -193,11 +197,12 @@ login). New events MUST map to one of these registered `entity_type` values:
 | Upstream client id | `client_id` | `upstream_client_id`, `clientId` |
 | Upstream payment id | `payment_id` | `upstream_payment_id`, `paymentId` |
 | Foreign keys (Clear-owned) | `bank_transaction_id`, `bank_import_batch_id`, `bank_account_id`, `payment_reconciliation_id`, `client_credit_id`, `manual_receivable_id` | camelCase, abbreviations |
-| Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`, `actor_id` (use role-specific names above) |
-| Audit event type | `event_type` | `type`, `action` |
+| Actor / timestamps | `imported_by`, `imported_at`, `confirmed_by`, `confirmed_at`, `reversed_at`, `sent_by`, `sent_at`, `created_by`, `created_at` | `issue_date`, `paidAt`; `actor_id` outside the audit trail (use role-specific names above) |
+| Audit action | `action` | `event_type` (pre-#258), `type` |
 | Audit subject type | `entity_type` | `entity`, `target_type`, `resource` |
 | Audit subject id | `entity_id` | `target_id`, `resource_id` |
-| Audit actor / time | `actor_user_id`, `occurred_at` | `user_id`, `actor_id`, `created_at` (on audit rows) |
+| Audit actor / time | `actor_id`, `occurred_at` (audit rows only) | `actor_user_id` (pre-#258), `user_id`, `created_at` (on audit rows) |
+| Audit snapshots / context | `before`, `after`, `metadata` (JSON columns `before_json`, `after_json`, `metadata_json`) | `payload`, `payload_json` (pre-#258), `diff`, `context` |
 | Login failure reason (audit) | `failure_reason` | `reason`, `error`, `code` |
 | List envelope | `items`, `limit`, `offset` | `data`, `results`, `count` |
 
@@ -297,7 +302,7 @@ exact spellings; do not invent variants per endpoint.
 | `sort_dir` | `asc` or `desc` (default `desc`) |
 
 Other single-value filters use the canonical field name itself (`status`,
-`client_id`, `event_type`, `entity_type`, `entity_id`, `counterparty`).
+`client_id`, `action`, `entity_type`, `entity_id`, `counterparty`).
 
 ---
 

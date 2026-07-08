@@ -29,10 +29,10 @@ final readonly class ListAuditEventsHandler
         $int = static fn (string $k): ?int => isset($q[$k]) && is_numeric($q[$k]) ? (int) $q[$k] : null;
 
         $filter = new AuditEventFilter(
-            eventType: $str('event_type'),
+            action: $str('action'),
             entityType: $str('entity_type'),
             entityId: $int('entity_id'),
-            actorUserId: $int('actor_user_id'),
+            actorId: $int('actor_id'),
             occurredFrom: $str('occurred_from'),
             occurredTo: $str('occurred_to'),
             sortColumn: $str('sort_by') ?? 'occurred_at',

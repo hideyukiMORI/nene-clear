@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listAuditEvents } from '@/api/endpoints'
-import type { AuditEvent, AuditEventType } from '@/types'
+import type { AuditEvent, AuditAction } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead, DatePicker, SortableTh, nextSort } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -10,9 +10,9 @@ import { formatDateTime } from '@/utils/format'
 
 const PAGE = 20
 
-// Every registered event_type (terminology §2) with its display label key and a
+// Every registered action (terminology §2) with its display label key and a
 // badge tone: green for value-creating, red for reversing/deleting/failing.
-const EVENT_META: Record<AuditEventType, StatusMeta> = {
+const EVENT_META: Record<AuditAction, StatusMeta> = {
   bank_import:                 { v: 'info', labelKey: 'audit.event.bank_import' },
   bank_import_batch_reversed:  { v: 'bad',  labelKey: 'audit.event.bank_import_batch_reversed' },
   reconciliation_confirmed:    { v: 'ok',   labelKey: 'audit.event.reconciliation_confirmed' },
@@ -36,9 +36,9 @@ const EVENT_META: Record<AuditEventType, StatusMeta> = {
   mfa_disabled:                { v: 'warn', labelKey: 'audit.event.mfa_disabled' },
 }
 
-const EVENT_TYPES = Object.keys(EVENT_META) as AuditEventType[]
+const ACTIONS = Object.keys(EVENT_META) as AuditAction[]
 
-/** Pretty-print one before/after block, or any payload value, as stable JSON. */
+/** Pretty-print one before/after/metadata block as stable JSON. */
 function StateBlock({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="audit-state">
@@ -50,43 +50,36 @@ function StateBlock({ label, value }: { label: string; value: unknown }) {
 
 function EventDetail({ event }: { event: AuditEvent }) {
   const { t } = useTranslation()
-  const payload = event.payload
-  const before = payload['before']
-  const after = payload['after']
-  // Context keys are everything in the payload that is not the before/after diff.
-  const context = Object.fromEntries(
-    Object.entries(payload).filter(([k]) => k !== 'before' && k !== 'after'),
-  )
-  const hasContext = Object.keys(context).length > 0
+  const { before, after, metadata } = event
 
-  if (before === undefined && after === undefined && !hasContext) {
+  if (before === null && after === null && metadata === null) {
     return <span className="muted">{t('audit.noChange')}</span>
   }
 
   return (
     <div className="audit-detail">
-      {hasContext && <StateBlock label="—" value={context} />}
-      {before !== undefined && <StateBlock label={t('audit.before')} value={before} />}
-      {after !== undefined && <StateBlock label={t('audit.after')} value={after} />}
+      {metadata !== null && <StateBlock label="—" value={metadata} />}
+      {before !== null && <StateBlock label={t('audit.before')} value={before} />}
+      {after !== null && <StateBlock label={t('audit.after')} value={after} />}
     </div>
   )
 }
 
 export default function AuditLogPage() {
   const { t } = useTranslation()
-  const [eventType, setEventType] = useState('')
+  const [action, setAction] = useState('')
   const [actor, setActor] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [applied, setApplied] = useState<{ eventType: string; actor: string; from: string; to: string; offset: number }>({ eventType: '', actor: '', from: '', to: '', offset: 0 })
+  const [applied, setApplied] = useState<{ action: string; actor: string; from: string; to: string; offset: number }>({ action: '', actor: '', from: '', to: '', offset: 0 })
   const [sort, setSort] = useState<SortState>({ by: 'occurred_at', dir: 'desc' })
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set())
 
   const auditQ = useQuery({
     queryKey: ['audit-events', applied, sort],
     queryFn: ({ signal }) => listAuditEvents({
-      eventType: applied.eventType || undefined,
-      actorUserId: applied.actor || undefined,
+      action: applied.action || undefined,
+      actorId: applied.actor || undefined,
       occurredFrom: applied.from ? applied.from.replace(/\//g, '-') : undefined,
       occurredTo: applied.to ? applied.to.replace(/\//g, '-') : undefined,
       sortBy: sort.by,
@@ -96,8 +89,8 @@ export default function AuditLogPage() {
     }, signal),
   })
 
-  function search() { setApplied({ eventType, actor, from, to, offset: 0 }) }
-  function clear() { setEventType(''); setActor(''); setFrom(''); setTo(''); setApplied({ eventType: '', actor: '', from: '', to: '', offset: 0 }) }
+  function search() { setApplied({ action, actor, from, to, offset: 0 }) }
+  function clear() { setAction(''); setActor(''); setFrom(''); setTo(''); setApplied({ action: '', actor: '', from: '', to: '', offset: 0 }) }
   function goPage(off: number) { setApplied(p => ({ ...p, offset: off })) }
   function onSort(col: string) { setSort(s => nextSort(s, col)); setApplied(p => ({ ...p, offset: 0 })) }
 
@@ -110,10 +103,10 @@ export default function AuditLogPage() {
     })
   }
 
-  function actorLabel(actorUserId: number): string {
-    return actorUserId === 0
+  function actorLabel(actorId: number): string {
+    return actorId === 0
       ? t('audit.actor.system')
-      : t('audit.actor.user', { id: actorUserId })
+      : t('audit.actor.user', { id: actorId })
   }
 
   const total = auditQ.data?.total ?? 0
@@ -131,10 +124,10 @@ export default function AuditLogPage() {
 
       <FilterBar>
         <FilterField label={t('audit.filter.event')}>
-          <select className="inp" value={eventType} onChange={e => setEventType(e.target.value)}>
+          <select className="inp" value={action} onChange={e => setAction(e.target.value)}>
             <option value="">{t('audit.filter.all')}</option>
-            {EVENT_TYPES.map(type => (
-              <option key={type} value={type}>{t(EVENT_META[type].labelKey)}</option>
+            {ACTIONS.map(a => (
+              <option key={a} value={a}>{t(EVENT_META[a].labelKey)}</option>
             ))}
           </select>
         </FilterField>
@@ -160,8 +153,8 @@ export default function AuditLogPage() {
           <thead>
             <tr>
               <SortableTh column="occurred_at" sort={sort} onSort={onSort}>{t('audit.table.time')}</SortableTh>
-              <SortableTh column="event_type" sort={sort} onSort={onSort}>{t('audit.table.event')}</SortableTh>
-              <SortableTh column="actor_user_id" sort={sort} onSort={onSort}>{t('audit.table.actor')}</SortableTh>
+              <SortableTh column="action" sort={sort} onSort={onSort}>{t('audit.table.event')}</SortableTh>
+              <SortableTh column="actor_id" sort={sort} onSort={onSort}>{t('audit.table.actor')}</SortableTh>
               <th>{t('audit.table.detail')}</th>
             </tr>
           </thead>
@@ -173,8 +166,8 @@ export default function AuditLogPage() {
                 <Fragment key={event.audit_event_id}>
                   <tr data-kbd-row={index} className={cursor === index ? 'is-cursor' : undefined}>
                     <td className="muted">{formatDateTime(event.occurred_at)}</td>
-                    <td><StatusBadge map={EVENT_META} value={event.event_type} dot fallback={event.event_type} /></td>
-                    <td>{actorLabel(event.actor_user_id)}</td>
+                    <td><StatusBadge map={EVENT_META} value={event.action} dot fallback={event.action} /></td>
+                    <td>{actorLabel(event.actor_id)}</td>
                     <td className="row-act">
                       <Button variant="ghost" size="sm" onClick={() => toggle(event.audit_event_id)}>
                         {isOpen ? t('audit.hideDetail') : t('audit.viewDetail')}

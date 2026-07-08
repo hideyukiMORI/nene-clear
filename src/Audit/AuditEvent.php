@@ -7,10 +7,12 @@ namespace NeneClear\Audit;
 /**
  * Read-side view of one audit record (compliance §6).
  *
- * Writes now go through the framework recorder (`Nene2\Audit\AuditEvent`, ADR
+ * Writes go through the framework recorder (`Nene2\Audit\AuditEvent`, ADR
  * 0014); this product value object is the shape the read layer hydrates from
- * `audit_events` and hands to {@see AuditEventResponse}. `payload` is the
- * normalized flat payload (see {@see PdoAuditReadRepository}).
+ * the canonical `audit_events` columns (stage 2, Issue #258) and hands to
+ * {@see AuditEventResponse}: `before` / `after` are the sanitized snapshots,
+ * `metadata` carries the event's extra context keys (e.g. `invoice_id` on
+ * dunning pauses) — each null when the event recorded none.
  *
  * `entityType` / `entityId` identify the record the operation changed, so a
  * single record's history is queryable. `entityId` is null when the subject has
@@ -19,16 +21,20 @@ namespace NeneClear\Audit;
 final readonly class AuditEvent
 {
     /**
-     * @param array<string, mixed> $payload
+     * @param array<string, mixed>|null $before
+     * @param array<string, mixed>|null $after
+     * @param array<string, mixed>|null $metadata
      */
     public function __construct(
         public int $organizationId,
-        public string $eventType,
+        public string $action,
         public string $entityType,
         public ?int $entityId,
-        public int $actorUserId,
+        public int $actorId,
         public string $occurredAt,
-        public array $payload,
+        public ?array $before,
+        public ?array $after,
+        public ?array $metadata,
         public ?int $id = null,
     ) {
     }

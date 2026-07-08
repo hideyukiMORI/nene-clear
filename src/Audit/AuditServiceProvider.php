@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NeneClear\Audit;
 
-use Nene2\Audit\AuditPayloadMode;
 use Nene2\Audit\AuditRecorder;
 use Nene2\Audit\AuditRecorderFactory;
 use Nene2\Audit\AuditRecorderFactoryInterface;
@@ -21,19 +20,21 @@ use Psr\Container\ContainerInterface;
 
 /**
  * Wires the append-only audit trail onto the framework audit module
- * (`Nene2\Audit`, ADR 0014) without re-migrating (stage ①).
+ * (`Nene2\Audit`, ADR 0014).
  *
- * The write side is the framework's transaction-atomic
- * {@see AuditRecorderFactoryInterface::forExecutor()} plus
- * {@see PdoAuditEventRepository}, pointed at Clear's existing `audit_events`
- * table via {@see AuditTableConfig} in SinglePayload mode — physical column
- * names (`event_type`, `actor_user_id`, `payload_json`) are absorbed by config,
- * so no column is renamed. A non-transactional {@see AuditRecorderInterface} is
- * also provided for the login auditing path, which carries no business mutation.
+ * Stage 2 (Issue #258): `audit_events` is the framework-canonical table
+ * ({@see AuditTableConfig::canonical()} — `action` / `actor_id` /
+ * `before_json` / `after_json` / `metadata_json`), so the config seam carries
+ * no name mapping any more. The write side is the framework's
+ * transaction-atomic {@see AuditRecorderFactoryInterface::forExecutor()} plus
+ * {@see PdoAuditEventRepository}; a non-transactional
+ * {@see AuditRecorderInterface} is also provided for the login auditing path,
+ * which carries no business mutation.
  *
- * The read side stays product-owned ({@see AuditReadRepositoryInterface}) because
- * it keeps tenant scoping and Clear's `actor_user_id` sort, which the framework
- * read contract deliberately omits.
+ * The read side stays product-owned ({@see AuditReadRepositoryInterface})
+ * because it keeps tenant scoping, Clear's `actor_id` sort, and inclusive
+ * `DATE(occurred_at)` bounds, which the framework read contract deliberately
+ * omits.
  */
 final readonly class AuditServiceProvider implements ServiceProviderInterface
 {
@@ -83,32 +84,17 @@ final readonly class AuditServiceProvider implements ServiceProviderInterface
     }
 
     /**
-     * Points the framework audit module at Clear's existing `audit_events` table
-     * (ADR 0014) — the single seam for stage-① adoption. SinglePayload mode folds
-     * `before`/`after`/`metadata` into the existing `payload_json` column; the
-     * `event_type` / `actor_user_id` physical names are kept (no rename), so the
-     * binding terminology and API contract are unchanged.
+     * The framework-canonical mapping for Clear's `audit_events` table (ADR
+     * 0014). Since the stage-2 migration (Issue #258) the physical schema *is*
+     * the convergence target — before/after payload mode, a `metadata_json`
+     * column, `action` / `actor_id` names, auto-increment integer id — so this
+     * is {@see AuditTableConfig::canonical()} with no knob turned.
      *
      * Public so integration tests can build a real framework recorder against the
      * same mapping.
      */
     public static function tableConfig(): AuditTableConfig
     {
-        return new AuditTableConfig(
-            table: 'audit_events',
-            mode: AuditPayloadMode::SinglePayload,
-            idColumn: 'id',
-            actionColumn: 'event_type',
-            entityTypeColumn: 'entity_type',
-            entityIdColumn: 'entity_id',
-            actorColumn: 'actor_user_id',
-            organizationColumn: 'organization_id',
-            occurredAtColumn: 'occurred_at',
-            metadataColumn: null,
-            beforeColumn: null,
-            afterColumn: null,
-            payloadColumn: 'payload_json',
-            idIsAutoIncrement: true,
-        );
+        return AuditTableConfig::canonical();
     }
 }

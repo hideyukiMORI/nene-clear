@@ -9,16 +9,16 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 /**
  * Read side of the audit trail (write is the framework recorder, ADR 0014).
  *
- * Reads `audit_events` directly so Clear keeps its own tenant scoping and sort
- * whitelist (including `actor_user_id`). The raw `payload_json` is normalized on
- * hydration: a framework-folded row `{before, after, metadata:{…}}` is flattened
- * back to Clear's historical flat shape `{…context, before, after}`, so folded
- * (post-adoption) and legacy flat rows return an identical payload to the API and
- * the frontend's before/after + context-key rendering.
+ * Reads the canonical `audit_events` columns (stage 2, Issue #258) directly so
+ * Clear keeps its own tenant scoping, its `actor_id` sort, and its inclusive
+ * `DATE(occurred_at)` bounds — read concerns the framework `AuditQuery`
+ * deliberately omits. The stage-1 payload-normalization layer is gone: every
+ * row is stored canonically (`before_json` / `after_json` / `metadata_json`),
+ * so hydration is a straight column read.
  */
 final readonly class PdoAuditReadRepository implements AuditReadRepositoryInterface
 {
-    private const string COLUMNS = 'id, organization_id, event_type, entity_type, entity_id, actor_user_id, occurred_at, payload_json';
+    private const string COLUMNS = 'id, organization_id, action, entity_type, entity_id, actor_id, occurred_at, before_json, after_json, metadata_json';
 
     public function __construct(
         private DatabaseQueryExecutorInterface $query,
@@ -58,9 +58,9 @@ final readonly class PdoAuditReadRepository implements AuditReadRepositoryInterf
         /** @var list<string|int> $params */
         $params = [$organizationId];
 
-        if ($filter->eventType !== null) {
-            $clauses[] = 'event_type = ?';
-            $params[] = $filter->eventType;
+        if ($filter->action !== null) {
+            $clauses[] = 'action = ?';
+            $params[] = $filter->action;
         }
         if ($filter->entityType !== null) {
             $clauses[] = 'entity_type = ?';
@@ -70,9 +70,9 @@ final readonly class PdoAuditReadRepository implements AuditReadRepositoryInterf
             $clauses[] = 'entity_id = ?';
             $params[] = $filter->entityId;
         }
-        if ($filter->actorUserId !== null) {
-            $clauses[] = 'actor_user_id = ?';
-            $params[] = $filter->actorUserId;
+        if ($filter->actorId !== null) {
+            $clauses[] = 'actor_id = ?';
+            $params[] = $filter->actorId;
         }
         if ($filter->occurredFrom !== null) {
             $clauses[] = 'DATE(occurred_at) >= ?';
@@ -90,9 +90,9 @@ final readonly class PdoAuditReadRepository implements AuditReadRepositoryInterf
     private static function orderBy(AuditEventFilter $filter): string
     {
         $column = match ($filter->sortColumn) {
-            'event_type' => 'event_type',
+            'action' => 'action',
             'entity_type' => 'entity_type',
-            'actor_user_id' => 'actor_user_id',
+            'actor_id' => 'actor_id',
             default => 'occurred_at',
         };
         $direction = strtolower($filter->sortDirection) === 'asc' ? 'ASC' : 'DESC';
@@ -105,42 +105,32 @@ final readonly class PdoAuditReadRepository implements AuditReadRepositoryInterf
      */
     private function hydrate(array $row): AuditEvent
     {
-        /** @var array<string, mixed> $payload */
-        $payload = json_decode((string) $row['payload_json'], true, 512, JSON_THROW_ON_ERROR);
-
         return new AuditEvent(
             organizationId: (int) $row['organization_id'],
-            eventType: (string) $row['event_type'],
+            action: (string) $row['action'],
             entityType: (string) $row['entity_type'],
             entityId: $row['entity_id'] !== null ? (int) $row['entity_id'] : null,
-            actorUserId: (int) $row['actor_user_id'],
+            actorId: (int) $row['actor_id'],
             occurredAt: (string) $row['occurred_at'],
-            payload: self::normalize($payload),
+            before: self::decode($row['before_json'] ?? null),
+            after: self::decode($row['after_json'] ?? null),
+            metadata: self::decode($row['metadata_json'] ?? null),
             id: (int) $row['id'],
         );
     }
 
     /**
-     * Flattens a framework-folded payload back to Clear's flat shape.
-     *
-     * The framework's SinglePayload writer stores `{before, after, metadata:{…}}`;
-     * Clear's historical rows are flat `{…context, before, after}`. Lifting the
-     * `metadata` object's keys to the top level makes both indistinguishable to
-     * the API and the frontend (which reads any non-before/after key as context).
-     * Legacy flat rows have no top-level `metadata` key and pass through unchanged.
-     *
-     * @param array<string, mixed> $payload
-     * @return array<string, mixed>
+     * @return array<string, mixed>|null
      */
-    private static function normalize(array $payload): array
+    private static function decode(mixed $json): ?array
     {
-        if (isset($payload['metadata']) && is_array($payload['metadata'])) {
-            /** @var array<string, mixed> $metadata */
-            $metadata = $payload['metadata'];
-            unset($payload['metadata']);
-            $payload = array_merge($metadata, $payload);
+        if (!is_string($json) || $json === '') {
+            return null;
         }
 
-        return $payload;
+        /** @var array<string, mixed>|null $decoded */
+        $decoded = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+
+        return is_array($decoded) ? $decoded : null;
     }
 }

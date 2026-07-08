@@ -1573,9 +1573,9 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
-        - name: event_type
+        - name: action
           in: query
-          description: Filter by exact event type (see terminology registry §audit event types).
+          description: Filter by exact action string (see terminology registry §audit actions).
           schema:
             type: string
         - name: entity_type
@@ -1589,7 +1589,7 @@ paths:
           schema:
             type: integer
             format: int64
-        - name: actor_user_id
+        - name: actor_id
           in: query
           schema: { type: integer, format: int64 }
         - name: occurred_from
@@ -1602,7 +1602,7 @@ paths:
           schema: { type: string, format: date }
         - name: sort_by
           in: query
-          description: "Sort column: occurred_at | event_type | entity_type | actor_user_id."
+          description: "Sort column: occurred_at | action | entity_type | actor_id."
           schema: { type: string }
         - name: sort_dir
           in: query
@@ -2596,7 +2596,7 @@ components:
 
     AuditEvent:
       type: object
-      required: [audit_event_id, organization_id, event_type, entity_type, occurred_at, payload]
+      required: [audit_event_id, organization_id, action, entity_type, occurred_at, before, after, metadata]
       properties:
         audit_event_id:
           type: integer
@@ -2604,9 +2604,9 @@ components:
         organization_id:
           type: integer
           format: int64
-        event_type:
+        action:
           type: string
-          description: Exact event type string (see terminology registry §audit event types).
+          description: Exact action string (see terminology registry §audit actions).
         entity_type:
           type: string
           description: Subject record type (see terminology registry §audit entity types).
@@ -2615,16 +2615,27 @@ components:
           format: int64
           nullable: true
           description: Subject record id; null when there is no single subject (e.g. failed login).
-        actor_user_id:
+        actor_id:
           type: integer
           format: int64
           nullable: true
         occurred_at:
           type: string
           format: date-time
-        payload:
+        before:
           type: object
-          description: Event detail, including before/after snapshots for state changes.
+          nullable: true
+          description: Sanitized snapshot before the change; null for creates.
+          additionalProperties: true
+        after:
+          type: object
+          nullable: true
+          description: Sanitized snapshot after the change; null for deletes.
+          additionalProperties: true
+        metadata:
+          type: object
+          nullable: true
+          description: Extra event context (e.g. invoice_id on dunning pause/resume); null when the event recorded none.
           additionalProperties: true
 
     AuditEventListResponse:

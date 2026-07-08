@@ -38,7 +38,7 @@ const dunning = (o) => ({ dunning_notice_id: 1, organization_id: 7, invoice_id: 
 const invoice = (o) => ({ invoice_id: 123, invoice_number: 'INV-2026-009', client_id: 45, issued_at: '2026-03-31', due_at: '2026-04-30', total_cents: 110000, outstanding_cents: 110000, status: 'overdue', currency: 'JPY', ...o })
 const usr = (o) => ({ user_id: 1, organization_id: 7, email: 'member@acme.example', role: 'member', status: 'active', ...o })
 const settings = { organization_id: 7, upstream_base_url: 'https://invoice.example.com', upstream_token_ref: 'NENE_INVOICE_BEARER_TOKEN', dunning_min_interval_days: 7, bank_accounts: [{ bank_account_id: 1, bank_name: 'みずほ銀行', bank_branch: '本店', account_type: 'ordinary', account_number: '1234567' }] }
-const audit = (o) => ({ audit_event_id: 1, organization_id: 7, event_type: 'reconciliation_confirmed', entity_type: 'payment_reconciliation', entity_id: 1, actor_user_id: 1, occurred_at: '2026-04-21 10:00:00', payload: { before: { bank_transaction_status: 'unmatched' }, after: { bank_transaction_status: 'matched', total_allocated_cents: 110000 } }, ...o })
+const audit = (o) => ({ audit_event_id: 1, organization_id: 7, action: 'reconciliation_confirmed', entity_type: 'payment_reconciliation', entity_id: 1, actor_id: 1, occurred_at: '2026-04-21 10:00:00', before: { bank_transaction_status: 'unmatched' }, after: { bank_transaction_status: 'matched', total_allocated_cents: 110000 }, metadata: null, ...o })
 
 const txs = [
   tx({ bank_transaction_id: 1, status: 'unmatched' }),
@@ -56,11 +56,11 @@ const users = [
   usr({ user_id: 3, email: 'sato@acme.example', role: 'viewer', status: 'invited' }),
 ]
 const audits = [
-  audit({ audit_event_id: 5, event_type: 'reconciliation_confirmed', entity_type: 'payment_reconciliation', entity_id: 1 }),
-  audit({ audit_event_id: 4, event_type: 'dunning_sent', entity_type: 'dunning_notice', entity_id: 7, payload: { after: { invoice_number: 'INV-2026-001', recipient_email: 'accounts@acme.example', channel: 'log' } } }),
-  audit({ audit_event_id: 3, event_type: 'user_updated', entity_type: 'user', entity_id: 2, payload: { before: { role: 'viewer' }, after: { role: 'member' } } }),
-  audit({ audit_event_id: 2, event_type: 'clear_settings_updated', entity_type: 'clear_settings', entity_id: 7, payload: { before: { dunning_min_interval_days: 14 }, after: { dunning_min_interval_days: 7 } } }),
-  audit({ audit_event_id: 1, event_type: 'login_succeeded', entity_type: 'user', entity_id: 1, payload: { after: { email: 'admin@acme.example' } } }),
+  audit({ audit_event_id: 5, action: 'reconciliation_confirmed', entity_type: 'payment_reconciliation', entity_id: 1 }),
+  audit({ audit_event_id: 4, action: 'dunning_sent', entity_type: 'dunning_notice', entity_id: 7, before: null, after: { invoice_number: 'INV-2026-001', recipient_email: 'accounts@acme.example', channel: 'log' } }),
+  audit({ audit_event_id: 3, action: 'user_updated', entity_type: 'user', entity_id: 2, before: { role: 'viewer' }, after: { role: 'member' }, metadata: { user_id: 2, email: 'member@acme.example' } }),
+  audit({ audit_event_id: 2, action: 'clear_settings_updated', entity_type: 'clear_settings', entity_id: 7, before: { dunning_min_interval_days: 14 }, after: { dunning_min_interval_days: 7 } }),
+  audit({ audit_event_id: 1, action: 'login_succeeded', entity_type: 'user', entity_id: 1, before: null, after: { email: 'admin@acme.example' } }),
 ]
 
 function payloadFor(pathname, method, empty) {

@@ -15,10 +15,10 @@ namespace NeneClear\Audit;
 final readonly class AuditEventFilter
 {
     public function __construct(
-        public ?string $eventType = null,
+        public ?string $action = null,
         public ?string $entityType = null,
         public ?int $entityId = null,
-        public ?int $actorUserId = null,
+        public ?int $actorId = null,
         public ?string $occurredFrom = null,
         public ?string $occurredTo = null,
         public string $sortColumn = 'occurred_at',

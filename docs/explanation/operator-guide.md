@@ -74,7 +74,7 @@ Dunning notices are **immutable** once created. No deletion.
 
 Every mutating operation is recorded in `audit_events`:
 
-| Event type | Trigger |
+| Action | Trigger |
 | --- | --- |
 | `bank_import` | CSV imported |
 | `bank_import_batch_reversed` | Import batch reversed |
@@ -83,8 +83,9 @@ Every mutating operation is recorded in `audit_events`:
 | `client_credit_applied` | Credit applied to invoice |
 | `dunning_sent` | Dunning notice sent |
 
-Each record contains: organization, event type, actor user ID, timestamp, and a
-JSON payload with before/after snapshots of the relevant data.
+Each record contains: organization, action, actor ID, timestamp, before/after
+JSON snapshots of the relevant data, and extra context metadata where the event
+carries it (e.g. the targeted `invoice_id`).
 
 ---
 
@@ -117,7 +118,7 @@ The following search and filter operations are available via the API and (in Pha
 
 Audit events are stored in `audit_events` and are queryable by:
 - `organization_id` (always scoped to caller's org)
-- `event_type`
+- `action`
 - `occurred_at` range (SQL-level; no REST endpoint in Phase 1/2)
 
 ---
