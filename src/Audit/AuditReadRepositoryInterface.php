@@ -8,14 +8,14 @@ namespace NeneClear\Audit;
  * Product-owned read side of the audit trail.
  *
  * The write side is the framework recorder (`Nene2\Audit`, ADR 0014); reads stay
- * in the product because they carry two concerns the framework read contract
- * intentionally leaves out: tenant (organization) scoping and Clear's own sort
- * whitelist (which includes `actor_user_id`, a column `Nene2\Audit\AuditQuery`
- * does not model).
+ * in the product because they carry concerns the framework read contract
+ * intentionally leaves out: tenant (organization) scoping, Clear's own sort
+ * whitelist (which includes `actor_id`, a column `Nene2\Audit\AuditQuery` does
+ * not model), and inclusive `DATE(occurred_at)` range bounds.
  *
- * Rows are read from `audit_events` verbatim (raw `payload_json`) and normalized
- * so a framework-folded row (`{before, after, metadata:{…}}`) and a legacy flat
- * row (`{…context, before, after}`) yield the same API payload shape.
+ * Rows are stored in the framework-canonical shape (stage 2, Issue #258):
+ * `before_json` / `after_json` / `metadata_json` hydrate straight into the
+ * product {@see AuditEvent} view.
  */
 interface AuditReadRepositoryInterface
 {

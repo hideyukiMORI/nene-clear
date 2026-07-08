@@ -413,8 +413,8 @@ export function dunningNoticesExportPath(params: DunningNoticeQuery): string {
 
 // --- Audit trail (admin) ---
 export interface AuditQuery {
-  eventType?: string
-  actorUserId?: string
+  action?: string
+  actorId?: string
   occurredFrom?: string
   occurredTo?: string
   sortBy?: string
@@ -425,8 +425,8 @@ export interface AuditQuery {
 
 export function listAuditEvents(params: AuditQuery, signal?: AbortSignal) {
   const q = new URLSearchParams({ limit: String(params.limit ?? 50), offset: String(params.offset ?? 0) })
-  if (params.eventType) q.set('event_type', params.eventType)
-  if (params.actorUserId) q.set('actor_user_id', params.actorUserId)
+  if (params.action) q.set('action', params.action)
+  if (params.actorId) q.set('actor_id', params.actorId)
   if (params.occurredFrom) q.set('occurred_from', params.occurredFrom)
   if (params.occurredTo) q.set('occurred_to', params.occurredTo)
   if (params.sortBy) q.set('sort_by', params.sortBy)

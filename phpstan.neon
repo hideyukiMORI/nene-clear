@@ -5,4 +5,8 @@ parameters:
     - tests
     - public_html
     - tools
+  # Phinx migration classes are file-loaded (not autoloaded); discover their
+  # symbols so migration tests can reference them.
+  scanDirectories:
+    - database/migrations
   tmpDir: .phpstan.cache

@@ -97,9 +97,9 @@ final class ImportBankCsvPdoTest extends TestCase
         self::assertSame(110000, $rows[0]->amountCents);
         self::assertSame('unmatched', $rows[0]->status->value);
 
-        $audit = $this->query->fetchOne('SELECT event_type, actor_user_id FROM audit_events WHERE event_type = ?', ['bank_import']);
+        $audit = $this->query->fetchOne('SELECT action, actor_id FROM audit_events WHERE action = ?', ['bank_import']);
         self::assertNotNull($audit);
-        self::assertSame(42, (int) $audit['actor_user_id']);
+        self::assertSame(42, (int) $audit['actor_id']);
     }
 
     public function test_reimporting_same_file_is_blocked(): void

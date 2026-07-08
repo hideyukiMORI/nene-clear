@@ -115,24 +115,25 @@ final class AuditHttpTest extends TestCase
         $body = $this->decode($list);
 
         self::assertArrayHasKey('items', $body);
-        $types = array_column($body['items'], 'event_type');
-        self::assertContains('user_created', $types);
-        self::assertContains('login_succeeded', $types);
+        $actions = array_column($body['items'], 'action');
+        self::assertContains('user_created', $actions);
+        self::assertContains('login_succeeded', $actions);
 
         $userCreated = null;
         foreach ($body['items'] as $item) {
-            if ($item['event_type'] === 'user_created') {
+            if ($item['action'] === 'user_created') {
                 $userCreated = $item;
                 break;
             }
         }
         self::assertNotNull($userCreated);
-        self::assertSame('new@acme.example', $userCreated['payload']['after']['email']);
+        self::assertNull($userCreated['before']);
+        self::assertSame('new@acme.example', $userCreated['after']['email']);
         // No password material ever reaches the audit trail.
         self::assertStringNotContainsStringIgnoringCase('a-strong-password', (string) json_encode($userCreated));
     }
 
-    public function test_event_type_filter_narrows_results(): void
+    public function test_action_filter_narrows_results(): void
     {
         $token = $this->tokenFor('admin@acme.example');
         $this->request('POST', '/admin/users', $token, [
@@ -141,9 +142,9 @@ final class AuditHttpTest extends TestCase
             'password' => 'a-strong-password',
         ]);
 
-        $body = $this->decode($this->request('GET', '/admin/audit-events?event_type=user_created', $token));
-        $types = array_unique(array_column($body['items'], 'event_type'));
-        self::assertSame(['user_created'], array_values($types));
+        $body = $this->decode($this->request('GET', '/admin/audit-events?action=user_created', $token));
+        $actions = array_unique(array_column($body['items'], 'action'));
+        self::assertSame(['user_created'], array_values($actions));
     }
 
     public function test_entity_type_is_recorded_and_filterable(): void
@@ -157,7 +158,7 @@ final class AuditHttpTest extends TestCase
         $newUserId = $created['user_id'];
 
         // The user_created event carries entity_type=user and entity_id=<new id>.
-        $body = $this->decode($this->request('GET', '/admin/audit-events?event_type=user_created', $token));
+        $body = $this->decode($this->request('GET', '/admin/audit-events?action=user_created', $token));
         self::assertSame('user', $body['items'][0]['entity_type']);
         self::assertSame($newUserId, $body['items'][0]['entity_id']);
 

@@ -144,12 +144,14 @@ final class SchemaFixture
             'CREATE TABLE audit_events (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 organization_id INTEGER NOT NULL,
-                event_type TEXT NOT NULL,
+                action TEXT NOT NULL,
                 entity_type TEXT NOT NULL DEFAULT \'\',
                 entity_id INTEGER,
-                actor_user_id INTEGER NOT NULL,
+                actor_id INTEGER NOT NULL,
                 occurred_at TEXT NOT NULL,
-                payload_json TEXT NOT NULL
+                before_json TEXT,
+                after_json TEXT,
+                metadata_json TEXT
             )'
         );
     }

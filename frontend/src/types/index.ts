@@ -152,9 +152,10 @@ export interface ListEnvelope<T> {
   total: number
 }
 
-// Append-only audit trail (terminology §2). `payload` is an open record whose
-// shape depends on `event_type`; it commonly carries `before` / `after` blocks.
-export type AuditEventType =
+// Append-only audit trail (terminology §2). `before` / `after` are the
+// sanitized snapshots; `metadata` carries extra context keys (e.g. the
+// targeted `invoice_id`) — each null when the event recorded none.
+export type AuditAction =
   | 'bank_import'
   | 'bank_import_batch_reversed'
   | 'reconciliation_confirmed'
@@ -180,13 +181,15 @@ export type AuditEventType =
 export interface AuditEvent {
   audit_event_id: number
   organization_id: number
-  event_type: AuditEventType
+  action: AuditAction
   // Subject record the event changed (terminology §audit entity types).
   entity_type: string
   entity_id: number | null
-  actor_user_id: number
+  actor_id: number
   occurred_at: string
-  payload: Record<string, unknown>
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null
 }
 
 // Invoice upstream read models (read-only from Clear's perspective)
