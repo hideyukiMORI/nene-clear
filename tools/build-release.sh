@@ -37,6 +37,7 @@ echo "==> Build the admin UI into public_html/assets/"
 required_paths=(
   public_html/index.php
   public_html/install.php
+  public_html/.htaccess
   public_html/assets/index.html
   vendor/autoload.php
   vendor/robmorgan/phinx/src/Phinx/Migration/Manager.php
