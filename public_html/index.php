@@ -16,6 +16,7 @@ use NeneClear\Database\ApplicationDatabaseIdentity;
 use NeneClear\Database\CandidateProfiles;
 use NeneClear\Database\MigrationVersions;
 use NeneClear\Http\ApplicationFactory;
+use NeneClear\Http\AuthorizationHeaderFallback;
 use NeneClear\InvoiceUpstream\DemoInvoiceUpstreamFixture;
 use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -151,6 +152,10 @@ $application = ApplicationFactory::create(
 
 $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
+
+// Shared-hosting front proxies (HETEML) strip the Authorization header; adopt
+// the SPA's X-Authorization mirror when the standard header is absent (#265).
+$request = AuthorizationHeaderFallback::apply($request);
 
 // fromGlobals() fills parsedBody from $_POST (form/multipart) only. The SPA
 // posts application/json, so decode it once here; handlers keep reading

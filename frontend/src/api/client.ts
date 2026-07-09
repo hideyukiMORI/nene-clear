@@ -122,8 +122,15 @@ async function request<T>(
     Accept: 'application/json',
   }
 
+  // The token goes to both headers: some shared-hosting front proxies (Tier A;
+  // observed on HETEML) strip the standard `Authorization` header before it
+  // reaches PHP, so the backend falls back to the `X-Authorization` mirror
+  // when the standard header is missing (#265).
   const token = getToken()
-  if (token) headers['Authorization'] = `Bearer ${token}`
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+    headers['X-Authorization'] = `Bearer ${token}`
+  }
 
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
