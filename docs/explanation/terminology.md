@@ -223,6 +223,8 @@ Base URL: `https://nene-clear.dev/problems/`. Slug is **kebab-case**.
 | `unauthorized` | Missing or invalid bearer token (framework `BearerTokenMiddleware`) |
 | `invalid-credentials` | Login failed — wrong email or password |
 | `too-many-login-attempts` | Login throttled — too many failed attempts (HTTP 429) |
+| `too-many-requests` | Disposable-demo start throttled per client (HTTP 429 + Retry-After; framework `Nene2\Demo` handler, #275) |
+| `demo-capacity-exceeded` | Disposable-demo org ceiling reached (HTTP 503; framework `Nene2\Demo` handler, #275) |
 | `mfa-challenge-invalid` | MFA challenge token missing, malformed, or expired (HTTP 401) |
 | `insufficient-capability` | Authenticated but lacks required capability |
 | `role-not-assignable` | Caller may not assign the requested role (e.g. org-admin assigning superadmin) |

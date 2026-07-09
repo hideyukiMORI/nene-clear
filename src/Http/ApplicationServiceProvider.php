@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Http;
 
+use Nene2\Demo\DemoRouteRegistrar;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use NeneClear\Audit\AuditRouteRegistrar;
@@ -24,6 +25,7 @@ use NeneClear\BankImport\DuplicateBankImportExceptionHandler;
 use NeneClear\BankImport\InvalidBankCsvExceptionHandler;
 use NeneClear\ClearSettings\ClearSettingsRouteRegistrar;
 use NeneClear\ClearSettings\ClearSettingsServiceProvider;
+use NeneClear\Demo\DemoServiceProvider;
 use NeneClear\Dunning\DunningNoticeNotFoundExceptionHandler;
 use NeneClear\Dunning\DunningPausedExceptionHandler;
 use NeneClear\Dunning\DunningRouteRegistrar;
@@ -97,7 +99,8 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
             ->addProvider(new InvoiceUpstreamServiceProvider())
             ->addProvider(new ExportServiceProvider())
             ->addProvider(new DunningServiceProvider())
-            ->addProvider(new MfaServiceProvider());
+            ->addProvider(new MfaServiceProvider())
+            ->addProvider(new DemoServiceProvider());
 
         $builder
             ->set(self::ROUTE_REGISTRARS, static function (ContainerInterface $c): array {
@@ -116,6 +119,9 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, ExportRouteRegistrar::class),
                     ServiceResolver::get($c, DunningRouteRegistrar::class),
                     ServiceResolver::get($c, MfaRouteRegistrar::class),
+                    // Disposable demo (#275): registered unconditionally — the framework
+                    // handler answers 404 while DEMO_MODE is off (fail-close).
+                    ServiceResolver::get($c, DemoRouteRegistrar::class),
                 ];
 
                 return $registrars;

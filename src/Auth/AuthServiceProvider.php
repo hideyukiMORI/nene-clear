@@ -47,6 +47,9 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
         '/admin/auth/login/mfa',
         // Invitee has no session yet; the invitation token is the credential.
         '/admin/auth/invitation', '/admin/auth/invitation/accept',
+        // Disposable-demo start (#275): creates the session — no bearer exists yet.
+        // Exact-match blocklist: each DemoTemplate case needs its path listed.
+        '/demo/standard',
     ];
 
     public function register(ContainerBuilder $builder): void
