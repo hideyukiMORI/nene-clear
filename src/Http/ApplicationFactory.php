@@ -10,6 +10,7 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Database\Preflight\CandidateProfile;
 use Nene2\Database\Preflight\DatabaseCandidateInspector;
+use Nene2\Demo\DemoConfig;
 use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\Error\DomainExceptionHandlerInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
@@ -104,6 +105,7 @@ final class ApplicationFactory
         ?string $appVersion = null,
         ?DatabaseCandidateInspector $databaseCandidateInspector = null,
         array $databaseCandidateProfiles = [],
+        ?DemoConfig $demoConfig = null,
     ): RequestHandlerInterface {
         $psr17 = new Psr17Factory();
         $requestIdHolder = new RequestIdHolder();
@@ -145,6 +147,7 @@ final class ApplicationFactory
             $encryptionKey,
             $logger,
             $requestIdHolder,
+            $demoConfig,
         );
 
         $routeRegistrars = $container->get(ApplicationServiceProvider::ROUTE_REGISTRARS);
@@ -202,6 +205,7 @@ final class ApplicationFactory
         ?InvitationMailerInterface $invitationMailer = null,
         string $encryptionKey = '',
         bool $debug = false,
+        ?DemoConfig $demoConfig = null,
     ): ContainerInterface {
         $requestIdHolder = new RequestIdHolder();
         $logger = (new MonologLoggerFactory())->create('nene-clear', $debug, $requestIdHolder);
@@ -218,6 +222,7 @@ final class ApplicationFactory
             $encryptionKey,
             $logger,
             $requestIdHolder,
+            $demoConfig,
         );
     }
 
@@ -236,11 +241,14 @@ final class ApplicationFactory
         string $encryptionKey,
         LoggerInterface $logger,
         RequestIdHolder $requestIdHolder,
+        ?DemoConfig $demoConfig = null,
     ): ContainerInterface {
         $langDir = dirname(__DIR__, 2) . '/lang';
 
         return (new ContainerBuilder())
             ->set(Psr17Factory::class, static fn (ContainerInterface $c): Psr17Factory => $psr17)
+            // Disposable-demo config (#275): defaults keep DEMO_MODE off (fail-close).
+            ->set(DemoConfig::class, static fn (ContainerInterface $c): DemoConfig => $demoConfig ?? new DemoConfig())
             ->set(LoggerInterface::class, static fn (ContainerInterface $c): LoggerInterface => $logger)
             ->set(RequestIdHolder::class, static fn (ContainerInterface $c): RequestIdHolder => $requestIdHolder)
             ->set(ResponseFactoryInterface::class, static fn (ContainerInterface $c): ResponseFactoryInterface => $psr17)

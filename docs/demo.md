@@ -72,6 +72,30 @@ php -S 0.0.0.0:8384 -t public_html public_html/index.php
 6. **Audit log** — every step above appears immediately at the top.
 7. **Reset** — rerun `php tools/seed-demo.php --force`; everything is clean again.
 
+## 4.5 Disposable demo orgs (`/demo/standard`, #275)
+
+With `DEMO_MODE=1` in `.env`, `GET /demo/standard` provisions a **fresh
+throwaway organization per visit** — hand the URL to a prospect and they get
+their own seeded playground (the invoice-style flow, adopted via
+`Nene2\Demo` v1.9.0):
+
+- The visitor lands signed in (a seat page stores a normal 1-hour access token
+  in the SPA session; when it expires, they simply visit the demo URL again).
+- The dataset is a compact T-relative variant of the fixed org's: ~60 deposits
+  over 3 months, dunning history, and the 名義ズレ showcase **pre-staged** —
+  open receivables and their exact-amount deposits already exist, so
+  propose → confirm works immediately with no CSV upload.
+- Protections: per-IP throttle (30 starts/hour → 429 + Retry-After),
+  instance-wide ceiling (`DEMO_MAX_ORGS` → 503), fail-close `DEMO_MODE`
+  (unset/typo → 404). Only `/demo/standard` is public; any other `/demo/*`
+  path stays behind auth.
+- Cleanup: `php tools/sweep-demo.php` (hourly cron) expires orgs past
+  `DEMO_TTL_HOURS` and reaps overflow. Only slugs prefixed `demo-` are ever
+  touched — the fixed `demo` org and real tenants are invisible to it.
+
+The fixed org (§2–4) remains the guided-demo star; disposable orgs are the
+"URL を配るだけ" channel.
+
 ## 5. Known limitations
 
 - **The Invoice upstream is a fixture, not a live NeNe Invoice.**

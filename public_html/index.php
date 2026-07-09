@@ -9,6 +9,7 @@ use Nene2\Database\PdoConnectionFactory;
 use Nene2\Database\PdoDatabaseQueryExecutor;
 use Nene2\Database\PdoDatabaseTransactionManager;
 use Nene2\Database\Preflight\DefaultDatabaseCandidateInspector;
+use Nene2\Demo\DemoConfig;
 use Nene2\Http\ResponseEmitter;
 use NeneClear\Database\AdapterAwareQueryExecutor;
 use NeneClear\Database\AdapterAwareTransactionManager;
@@ -116,6 +117,16 @@ if ($env('NENE_CLEAR_DEMO_UPSTREAM') === '1' && $invoiceApiBaseUrl === null) {
     DemoInvoiceUpstreamFixture::populate($invoiceClient, new DateTimeImmutable('today'));
 }
 
+// Disposable-demo config (#275). DEMO_MODE parses strictly (only 1/true/yes
+// enable it) and defaults OFF — the demo route creates organizations without
+// authentication, so a typo must fail closed. Numeric knobs fall back to the
+// framework defaults (3h TTL / 200 orgs / 5 slug attempts) when unset.
+$demoConfig = new DemoConfig(
+    demoMode: in_array(strtolower($env('DEMO_MODE')), ['1', 'true', 'yes'], true),
+    ttlHours: (int) ($env('DEMO_TTL_HOURS') ?: '3'),
+    maxOrgs: (int) ($env('DEMO_MAX_ORGS') ?: '200'),
+);
+
 // Machine surface (issue #182): the repo VERSION file is this app's release
 // version, surfaced on the auth-gated GET /machine/health so deployment tooling
 // (e.g. NeNe Suite update tracking) can read the installed version.
@@ -159,6 +170,7 @@ $application = ApplicationFactory::create(
     appVersion: $appVersion !== '' ? $appVersion : null,
     databaseCandidateInspector: $candidateInspector,
     databaseCandidateProfiles: $candidateProfiles,
+    demoConfig: $demoConfig,
 );
 
 $psr17 = new Psr17Factory();
@@ -191,7 +203,9 @@ $isSpaRoute = $wantHtml
     && $request->getMethod() === 'GET'
     && !str_starts_with($path, '/health')
     && !str_starts_with($path, '/machine')
-    && !str_starts_with($path, '/assets/');
+    && !str_starts_with($path, '/assets/')
+    // The demo start route serves its own HTML (seat page) — never the SPA shell (#275).
+    && !str_starts_with($path, '/demo/');
 
 if ($isSpaRoute) {
     $spaIndex = __DIR__ . '/assets/index.html';
