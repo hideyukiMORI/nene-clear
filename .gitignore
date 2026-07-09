@@ -17,4 +17,5 @@
 /database/*.sqlite3
 /frontend/node_modules/
 /frontend/apps/*/dist/
+/frontend/dist-e2e/
 /sec-router.php
