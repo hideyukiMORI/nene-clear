@@ -24,7 +24,10 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run build && npm run preview -- --port 4174 --strictPort',
+    // --base=/ overrides the backend-serving default ('/assets/', #268):
+    // `vite preview` mounts the outDir at the root, so the root base is the
+    // self-consistent one here.
+    command: 'npm run build -- --base=/ && npm run preview -- --port 4174 --strictPort',
     cwd: '../../frontend',
     url: 'http://localhost:4174',
     reuseExistingServer: !process.env.CI,

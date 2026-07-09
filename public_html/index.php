@@ -22,6 +22,17 @@ use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 
+// php -S with a router script routes EVERY request here, including existing
+// static files (SPA assets, favicon). Returning false hands those back to the
+// built-in server for direct serving — mirroring Apache's `-f` short-circuit
+// in .htaccess (#268). No effect outside the CLI server.
+if (PHP_SAPI === 'cli-server') {
+    $staticPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    if (is_string($staticPath) && $staticPath !== '/' && is_file(__DIR__ . $staticPath)) {
+        return false;
+    }
+}
+
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 $root = dirname(__DIR__);

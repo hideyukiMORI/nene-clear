@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   // Load env from project root (one level up from frontend/) so .env values
   // are available without duplicating them in frontend/.env.
   const projectEnv = loadEnv(mode, resolve(__dirname, '..'), '')
@@ -20,6 +20,12 @@ export default defineConfig(({ mode }) => {
   const frontendPort = parseInt(projectEnv['NENE_CLEAR_FRONTEND_PORT'] ?? '5380', 10)
 
   return {
+    // The build lands in public_html/assets/ and is served by the PHP backend
+    // under the /assets/ mount, so asset URLs must carry that prefix (#268).
+    // The dev server keeps base '/' (it mounts the app at the root), and the
+    // E2E suite builds with `--base=/` because `vite preview` also serves the
+    // outDir at the root (tests/e2e/playwright.config.ts).
+    base: command === 'build' ? '/assets/' : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: { '@': resolve(__dirname, 'src') },

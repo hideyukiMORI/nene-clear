@@ -9,7 +9,8 @@ credentials — no self-signup, no auth-code changes. Reset = rerun the seeder.
 ```bash
 composer install
 composer migrations:migrate
-docker compose up -d mailpit          # local: catches dunning mail on :8383
+(cd frontend && npm ci && npm run build)   # SPA into public_html/assets/ (git-ignored)
+docker compose up -d mailpit               # local: catches dunning mail on :8383
 ```
 
 `.env` (see `.env.example` for the full comments):
