@@ -3,58 +3,74 @@
 declare(strict_types=1);
 
 /**
- * Tier A web installer (PoC, #232) for NeNe Clear on shared hosting.
+ * Tier A web installer for NeNe Clear on shared hosting (#232 PoC → #271 parity
+ * with the proven nene-invoice installer).
  *
- * Config-boundary entry point (like public_html/index.php): raw superglobal / env
- * access and DB wiring live here on purpose. Walks a fresh operator through
- * requirements → database → tenancy → migrate → first organization + admin,
- * reusing the same domain use cases the app uses (CreateOrganizationUseCase /
- * CreateUserUseCase via ApplicationFactory::container()) so password hashing,
- * uniqueness and auditing behave identically to the running app.
+ * Config-boundary entry point (like public_html/index.php): raw superglobal /
+ * env access and DB wiring live here on purpose. Walks a fresh operator
+ * through a step wizard — requirements → database → admin → complete — with
+ * PRG after the database step, field-level validation that preserves input
+ * (#267), and a defense-in-depth re-install guard (marker + adapter-aware
+ * database probe, re-checked immediately before the final mutation).
  *
- * PoC scope: assumes the application code is already present (git clone / uploaded
- * bundle). Downloading the release ZIP from GitHub is a later slice and needs a
- * release-build workflow first. Out of scope here: signature verification,
- * auto-update, Suite integration.
+ * Logic comes from the NENE2 installer toolkit (ServerRequirementChecker,
+ * DatabaseSchemaApplier, EnvironmentWriter, ReInstallationGuard); the markup
+ * is product-owned — the toolkit's neutral InstallerRenderer is documented as
+ * replace-wholesale. Domain writes reuse the app's own use cases
+ * (CreateOrganizationUseCase / CreateUserUseCase via
+ * ApplicationFactory::container()) so password hashing, uniqueness and
+ * auditing behave identically to the running app.
+ *
+ * When `vendor/` is absent the installer switches to the acquisition flow:
+ * upload the official release ZIP, SHA-256 verified BEFORE extraction
+ * (dependency-zero {@see \NeneClear\Install\PayloadAcquisition}, loaded via
+ * require — Composer isn't available yet).
+ *
+ * CLI: `php public_html/install.php --export-patterns [dir]` renders every
+ * screen/state to static HTML (the ClaudeDesign handoff source — one source of
+ * truth, no hand-copied mockups).
  *
  * WARNING: NeNe Clear handles bank deposits and PII. Shared hosting is NOT
- * recommended (ADR 0009 / #206) — VPS + Docker is the recommended target. This
- * installer surfaces that warning but does not block. DELETE this file (or deny
- * access to it) immediately after a successful install.
+ * recommended for production data (roadmap Phase 3 / #193) — VPS + Docker is
+ * the recommended target. This installer surfaces that warning but does not
+ * block. DELETE this file immediately after a successful install.
  */
 
 use Nene2\Config\DatabaseConfig;
 use Nene2\Database\PdoConnectionFactory;
 use Nene2\Database\PdoDatabaseQueryExecutor;
 use Nene2\Database\PdoDatabaseTransactionManager;
+use Nene2\Install\DatabaseSchemaApplier;
 use Nene2\Install\EnvironmentWriter;
+use Nene2\Install\ProvisioningProbe;
+use Nene2\Install\ReInstallationGuard;
+use Nene2\Install\ServerRequirementChecker;
+use Nene2\Install\ServerRequirements;
 use NeneClear\Auth\Role;
 use NeneClear\Database\AdapterAwareQueryExecutor;
 use NeneClear\Database\AdapterAwareTransactionManager;
 use NeneClear\Http\ApplicationFactory;
 use NeneClear\Http\ServiceResolver;
+use NeneClear\Install\PayloadAcquisition;
 use NeneClear\Organization\CreateOrganizationInput;
 use NeneClear\Organization\CreateOrganizationUseCaseInterface;
 use NeneClear\User\CreateUserInput;
 use NeneClear\User\CreateUserUseCaseInterface;
 use Phinx\Config\Config as PhinxConfig;
-use Phinx\Migration\Manager as PhinxManager;
-use Symfony\Component\Console\Input\StringInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 
 $root = dirname(__DIR__);
-
-if (!is_file($root . '/vendor/autoload.php')) {
-    render_page('依存関係が見つかりません', '<p class="err">'
-        . '<code>vendor/</code> がありません。ローカルでは <code>composer install</code> を実行してください。'
-        . '共有ホスティング向けの ZIP 取得はこの PoC の次スライスで対応します。</p>');
-    exit;
-}
-
-require $root . '/vendor/autoload.php';
-
 $marker = $root . '/var/.installed';
 $envFile = $root . '/.env';
+
+// -------------------------------------------------------------------------
+// Helpers (dependency-zero — usable in the pre-vendor acquisition flow too)
+// -------------------------------------------------------------------------
+
+/** HTML-escape. */
+function h(string $s): string
+{
+    return htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
+}
 
 /** Read a POST field as a trimmed string (L8-safe against mixed superglobals). */
 function post(string $key): string
@@ -62,10 +78,10 @@ function post(string $key): string
     return is_string($_POST[$key] ?? null) ? trim((string) $_POST[$key]) : '';
 }
 
-/** HTML-escape. */
-function e(string $value): string
+/** Read a POST field without trimming (passwords). */
+function post_raw(string $key): string
 {
-    return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    return is_string($_POST[$key] ?? null) ? (string) $_POST[$key] : '';
 }
 
 function slugify(string $name): string
@@ -73,258 +89,1117 @@ function slugify(string $name): string
     return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-');
 }
 
-function render_page(string $title, string $bodyHtml): void
+/** 403 refusal shared by the entry guard and the pre-mutation re-check. */
+function refuse_install(string $message): never
 {
-    $t = e($title);
-    echo <<<HTML
-    <!doctype html><html lang="ja"><head><meta charset="utf-8">
+    http_response_code(403);
+    echo render_installer_page([
+        'view' => 'blocked',
+        'blockedMessage' => $message,
+    ]);
+    exit;
+}
+
+/** SVG icons (static, trusted markup). */
+function ico(string $name): string
+{
+    return match ($name) {
+        'mark' => '<svg viewBox="0 0 42 42" fill="none"><rect x="4" y="10" width="34" height="24" rx="4" stroke="currentColor" stroke-width="2.6"/><path d="M4 18h34" stroke="currentColor" stroke-width="2.6"/><path d="M11 27h9" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><path d="M26 26.5l3 3 5.5-6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        'check' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg>',
+        'x' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 5l10 10M15 5L5 15"/></svg>',
+        'arrow' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11 5l5 5-5 5"/></svg>',
+        'back' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10H5M9 5L4 10l5 5"/></svg>',
+        'shield' => '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2l5 2v3.5c0 3-2 5.3-5 6.5-3-1.2-5-3.5-5-6.5V4z"/></svg>',
+        'server' => '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="3" width="11" height="4.5" rx="1"/><rect x="2.5" y="8.5" width="11" height="4.5" rx="1"/><circle cx="5" cy="5.25" r=".6" fill="currentColor"/><circle cx="5" cy="10.75" r=".6" fill="currentColor"/></svg>',
+        'oss' => '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 1.5l2 4.5 4.8.4-3.6 3.2 1.1 4.7L8 11.8 3.7 14.3l1.1-4.7L1.2 6.4 6 6z"/></svg>',
+        'help' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7.5"/><path d="M7.8 7.7a2.2 2.2 0 0 1 4.3.6c0 1.5-2.1 1.9-2.1 3"/><path d="M10 14.2v.01"/></svg>',
+        'eye' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4"/></svg>',
+        'warn' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3l8 14H2z"/><path d="M10 8v4M10 14.5v.01"/></svg>',
+        'trash' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5h13M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M5.5 5.5l.7 10a1.5 1.5 0 0 0 1.5 1.4h4.6a1.5 1.5 0 0 0 1.5-1.4l.7-10"/></svg>',
+        'login' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><path d="M12 6l4 4-4 4M16 10H8"/></svg>',
+        'upload' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13v2.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5V13"/><path d="M10 3v10M6 7l4-4 4 4"/></svg>',
+        'org' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="6" height="10" rx="1"/><rect x="11" y="3" width="6" height="14" rx="1"/><path d="M5 10h2M5 13h2M13 6h2M13 9h2M13 12h2"/></svg>',
+        'db' => '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><ellipse cx="10" cy="4.5" rx="6.5" ry="2.5"/><path d="M3.5 4.5v11c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5v-11"/><path d="M3.5 10c0 1.4 2.9 2.5 6.5 2.5s6.5-1.1 6.5-2.5"/></svg>',
+        default => '',
+    };
+}
+
+// -------------------------------------------------------------------------
+// Requirement checks
+// -------------------------------------------------------------------------
+
+/**
+ * Server requirements for a normal install (toolkit checker; diagnostics only).
+ *
+ * @return list<array{label: string, detail: string, ok: bool, fix: string}>
+ */
+function requirement_checks(string $root): array
+{
+    $verdicts = (new ServerRequirementChecker())->check(new ServerRequirements(
+        minPhpVersion: '8.4.0',
+        requiredExtensions: ['pdo', 'pdo_mysql', 'mbstring', 'openssl', 'json', 'curl'],
+        writablePaths: [$root . '/var', $root],
+        requiredFiles: [$root . '/vendor/autoload.php'],
+    ));
+
+    $ok = static function (string $requirement, ?string $target = null) use ($verdicts): bool {
+        foreach ($verdicts as $verdict) {
+            if ($verdict->requirement !== $requirement) {
+                continue;
+            }
+            if ($target !== null && $verdict->target !== $target) {
+                continue;
+            }
+            if (!$verdict->satisfied) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    return [
+        [
+            'label' => 'PHP 8.4 以上',
+            'detail' => '現在: ' . PHP_VERSION,
+            'ok' => $ok(ServerRequirementChecker::REQUIREMENT_PHP),
+            'fix' => 'サーバーのコントロールパネルで使用する PHP のバージョンを 8.4 以上に切り替えてください。',
+        ],
+        [
+            'label' => 'PHP 拡張モジュール',
+            'detail' => 'pdo / pdo_mysql / mbstring / openssl / json / curl',
+            'ok' => $ok(ServerRequirementChecker::REQUIREMENT_EXTENSION),
+            'fix' => '不足している拡張モジュールを有効化してください（ホスティングのサポートにご確認ください）。',
+        ],
+        [
+            'label' => 'var/ ディレクトリへの書き込み権限',
+            'detail' => 'インストール完了マーカーを保存します',
+            'ok' => $ok(ServerRequirementChecker::REQUIREMENT_WRITABLE, $root . '/var'),
+            'fix' => 'ファイルマネージャまたは FTP で <code>var/</code> フォルダのパーミッションを「書き込み可（755 または 775）」に変更してください。',
+        ],
+        [
+            'label' => 'ルートディレクトリへの書き込み権限',
+            'detail' => '.env ファイルを作成します',
+            'ok' => $ok(ServerRequirementChecker::REQUIREMENT_WRITABLE, $root),
+            'fix' => '展開先フォルダを一時的に書き込み可にしてください。インストール完了後は元の権限に戻して構いません。',
+        ],
+        [
+            'label' => 'vendor/ ディレクトリ（依存一式）',
+            'detail' => '依存ライブラリ',
+            'ok' => $ok(ServerRequirementChecker::REQUIREMENT_FILE, $root . '/vendor/autoload.php'),
+            'fix' => 'ZIP ファイルが完全に展開されているか確認してください。',
+        ],
+    ];
+}
+
+/**
+ * Minimal requirements for the acquisition (upload) flow — vendor/ and DB are
+ * not required here (vendor arrives via this very step).
+ *
+ * @return list<array{label: string, detail: string, ok: bool, fix: string}>
+ */
+function acquire_requirement_checks(string $root): array
+{
+    $zipOk = class_exists('ZipArchive');
+    $varOk = (is_dir($root . '/var') || @mkdir($root . '/var', 0755, true)) && is_writable($root . '/var');
+
+    return [
+        [
+            'label' => 'PHP 8.4 以上',
+            'detail' => '現在: ' . PHP_VERSION,
+            'ok' => version_compare(PHP_VERSION, '8.4.0', '>='),
+            'fix' => 'サーバーのコントロールパネルで使用する PHP のバージョンを 8.4 以上に切り替えてください。',
+        ],
+        [
+            'label' => 'zip 拡張モジュール（ZipArchive）',
+            'detail' => $zipOk ? '利用可' : '利用不可',
+            'ok' => $zipOk,
+            'fix' => 'アップロードした ZIP を展開するには <code>zip</code> 拡張が必要です。ホスティングのサポートにご確認ください。',
+        ],
+        [
+            'label' => 'var/ ディレクトリへの書き込み権限',
+            'detail' => $varOk ? '書き込み可' : '書き込み不可',
+            'ok' => $varOk,
+            'fix' => 'ファイルマネージャまたは FTP で <code>var/</code> フォルダのパーミッションを「書き込み可（755 または 775）」に変更してください。',
+        ],
+        [
+            'label' => 'ルートディレクトリへの書き込み権限',
+            'detail' => 'アプリ本体を展開します',
+            'ok' => is_writable($root),
+            'fix' => '展開先フォルダ（public_html の 1 つ上）を一時的に書き込み可にしてください。展開後は元の権限に戻して構いません。',
+        ],
+    ];
+}
+
+// -------------------------------------------------------------------------
+// Re-install guards
+// -------------------------------------------------------------------------
+
+/**
+ * Defense in depth: even when the var/.installed marker is lost (ephemeral
+ * var/), an already-provisioned database must not be re-set-up (.env
+ * overwrite, second admin). Adapter-aware: probes the MySQL or SQLite
+ * database the written .env points at.
+ */
+function database_already_provisioned(string $envFile): bool
+{
+    if (!is_file($envFile)) {
+        return false;
+    }
+
+    $env = parse_ini_file($envFile) ?: [];
+    $adapter = (string) ($env['DB_ADAPTER'] ?? '');
+
+    try {
+        if ($adapter === 'sqlite') {
+            $path = (string) ($env['DB_NAME'] ?? '');
+            if ($path === '' || !is_file($path)) {
+                return false;
+            }
+            $pdo = new PDO('sqlite:' . $path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        } elseif ($adapter === 'mysql') {
+            if (empty($env['DB_NAME'])) {
+                return false;
+            }
+            $dsn = sprintf(
+                'mysql:host=%s;port=%s;dbname=%s;charset=%s',
+                (string) ($env['DB_HOST'] ?? '127.0.0.1'),
+                (string) ($env['DB_PORT'] ?? '3306'),
+                (string) $env['DB_NAME'],
+                (string) ($env['DB_CHARSET'] ?? 'utf8mb4'),
+            );
+            $pdo = new PDO($dsn, (string) ($env['DB_USER'] ?? ''), (string) ($env['DB_PASSWORD'] ?? ''), [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 3,
+            ]);
+        } else {
+            return false;
+        }
+
+        $stmt = $pdo->query('SELECT COUNT(*) FROM users');
+
+        return $stmt !== false && (int) $stmt->fetchColumn() > 0;
+    } catch (\Throwable) {
+        // No env / unreachable DB / no schema yet → genuinely not provisioned.
+        return false;
+    }
+}
+
+// -------------------------------------------------------------------------
+// Page renderer — a single function so the CLI pattern export renders the
+// exact same markup the live installer serves (one source of truth).
+// -------------------------------------------------------------------------
+
+/**
+ * @param array{
+ *   view: string,
+ *   checks?: list<array{label: string, detail: string, ok: bool, fix: string}>,
+ *   reqErrors?: list<array{label: string, detail: string, ok: bool, fix: string}>,
+ *   errors?: list<string>,
+ *   fieldErrors?: array<string, string>,
+ *   old?: array<string, string>,
+ *   summary?: string,
+ *   blockedMessage?: string
+ * } $state
+ */
+function render_installer_page(array $state): string
+{
+    $view = $state['view'];
+    $checks = $state['checks'] ?? [];
+    $reqErrors = $state['reqErrors'] ?? [];
+    $errors = $state['errors'] ?? [];
+    $fieldErrors = $state['fieldErrors'] ?? [];
+    $oldValues = $state['old'] ?? [];
+    $summary = $state['summary'] ?? '';
+    $blockedMessage = $state['blockedMessage'] ?? '';
+
+    $old = static fn (string $k, string $default = ''): string => h($oldValues[$k] ?? $default);
+    $hasError = $errors !== [] || $fieldErrors !== [];
+
+    $tenantOld = ($oldValues['tenant_mode'] ?? 'single') === 'multi' ? 'multi' : 'single';
+    $adapterOld = ($oldValues['db_adapter'] ?? 'mysql') === 'sqlite' ? 'sqlite' : 'mysql';
+
+    // Host-name presets for the DB step chips (HETEML first — the known target).
+    $hosts = [
+        ['id' => 'heteml', 'label' => 'ヘテムル', 'host' => 'mysqlXXX.phy.heteml.lan', 'db' => '_nene_clear', 'user' => '_nene_clear', 'note' => '「データベース」→「データベース一覧」の「ホスト名（DB サーバー）」を使います。ユーザー名は DB 名と同じです。'],
+        ['id' => 'sakura', 'label' => 'さくら', 'host' => 'mysqlXXX.db.sakura.ne.jp', 'db' => 'yourname_clear', 'user' => 'yourname', 'note' => '「データベース」→ 該当 DB の「データベースサーバ」欄がホスト名です。'],
+        ['id' => 'xserver', 'label' => 'エックスサーバー', 'host' => 'mysqlXXXX.xserver.jp', 'db' => 'yourid_clear', 'user' => 'yourid_user', 'note' => 'サーバーパネル「MySQL 設定」→「MySQL ホスト名」を確認してください。'],
+        ['id' => 'conoha', 'label' => 'ConoHa WING', 'host' => 'mysqlXXX.conoha.ne.jp', 'db' => 'yourname_clear', 'user' => 'yourname', 'note' => '「データベース」→ 対象 DB の「ホスト名」をコピーしてください。'],
+        ['id' => 'other', 'label' => 'その他 / わからない', 'host' => 'localhost', 'db' => 'yourname_clear', 'user' => 'yourname', 'note' => '契約中のレンタルサーバー管理画面（コントロールパネル）の「データベース」欄で確認できます。'],
+    ];
+
+    // Stepper position (0=DB / 1=admin / 2=complete; requirements & acquire = 0).
+    $stepIdx = match ($view) {
+        'admin' => 1,
+        'complete' => 2,
+        default => 0,
+    };
+    $vsteps = [
+        ['t' => 'データベース', 'd' => '接続情報の入力'],
+        ['t' => '管理者設定', 'd' => '組織とアカウント作成'],
+        ['t' => '完了', 'd' => 'セットアップ終了'],
+    ];
+
+    // ---- reusable fragments ----
+    $reqList = static function (array $rows): string {
+        $html = '<ul class="reqs">';
+        foreach ($rows as $c) {
+            $html .= '<li class="' . ($c['ok'] ? 'pass' : 'fail') . '">'
+                . '<span class="ic">' . ($c['ok'] ? ico('check') : ico('x')) . '</span>'
+                . '<div class="rq-body"><div class="rq-t">' . h($c['label']) . '</div>'
+                . '<div class="rq-d">' . h($c['detail']) . '</div>'
+                . (!$c['ok'] ? '<div class="rq-fix"><b>解決方法:</b> ' . $c['fix'] . '</div>' : '')
+                . '</div></li>';
+        }
+
+        return $html . '</ul>';
+    };
+    $alert = static fn (string $kind, string $title, string $textHtml, string $detail = ''): string => '<div class="alert ' . $kind . '">' . ico($kind === 'ok' ? 'check' : 'warn')
+        . '<div class="a-body"><div class="a-title">' . h($title) . '</div><div class="a-text">' . $textHtml . '</div>'
+        . ($detail !== '' ? '<details><summary>技術的な詳細を表示</summary><div class="det">' . h($detail) . '</div></details>' : '')
+        . '</div></div>';
+    $fieldErr = static function (string $key, string $hint) use ($fieldErrors): string {
+        if (isset($fieldErrors[$key])) {
+            return '<p class="err-text">' . ico('warn') . h($fieldErrors[$key]) . '</p>';
+        }
+
+        return $hint !== '' ? '<p class="hint">' . $hint . '</p>' : '';
+    };
+    $inputClass = static fn (string $key): string => isset($fieldErrors[$key]) ? 'input is-error' : 'input';
+
+    // ---- view body ----
+    $body = '';
+
+    if ($view === 'blocked') {
+        $body = '<div class="iz-head">インストールできません</div>'
+            . $alert('error', 'インストールがブロックされました', h($blockedMessage))
+            . '<div class="sec-warn"><span class="sw-ico">' . ico('trash') . '</span><div>'
+            . '<div class="sw-t">セキュリティ: install.php を削除してください</div>'
+            . '<div class="sw-d">構成済みの環境に <code>install.php</code> を残すと、第三者に再セットアップされる恐れがあります。FTP またはファイルマネージャから<b>今すぐ削除</b>してください。</div>'
+            . '</div></div>';
+    } elseif ($view === 'acquire') {
+        $body = '<div class="iz-head">アプリの取得（アップロード）</div>'
+            . '<div class="iz-headsub">アプリ本体（<code>vendor/</code> など）がまだ展開されていません。<b>公式配布元からダウンロードした ZIP</b> をアップロードして展開します。</div>';
+        if ($errors !== []) {
+            $body .= $alert('error', 'アップロードを処理できませんでした', h(implode(' ', $errors)));
+        }
+        if ($reqErrors !== []) {
+            $body .= $alert('error', '展開に必要な条件が不足しています', '以下を解消してから、ページを再読み込みしてください。');
+        }
+        $body .= $reqList($checks);
+        if ($reqErrors === []) {
+            $body .= '<form method="post" action="install.php" id="acquireForm" enctype="multipart/form-data">'
+                . '<input type="hidden" name="action" value="acquire">'
+                . '<div class="field"><label class="label">配布 ZIP ファイル<span class="req">*</span>'
+                . '<span class="tip" tabindex="0">?<span class="tip-body">NeNe Clear の公式リリースから入手した <code>nene-clear-*.zip</code> を選んでください。他のファイルはアップロードしないでください。</span></span></label>'
+                . '<label class="up-drop" id="upDrop" for="payloadFile">'
+                . '<span class="ud-ic">' . ico('upload') . '</span>'
+                . '<span class="ud-t">ZIP ファイルを選択</span>'
+                . '<span class="ud-d">クリックして <code>nene-clear-*.zip</code> を選択（.zip のみ）</span>'
+                . '<span class="ud-file" id="upFileName" hidden></span>'
+                . '<input type="file" id="payloadFile" name="payload" accept=".zip,application/zip">'
+                . '</label>'
+                . '<p class="hint"><b>公式配布元から入手した ZIP のみを使用してください。</b>出所不明の ZIP はアップロードしないでください。</p></div>'
+                . '<div class="field"><label class="label" for="expected_sha256">期待する SHA-256<span class="req">*</span>'
+                . '<span class="tip" tabindex="0">?<span class="tip-body">公式リリースに記載されている ZIP の SHA-256（64 桁の 16 進数）を貼り付けてください。アップロードしたファイルのハッシュと照合し、一致した場合のみ展開します。</span></span></label>'
+                . '<input id="expected_sha256" name="expected_sha256" class="input mono" value="' . $old('expected_sha256') . '" placeholder="例: 87ad1447…（64 桁の 16 進数）" autocomplete="off" spellcheck="false" required>'
+                . '<p class="hint">展開の<b>前</b>にハッシュを照合します（不一致なら展開しません）。この段階では署名検証は行いません（配布元の SHA-256 照合のみ）。</p></div>'
+                . '<div class="btn-row"><button type="submit" class="btn btn-primary btn-block">アップロードして展開' . ico('arrow') . '</button></div>'
+                . '</form>';
+        } else {
+            $body .= '<div class="btn-row"><a class="btn btn-primary btn-block" href="install.php">再読み込みして再チェック</a></div>';
+        }
+    } elseif ($view === 'requirements') {
+        $body = '<div class="iz-head">サーバー要件の確認</div>'
+            . '<div class="iz-headsub">インストールを始める前に、サーバーが NeNe Clear の動作条件を満たしているか確認します。</div>';
+        $body .= $reqErrors === []
+            ? $alert('ok', 'すべての要件を満たしています', 'このサーバーでインストールを続行できます。')
+            : $alert('error', '要件チェックに失敗しました', '以下を解消してから、ページを再読み込みしてください。解決後にセットアップを続行できます。');
+        $body .= '<div class="alert warn">' . ico('warn') . '<div class="a-body"><div class="a-title">本番データを扱う場合の推奨環境</div>'
+            . '<div class="a-text">NeNe Clear は銀行入金・取引先情報（PII）を扱います。本番運用は <b>VPS + Docker</b> を推奨します（共有ホスティングは非推奨）。運用時は <code>NENE_CLEAR_ENCRYPTION_KEY</code>（保存時暗号化）の設定も検討してください。</div></div></div>';
+        $body .= $reqList($checks);
+        $body .= '<div class="btn-row">'
+            . ($reqErrors === []
+                ? '<a class="btn btn-primary btn-block" href="install.php?step=1">セットアップを開始' . ico('arrow') . '</a>'
+                : '<a class="btn btn-primary btn-block" href="install.php">再読み込みして再チェック</a>')
+            . '</div>';
+    } elseif ($view === 'database') {
+        $body = '<div class="iz-head">データベースに接続</div>'
+            . '<div class="iz-headsub">接続情報を入力してください。MySQL の値は契約中の<b>レンタルサーバー管理画面（コントロールパネル）の「データベース」欄</b>で確認できます。</div>';
+        if ($errors !== []) {
+            $body .= $alert(
+                'error',
+                'データベースに接続できませんでした',
+                'ホスト名・ポート・ユーザー名・パスワードをご確認ください。共有サーバーではホスト名が <code>localhost</code> ではなく専用ホスト名のことが多いです。',
+                implode("\n", $errors),
+            );
+        }
+
+        $chips = '';
+        foreach ($hosts as $hh) {
+            $chips .= '<button type="button" class="host-chip" data-id="' . h($hh['id']) . '" data-host="' . h($hh['host']) . '" data-db="' . h($hh['db']) . '" data-user="' . h($hh['user']) . '" data-note="' . h($hh['note']) . '">' . h($hh['label']) . '</button>';
+        }
+
+        $mysqlHidden = $adapterOld === 'sqlite' ? ' hidden' : '';
+        $sqliteHidden = $adapterOld === 'sqlite' ? '' : ' hidden';
+        $mysqlSel = $adapterOld === 'mysql' ? ' selected' : '';
+        $sqliteSel = $adapterOld === 'sqlite' ? ' selected' : '';
+
+        $body .= '<form method="post" action="install.php?step=1" id="dbForm">'
+            . '<div class="field"><label class="label" for="db_adapter">データベースの種類'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">通常は MySQL を選びます。SQLite はお試し・単一プロセス向けで、本番運用には推奨しません。</span></span></label>'
+            . '<select id="db_adapter" name="db_adapter" class="select">'
+            . '<option value="mysql"' . $mysqlSel . '>MySQL（推奨・共有ホスティング）</option>'
+            . '<option value="sqlite"' . $sqliteSel . '>SQLite（お試し・単一ファイル）</option>'
+            . '</select></div>'
+            . '<div id="sqliteNote"' . $sqliteHidden . '>'
+            . '<div class="alert warn">' . ico('warn') . '<div class="a-body"><div class="a-title">SQLite はお試し向けです</div>'
+            . '<div class="a-text">データは <code>database/nene_clear.sqlite3</code> に保存されます。同時アクセスに弱いため（database is locked）、本番運用では MySQL を推奨します。</div></div></div></div>'
+            . '<div id="mysqlFields"' . $mysqlHidden . '>'
+            . '<div class="host-help"><div class="hh-q">' . ico('help') . 'お使いのレンタルサーバーは？</div>'
+            . '<div class="hh-sub">選ぶと、ホスト名の<b>記入例</b>を自動入力します（実際の値はコントロールパネルでご確認ください）。</div>'
+            . '<div class="host-chips" id="hostChips">' . $chips . '</div>'
+            . '<button type="button" class="linkbtn cp-toggle" id="cpToggle">コントロールパネルのどこを見る？</button>'
+            . '<div class="cp-diagram" id="cpDiagram" hidden>'
+            . '<div class="cp-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="cp-url">https://cp.your-host.example/database</span></div>'
+            . '<div class="cp-grid"><div class="cp-menu">'
+            . '<div class="cp-mi"><span class="cp-bullet"></span>ドメイン</div><div class="cp-mi"><span class="cp-bullet"></span>メール</div>'
+            . '<div class="cp-mi hot"><span class="cp-bullet"></span>データベース</div><div class="cp-mi"><span class="cp-bullet"></span>FTP</div><div class="cp-mi"><span class="cp-bullet"></span>SSL</div>'
+            . '</div><div class="cp-body"><div class="cp-h">データベース情報</div><div class="cp-kv">'
+            . '<span class="k">ホスト名</span><span class="v hl" id="cpHost">localhost</span>'
+            . '<span class="k">データベース名</span><span class="v" id="cpDb">yourname_clear</span>'
+            . '<span class="k">ユーザー名</span><span class="v" id="cpUser">yourname</span>'
+            . '<span class="k">ポート</span><span class="v">3306</span>'
+            . '</div><div class="cp-note" id="cpNote">契約中のレンタルサーバー管理画面（コントロールパネル）の「データベース」欄で確認できます。黄色の<b>ホスト名</b>を下のフォームにそのまま貼り付けてください。</div></div></div></div></div>'
+            . '<div class="form-row2">'
+            . '<div class="field"><label class="label" for="db_host">ホスト<span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">データベースサーバーのアドレス。共有ホスティングでは <code>localhost</code> ではなく専用ホスト名（例 mysqlXXX.phy.heteml.lan）のことが多いです。</span></span></label>'
+            . '<input id="db_host" name="db_host" class="input mono" value="' . $old('db_host', 'localhost') . '" placeholder="例: mysqlXXX.phy.heteml.lan"></div>'
+            . '<div class="field"><label class="label" for="db_port">ポート<span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">通常は MySQL 既定の <code>3306</code> のままで問題ありません。</span></span></label>'
+            . '<input id="db_port" name="db_port" class="input mono" value="' . $old('db_port', '3306') . '"></div>'
+            . '</div>'
+            . '<div class="field"><label class="label" for="db_name">データベース名<span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">コントロールパネルで作成済みのデータベース名。空のデータベースを指定してください（既存データには触れません）。</span></span></label>'
+            . '<input id="db_name" name="db_name" class="input mono" value="' . $old('db_name') . '" placeholder="例: yourname_clear">'
+            . '<p class="hint">事前に作成した<b>空のデータベース</b>を指定します。テーブルはこのインストーラが作成します。</p></div>'
+            . '<div class="field"><label class="label" for="db_user">ユーザー名<span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">そのデータベースにアクセスできる MySQL ユーザー名。コントロールパネルの DB 情報に記載されています。</span></span></label>'
+            . '<input id="db_user" name="db_user" class="input mono" value="' . $old('db_user') . '" placeholder="例: yourname_clear"></div>'
+            . '<div class="field"><label class="label" for="db_password">パスワード<span class="opt">（サーバーによっては任意）</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">上記 MySQL ユーザーのパスワード。コントロールパネルで設定／確認できます。<b>NeNe Clear のログインパスワードとは別物</b>です。</span></span></label>'
+            . '<div class="pw-wrap"><input id="db_password" name="db_password" class="input mono" type="password" value="' . $old('db_password') . '" placeholder="••••••••">'
+            . '<button type="button" class="pw-eye" data-pw="db_password" tabindex="-1" aria-label="パスワード表示切替">' . ico('eye') . '</button></div>'
+            . '<p class="hint">サーバーの DB ユーザーのパスワード。<b>NeNe Clear のログインパスワードとは別物</b>です。</p></div>'
+            . '</div>'
+            . '<div class="btn-row"><a class="btn btn-ghost btn-back" href="install.php" aria-label="戻る">' . ico('back') . '</a>'
+            . '<button type="submit" class="btn btn-primary">接続テスト＆スキーマ適用' . ico('arrow') . '</button></div>'
+            . '</form>';
+    } elseif ($view === 'admin') {
+        $isMulti = $tenantOld === 'multi';
+        $body = '<div class="iz-head">組織と管理者アカウントを作成</div>'
+            . '<div class="iz-headsub">最初にサインインする管理者アカウントを設定します。利用形態は後から組織を追加する場合のみ「複数組織」を選んでください。</div>';
+        if ($errors !== []) {
+            $body .= $alert('error', '入力内容を確認してください', h(implode(' ', $errors)));
+        }
+
+        $singleOn = $isMulti ? '' : ' on';
+        $multiOn = $isMulti ? ' on' : '';
+        $singleChecked = $isMulti ? '' : ' checked';
+        $multiChecked = $isMulti ? ' checked' : '';
+        $singleHidden = $isMulti ? ' hidden' : '';
+
+        $body .= '<form method="post" action="install.php?step=2" id="adminForm">'
+            . '<div class="tenant-sec"><div class="ts-h">' . ico('org') . '利用形態</div>'
+            . '<label class="opt-card' . $singleOn . '" data-tenant="single"><input type="radio" name="tenant_mode" value="single"' . $singleChecked . '>'
+            . '<div><div class="oc-t">単一組織（single）<span class="oc-badge">既定</span></div>'
+            . '<div class="oc-d">1 つの会社／組織だけで使う一般的な構成。組織と管理者（admin）アカウントを作成します。</div></div></label>'
+            . '<label class="opt-card' . $multiOn . '" data-tenant="multi"><input type="radio" name="tenant_mode" value="multi"' . $multiChecked . '>'
+            . '<div><div class="oc-t">複数組織（multi）<span class="oc-badge">上級者向け</span></div>'
+            . '<div class="oc-d">複数の組織（テナント）を 1 つのインストールで運用します。横断管理者（superadmin）を作成し、組織はログイン後の管理画面から追加します。</div></div></label>'
+            . '</div>'
+            . '<div id="singleFields"' . $singleHidden . '>'
+            . '<div class="field"><label class="label" for="org_name">組織名（会社名）<span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">督促状の差出人など、画面や帳票の表示に使われる組織の正式名称です。後から変更できます。</span></span></label>'
+            . '<input id="org_name" name="org_name" class="' . $inputClass('org_name') . '" value="' . $old('org_name') . '" placeholder="例: 株式会社ねね商事">'
+            . $fieldErr('org_name', '督促状の差出人などに表示されます（後から変更可）。')
+            . '</div>'
+            . '<div class="field"><label class="label" for="org_slug">組織スラッグ<span class="opt">（任意・英数字とハイフン）</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">システム内部で組織を識別する短い英数字 ID。空欄なら組織名から自動生成します。</span></span></label>'
+            . '<input id="org_slug" name="org_slug" class="' . $inputClass('org_slug') . ' mono" value="' . $old('org_slug') . '" placeholder="例: nene-shoji">'
+            . $fieldErr('org_slug', '空欄で自動生成。小文字英数字とハイフンのみ。')
+            . '</div></div>'
+            . '<div class="field"><label class="label" for="admin_email">管理者メールアドレス<span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">最初の管理者アカウントのログイン ID になります。運用担当者のメールを推奨します。</span></span></label>'
+            . '<input id="admin_email" name="admin_email" type="email" class="' . $inputClass('admin_email') . '" value="' . $old('admin_email') . '" placeholder="例: admin@yourcompany.co.jp" required>'
+            . $fieldErr('admin_email', 'このメールが<b>最初の管理者ログイン ID</b> になります。')
+            . '</div>'
+            . '<div class="field"><label class="label" for="admin_password">管理者パスワード<span class="opt">（12 文字以上）</span><span class="req">*</span>'
+            . '<span class="tip" tabindex="0">?<span class="tip-body">12 文字以上。パスワードは安全にハッシュ化して保存され、元の文字列は保持されません。<b>DB 接続パスワードとは別物</b>です。</span></span></label>'
+            . '<div class="pw-wrap"><input id="admin_password" name="admin_password" class="' . $inputClass('admin_password') . '" type="password" placeholder="12 文字以上" required minlength="12">'
+            . '<button type="button" class="pw-eye" data-pw="admin_password" tabindex="-1" aria-label="パスワード表示切替">' . ico('eye') . '</button></div>'
+            . $fieldErr('admin_password', '12 文字以上。<b>ハッシュ化して安全に保管</b>されます（元の文字列は保存されません）。')
+            . '</div>'
+            . '<div class="btn-row"><a class="btn btn-ghost btn-back" href="install.php?step=1" aria-label="戻る">' . ico('back') . '</a>'
+            . '<button type="submit" class="btn btn-primary">インストールを実行' . ico('arrow') . '</button></div>'
+            . '</form>';
+    } else { // complete
+        $body = '<div class="done-mark">' . ico('check') . '</div>'
+            . '<div class="done-title">インストール完了</div>'
+            . '<div class="done-sub">' . h($summary) . '</div>'
+            . '<div class="sec-warn"><span class="sw-ico">' . ico('trash') . '</span><div>'
+            . '<div class="sw-t">セキュリティ: 必ず install.php を削除してください</div>'
+            . '<div class="sw-d">放置すると第三者に再セットアップされる恐れがあります。FTP またはファイルマネージャから <code>install.php</code> を<b>削除（またはリネーム）</b>してください。</div>'
+            . '</div></div>'
+            . '<div class="next-h">次のステップ</div>'
+            . '<ol class="next-list">'
+            . '<li><span class="nl-n">1</span><div><b><code>install.php</code> を削除する</b><div class="nl-d">最優先。サーバーからこのファイルを消します。</div></div></li>'
+            . '<li><span class="nl-n">2</span><div><b>管理画面にログイン</b><div class="nl-d">先ほど設定した管理者メール・パスワードで。</div></div></li>'
+            . '<li><span class="nl-n">3</span><div><b>銀行口座（CSV 取込プロファイル）を設定</b><div class="nl-d">設定画面で口座と CSV 列の対応を登録すると、入金 CSV の取込と消込を始められます。</div></div></li>'
+            . '</ol>'
+            . '<a class="btn btn-primary btn-block btn-lg" href="./">' . ico('login') . '管理画面にログイン</a>';
+    }
+
+    // ---- stepper fragments ----
+    $vstepHtml = '';
+    $hstepHtml = '';
+    foreach ($vsteps as $i => $s) {
+        $cls = $i === $stepIdx ? 'active' : ($i < $stepIdx ? 'done' : '');
+        $vstepHtml .= '<li class="' . $cls . '"><div class="vs-rail"><span class="vs-dot">' . ($i < $stepIdx ? ico('check') : (string) ($i + 1)) . '</span><span class="vs-line"></span></div>'
+            . '<div class="vs-body"><div class="vs-t">' . h($s['t']) . '</div><div class="vs-d">' . h($s['d']) . '</div></div></li>';
+        $hstepHtml .= '<div class="hs ' . $cls . '">' . ($i + 1) . '. ' . h($s['t']) . '</div>';
+    }
+
+    $errFlag = $hasError ? '1' : '0';
+    $viewAttr = h($view);
+    $mark = ico('mark');
+    $shield = ico('shield');
+    $server = ico('server');
+    $oss = ico('oss');
+    $warnIco = ico('warn');
+    $css = installer_css();
+
+    return <<<HTML
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{$t} — NeNe Clear インストーラ</title>
-    <style>
-      body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;color:#14342b}
-      h1{font-size:1.4rem} label{display:block;margin:.6rem 0 .2rem;font-weight:600}
-      input,select{width:100%;padding:.5rem;border:1px solid #b7c9c0;border-radius:6px;box-sizing:border-box}
-      fieldset{border:1px solid #cfe0d8;border-radius:8px;margin:1rem 0;padding:1rem}
-      legend{font-weight:700;color:#0f6b4f} button{margin-top:1rem;padding:.7rem 1.2rem;background:#0f6b4f;color:#fff;border:0;border-radius:8px;font-size:1rem;cursor:pointer}
-      .warn{background:#fff6e6;border:1px solid #f0c674;padding:.8rem;border-radius:8px}
-      .err{background:#fdecea;border:1px solid #e6a6a1;padding:.8rem;border-radius:8px}
-      .ok{background:#e7f6ee;border:1px solid #8fd0ac;padding:.8rem;border-radius:8px}
-      ul{padding-left:1.2rem} code{background:#eef4f1;padding:.1rem .3rem;border-radius:4px}
-    </style></head><body><h1>{$t}</h1>{$bodyHtml}</body></html>
+    <title>NeNe Clear — セットアップウィザード</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 42 42'%3E%3Crect width='42' height='42' rx='8' fill='%23132f54'/%3E%3Cpath d='M10 15h22M10 15v14a3 3 0 003 3h16a3 3 0 003-3V15' stroke='%23fff' fill='none' stroke-width='2.4'/%3E%3Cpath d='M15 26h7M25.5 25.5l2.5 2.5 4.5-5' stroke='%237fb2ff' fill='none' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
+    <style>{$css}</style>
+    </head>
+    <body data-view="{$viewAttr}" data-error="{$errFlag}">
+    <div class="iz"><div class="iz-stage">
+      <aside class="iz-aside">
+        <div class="iz-bs-top">
+          <span class="mono-mark">{$mark}</span>
+          <div><div class="abt-name">NeNe Clear</div><div class="abt-sub">Setup Wizard</div></div>
+        </div>
+        <div class="iz-bs-mid">
+          <h2>入金消込から督促まで、<br>確実に、ひと続きで。</h2>
+          <p class="lead">銀行入金データと請求を正確に突合し、未収の取りこぼしを防ぐ。経理の現場のための堅実な消込・債権管理基盤です。3 ステップでセットアップが完了します。</p>
+          <ul class="vstep">{$vstepHtml}</ul>
+        </div>
+        <div class="iz-bs-foot">
+          <div class="iz-trust">
+            <span class="tb">{$shield}銀行CSV自動突合</span>
+            <span class="tb">{$server}セルフホスト</span>
+            <span class="tb">{$oss}オープンソース（MIT）</span>
+          </div>
+          <div class="copy">© 2026 NeNe Clear — install.php</div>
+        </div>
+      </aside>
+      <div class="iz-main">
+        <div class="iz-form" id="izView">
+          <div class="hstep">{$hstepHtml}</div>
+          {$body}
+        </div>
+        <div class="iz-form iz-loading" id="izLoading" hidden>
+          <div class="ld-h">インストールしています</div>
+          <div class="ld-sub">接続の確認からテーブル作成までを順に実行しています。完了までこのページを開いたままにしてください。</div>
+          <div class="ld-bar"><span id="ldBar"></span></div>
+          <ul class="substeps" id="substeps"></ul>
+          <div class="ld-warn">{$warnIco}このページを閉じたり、ボタンを二度押ししないでください。</div>
+        </div>
+      </div>
+    </div></div>
+    <script src="installer.js"></script>
+    </body>
+    </html>
     HTML;
 }
 
-/** @return list<array{label:string, ok:bool, fix:string}> */
-function requirements(string $root): array
+/** The installer stylesheet (placeholder design-system: deep-navy Clear identity). */
+function installer_css(): string
 {
-    return [
-        ['label' => 'PHP 8.4 以上（現在 ' . PHP_VERSION . '）', 'ok' => version_compare((string) phpversion(), '8.4.0', '>='), 'fix' => 'PHP 8.4 系を有効にしてください。'],
-        ['label' => 'PDO 拡張', 'ok' => extension_loaded('pdo'), 'fix' => 'pdo を有効化してください。'],
-        ['label' => 'MySQL ドライバ (pdo_mysql)', 'ok' => extension_loaded('pdo_mysql'), 'fix' => '共有ホスティングで MySQL を使う場合は必須です。'],
-        ['label' => 'mbstring 拡張', 'ok' => extension_loaded('mbstring'), 'fix' => 'mbstring を有効化してください。'],
-        ['label' => 'ルートディレクトリが書込可（.env 生成用）', 'ok' => is_writable($root), 'fix' => 'サーバのパーミッションを確認してください。'],
+    return <<<'CSS'
+    :root{
+      --bg:oklch(98% 0.003 250);--surface:oklch(100% 0 0);--surface-sunk:oklch(96.4% 0.005 250);
+      --border:oklch(90.5% 0.008 250);--border-strong:oklch(83.5% 0.012 250);
+      --fg:oklch(26% 0.02 258);--fg-muted:oklch(50% 0.015 255);--fg-subtle:oklch(62% 0.012 255);--fg-faint:oklch(73% 0.01 255);
+      --brand:oklch(42% 0.09 258);--brand-strong:oklch(34% 0.075 260);--brand-deep:oklch(26% 0.055 262);
+      --brand-soft:oklch(93.5% 0.02 255);--on-brand:oklch(98.5% 0.006 250);
+      --ok:oklch(47% 0.07 155);--ok-soft:oklch(94.5% 0.028 155);--danger:oklch(49% 0.115 28);--danger-soft:oklch(95% 0.03 28);
+      --warn:oklch(55% 0.075 75);--warn-soft:oklch(95% 0.035 80);
+      --side-accent:oklch(80% 0.07 250);
+      --radius:8px;--radius-sm:6px;
+      --ring:0 0 0 3px oklch(45% 0.1 255 / 0.20);
+      --font-sans:"Noto Sans JP",system-ui,sans-serif;--font-num:"Roboto Mono","Noto Sans JP",monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:var(--font-sans);background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased}
+    code{font-family:var(--font-num);background:oklch(94% 0.008 250);padding:.05em .35em;border-radius:4px;font-size:.92em}
+    .iz{min-height:100vh}
+    .iz-stage{display:grid;grid-template-columns:minmax(380px,0.92fr) 1.08fr;min-height:100vh}
+    .iz-aside{position:relative;overflow:hidden;color:oklch(94% 0.012 250);display:flex;flex-direction:column;justify-content:space-between;padding:48px 46px 38px;
+      background:linear-gradient(157deg,var(--brand-strong) 0%,var(--brand-deep) 60%,oklch(22% 0.045 264) 100%)}
+    .iz-aside::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(oklch(100% 0 0/0.05) 1px,transparent 1px),linear-gradient(90deg,oklch(100% 0 0/0.05) 1px,transparent 1px);background-size:40px 40px;mask-image:linear-gradient(150deg,#000 8%,transparent 80%)}
+    .iz-aside>*{position:relative;z-index:1}
+    .iz-bs-top{display:flex;align-items:center;gap:13px}
+    .mono-mark{width:38px;height:36px;flex:none;color:var(--side-accent)}
+    .mono-mark svg{width:100%;height:100%;display:block}
+    .abt-name{font-size:18px;font-weight:700;color:#fff}
+    .abt-sub{font-size:10.5px;color:oklch(78% 0.03 250);letter-spacing:.16em;text-transform:uppercase;margin-top:3px}
+    .iz-bs-mid{max-width:400px}
+    .iz-bs-mid h2{font-size:24px;font-weight:700;line-height:1.55;color:#fff;text-wrap:balance}
+    .iz-bs-mid .lead{font-size:13px;color:oklch(82% 0.025 250);margin-top:14px;line-height:1.9}
+    .vstep{list-style:none;margin:30px 0 0}
+    .vstep li{display:flex;gap:14px}
+    .vs-rail{display:flex;flex-direction:column;align-items:center;flex:none}
+    .vs-dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:var(--font-num);font-size:13px;font-weight:600;background:oklch(100% 0 0/0.10);color:oklch(86% 0.02 250);border:1px solid oklch(100% 0 0/0.20)}
+    .vs-dot svg{width:14px;height:14px}
+    .vs-line{width:2px;flex:1;min-height:22px;background:oklch(100% 0 0/0.16);margin:4px 0}
+    .vstep li:last-child .vs-line{display:none}
+    .vs-body{padding-top:3px;padding-bottom:18px}
+    .vs-t{font-size:14px;font-weight:600;color:oklch(92% 0.015 250)}
+    .vs-d{font-size:11.5px;color:oklch(72% 0.02 250);margin-top:2px}
+    .vstep li.active .vs-dot{background:var(--side-accent);color:var(--brand-deep);border-color:var(--side-accent);box-shadow:0 0 0 5px oklch(100% 0 0/0.08)}
+    .vstep li.active .vs-t{color:#fff}
+    .vstep li.done .vs-dot{background:oklch(100% 0 0/0.16);color:var(--side-accent)}
+    .vstep li.done .vs-line{background:var(--side-accent);opacity:.6}
+    .iz-trust{display:flex;flex-wrap:wrap;gap:8px 14px}
+    .tb{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:oklch(80% 0.025 250)}
+    .tb svg{width:13px;height:13px}
+    .copy{font-size:10.5px;color:oklch(62% 0.02 252);margin-top:14px}
+    .iz-main{display:flex;align-items:flex-start;justify-content:center;padding:56px 48px;overflow-y:auto}
+    .iz-form{width:100%;max-width:560px}
+    .hstep{display:none;gap:8px;margin-bottom:26px}
+    .hs{flex:1;text-align:center;font-size:11.5px;font-weight:600;padding:8px 4px;border-radius:var(--radius-sm);color:var(--fg-faint);background:var(--surface-sunk);border:1px solid var(--border)}
+    .hs.active{background:var(--brand);color:var(--on-brand);border-color:var(--brand)}
+    .hs.done{background:var(--brand-soft);color:var(--brand-strong)}
+    .hs.done::before{content:"✓ "}
+    .iz-head{font-size:24px;font-weight:700;letter-spacing:.01em}
+    .iz-headsub{font-size:13px;color:var(--fg-muted);margin:10px 0 24px;line-height:1.9}
+    .alert{display:flex;gap:12px;padding:14px 16px;border-radius:var(--radius);margin-bottom:20px;font-size:13px;border:1px solid}
+    .alert>svg{width:18px;height:18px;flex:none;margin-top:2px}
+    .alert.ok{background:var(--ok-soft);border-color:color-mix(in oklch,var(--ok) 30%,transparent);color:var(--ok)}
+    .alert.error{background:var(--danger-soft);border-color:color-mix(in oklch,var(--danger) 30%,transparent);color:var(--danger)}
+    .alert.warn{background:var(--warn-soft);border-color:color-mix(in oklch,var(--warn) 35%,transparent);color:oklch(42% 0.07 70)}
+    .a-title{font-weight:700}
+    .a-text{margin-top:2px;color:inherit;opacity:.92;line-height:1.75}
+    .alert details{margin-top:8px}
+    .alert summary{cursor:pointer;font-size:12px;font-weight:600}
+    .alert .det{font-family:var(--font-num);font-size:11.5px;white-space:pre-wrap;word-break:break-all;background:oklch(100% 0 0/0.5);border-radius:6px;padding:8px 10px;margin-top:6px}
+    .reqs{list-style:none;margin:0 0 24px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .reqs li{display:flex;gap:13px;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .reqs li:last-child{border-bottom:none}
+    .reqs .ic{width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;margin-top:2px}
+    .reqs .ic svg{width:12px;height:12px}
+    .reqs li.pass .ic{background:var(--ok-soft);color:var(--ok)}
+    .reqs li.fail .ic{background:var(--danger-soft);color:var(--danger)}
+    .rq-t{font-size:13.5px;font-weight:600}
+    .rq-d{font-size:12px;color:var(--fg-subtle);font-family:var(--font-num)}
+    .rq-fix{font-size:12px;color:var(--danger);margin-top:6px;line-height:1.7}
+    .field{margin-bottom:18px}
+    .label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-bottom:7px}
+    .req{color:var(--danger)}
+    .opt{font-size:11px;font-weight:500;color:var(--fg-subtle)}
+    .input,.select{width:100%;padding:10px 12px;font-size:14px;font-family:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-sm);transition:border-color .15s, box-shadow .15s}
+    .input:focus,.select:focus{outline:none;border-color:var(--brand);box-shadow:var(--ring)}
+    .input.mono{font-family:var(--font-num);font-size:13.5px}
+    .input.is-error{border-color:var(--danger);box-shadow:0 0 0 3px oklch(49% 0.115 28 / 0.15)}
+    .hint{font-size:11.5px;color:var(--fg-subtle);margin-top:6px;line-height:1.7}
+    .err-text{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--danger);font-weight:600;margin-top:6px}
+    .err-text svg{width:13px;height:13px}
+    .form-row2{display:grid;grid-template-columns:1fr 140px;gap:14px}
+    .tip{position:relative;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--surface-sunk);border:1px solid var(--border-strong);color:var(--fg-subtle);font-size:10.5px;font-weight:700;cursor:help}
+    .tip-body{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:260px;background:var(--brand-deep);color:oklch(93% 0.01 250);font-size:11.5px;font-weight:400;line-height:1.7;padding:10px 12px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:10}
+    .tip:hover .tip-body,.tip:focus .tip-body{opacity:1}
+    .pw-wrap{position:relative}
+    .pw-wrap .input{padding-right:42px}
+    .pw-eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;display:grid;place-items:center;background:none;border:0;border-radius:6px;color:var(--fg-subtle);cursor:pointer}
+    .pw-eye:hover{background:var(--surface-sunk)}
+    .pw-eye svg{width:17px;height:17px}
+    .btn-row{display:flex;gap:10px;margin-top:26px}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;font-size:14px;font-weight:700;font-family:inherit;border-radius:var(--radius);border:1px solid transparent;cursor:pointer;text-decoration:none;transition:filter .15s}
+    .btn svg{width:16px;height:16px}
+    .btn-primary{background:var(--brand);color:var(--on-brand);flex:1}
+    .btn-primary:hover{filter:brightness(1.08)}
+    .btn-ghost{background:var(--surface);border-color:var(--border-strong);color:var(--fg-muted)}
+    .btn-block{width:100%}
+    .btn-lg{padding:14px 24px;font-size:15px}
+    .btn-back{flex:none;padding:12px 14px}
+    .host-help{background:var(--surface-sunk);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:20px}
+    .hh-q{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
+    .hh-q svg{width:15px;height:15px;color:var(--fg-subtle)}
+    .hh-sub{font-size:11.5px;color:var(--fg-subtle);margin:4px 0 10px}
+    .host-chips{display:flex;flex-wrap:wrap;gap:7px}
+    .host-chip{padding:6px 13px;font-size:12px;font-weight:600;font-family:inherit;background:var(--surface);border:1px solid var(--border-strong);border-radius:99px;color:var(--fg-muted);cursor:pointer}
+    .host-chip.on{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+    .linkbtn{background:none;border:0;padding:0;font-family:inherit;font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;margin-top:12px;display:inline-flex;align-items:center;gap:4px}
+    .linkbtn svg{width:13px;height:13px;transition:transform .15s}
+    .linkbtn.open svg{transform:rotate(180deg)}
+    .cp-diagram{margin-top:12px;border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+    .cp-bar{display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--surface-sunk);border-bottom:1px solid var(--border)}
+    .cp-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--border-strong)}
+    .cp-url{font-family:var(--font-num);font-size:10.5px;color:var(--fg-faint);margin-left:8px}
+    .cp-grid{display:grid;grid-template-columns:120px 1fr}
+    .cp-menu{border-right:1px solid var(--border);padding:10px 0}
+    .cp-mi{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--fg-subtle);padding:6px 12px}
+    .cp-mi.hot{background:var(--brand-soft);color:var(--brand-strong);font-weight:700}
+    .cp-bullet{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5}
+    .cp-body{padding:12px 16px}
+    .cp-h{font-size:12px;font-weight:700;margin-bottom:8px}
+    .cp-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:11.5px}
+    .cp-kv .k{color:var(--fg-subtle)}
+    .cp-kv .v{font-family:var(--font-num)}
+    .cp-kv .v.hl{background:var(--warn-soft);border-radius:4px;padding:0 5px;font-weight:700}
+    .cp-note{font-size:11px;color:var(--fg-subtle);margin-top:9px;line-height:1.7}
+    .tenant-sec{margin-bottom:22px}
+    .ts-h{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;margin-bottom:10px}
+    .ts-h svg{width:15px;height:15px;color:var(--fg-subtle)}
+    .opt-card{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--border-strong);border-radius:var(--radius);padding:13px 15px;margin-bottom:9px;cursor:pointer;background:var(--surface);transition:border-color .15s, box-shadow .15s}
+    .opt-card.on{border-color:var(--brand);box-shadow:var(--ring)}
+    .opt-card input{margin-top:4px;accent-color:var(--brand)}
+    .oc-t{font-size:13.5px;font-weight:700}
+    .oc-badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--brand-soft);color:var(--brand-strong);margin-left:7px;vertical-align:1px}
+    .oc-d{font-size:12px;color:var(--fg-subtle);margin-top:3px;line-height:1.7}
+    .up-drop{display:flex;flex-direction:column;align-items:center;gap:5px;border:2px dashed var(--border-strong);border-radius:var(--radius);padding:28px 20px;cursor:pointer;text-align:center;background:var(--surface-sunk);transition:border-color .15s}
+    .up-drop:hover,.up-drop.has-file{border-color:var(--brand)}
+    .ud-ic{width:30px;height:30px;color:var(--fg-subtle)}
+    .ud-ic svg{width:100%;height:100%}
+    .ud-t{font-size:13.5px;font-weight:700}
+    .ud-d{font-size:11.5px;color:var(--fg-subtle)}
+    .ud-file{font-family:var(--font-num);font-size:11.5px;color:var(--brand-strong);font-weight:600;margin-top:6px;word-break:break-all}
+    .up-drop input[type=file]{display:none}
+    .ld-h{font-size:22px;font-weight:700}
+    .ld-sub{font-size:13px;color:var(--fg-muted);margin:8px 0 22px;line-height:1.8}
+    .ld-bar{height:6px;border-radius:99px;background:var(--surface-sunk);overflow:hidden;margin-bottom:20px}
+    .ld-bar span{display:block;height:100%;width:0;border-radius:99px;background:var(--brand);transition:width .5s}
+    .substeps{list-style:none}
+    .substeps li{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--border)}
+    .substeps li:last-child{border-bottom:none}
+    .ss-ic{width:22px;height:22px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--surface-sunk);color:var(--ok)}
+    .ss-ic svg{width:12px;height:12px}
+    .ss-t{font-size:13.5px;font-weight:600}
+    .ss-d{font-size:11.5px;color:var(--fg-subtle)}
+    .ss-meta{margin-left:auto;font-size:11px;font-weight:600;color:var(--fg-faint)}
+    .ss-done .ss-ic{background:var(--ok-soft)}
+    .ss-done .ss-meta{color:var(--ok)}
+    .ss-pending{opacity:.5}
+    .spinner{width:13px;height:13px;border:2px solid var(--border-strong);border-top-color:var(--brand);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .ld-warn{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--warn);margin-top:18px}
+    .ld-warn svg{width:14px;height:14px}
+    .done-mark{width:64px;height:64px;border-radius:50%;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;margin:8px 0 18px;animation:pop .35s ease-out}
+    .done-mark svg{width:30px;height:30px}
+    @keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+    .done-title{font-size:24px;font-weight:700}
+    .done-sub{font-size:13.5px;color:var(--fg-muted);margin:10px 0 22px;line-height:1.9}
+    .sec-warn{display:flex;gap:13px;background:var(--danger-soft);border:1px solid color-mix(in oklch,var(--danger) 30%,transparent);border-radius:var(--radius);padding:15px 17px;margin-bottom:24px}
+    .sw-ico{width:20px;height:20px;flex:none;color:var(--danger);margin-top:2px}
+    .sw-ico svg{width:100%;height:100%}
+    .sw-t{font-size:13.5px;font-weight:700;color:var(--danger)}
+    .sw-d{font-size:12.5px;color:oklch(40% 0.08 28);margin-top:3px;line-height:1.75}
+    .next-h{font-size:13px;font-weight:700;margin-bottom:10px}
+    .next-list{list-style:none;margin-bottom:26px}
+    .next-list li{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .next-list li:last-child{border-bottom:none}
+    .nl-n{width:22px;height:22px;flex:none;border-radius:50%;background:var(--brand-soft);color:var(--brand-strong);display:grid;place-items:center;font-family:var(--font-num);font-size:11.5px;font-weight:700}
+    .nl-d{font-size:12px;color:var(--fg-subtle);margin-top:2px;font-weight:400}
+    [hidden]{display:none !important}
+    @media (max-width:900px){
+      .iz-stage{grid-template-columns:1fr}
+      .iz-aside{padding:30px 26px 26px;flex-direction:row;align-items:center;justify-content:space-between;gap:16px}
+      .iz-aside .iz-bs-mid,.iz-aside .iz-bs-foot{display:none}
+      .iz-main{padding:32px 22px 48px}
+      .hstep{display:flex}
+    }
+    @media (max-width:520px){.form-row2{grid-template-columns:1fr}.iz-head,.done-title{font-size:21px}}
+    @media (prefers-reduced-motion:reduce){.done-mark{animation:none}}
+    CSS;
+}
+
+// -------------------------------------------------------------------------
+// CLI: pattern export for the design handoff (one source of truth)
+// -------------------------------------------------------------------------
+
+if (PHP_SAPI === 'cli') {
+    $argvList = is_array($_SERVER['argv'] ?? null) ? array_values($_SERVER['argv']) : [];
+    if (($argvList[1] ?? '') !== '--export-patterns') {
+        fwrite(STDERR, "Usage: php public_html/install.php --export-patterns [output-dir]\n");
+        exit(1);
+    }
+    $outDir = is_string($argvList[2] ?? null) && $argvList[2] !== '' ? $argvList[2] : $root . '/build/installer-patterns';
+    if (!is_dir($outDir) && !mkdir($outDir, 0775, true)) {
+        fwrite(STDERR, "Cannot create output dir: {$outDir}\n");
+        exit(1);
+    }
+
+    $passChecks = [
+        ['label' => 'PHP 8.4 以上', 'detail' => '現在: 8.4.23', 'ok' => true, 'fix' => 'サーバーのコントロールパネルで使用する PHP のバージョンを 8.4 以上に切り替えてください。'],
+        ['label' => 'PHP 拡張モジュール', 'detail' => 'pdo / pdo_mysql / mbstring / openssl / json / curl', 'ok' => true, 'fix' => '不足している拡張モジュールを有効化してください。'],
+        ['label' => 'var/ ディレクトリへの書き込み権限', 'detail' => 'インストール完了マーカーを保存します', 'ok' => true, 'fix' => ''],
+        ['label' => 'ルートディレクトリへの書き込み権限', 'detail' => '.env ファイルを作成します', 'ok' => true, 'fix' => ''],
+        ['label' => 'vendor/ ディレクトリ（依存一式）', 'detail' => '依存ライブラリ', 'ok' => true, 'fix' => ''],
     ];
+    $failChecks = $passChecks;
+    $failChecks[0] = ['label' => 'PHP 8.4 以上', 'detail' => '現在: 8.1.27', 'ok' => false, 'fix' => 'サーバーのコントロールパネルで使用する PHP のバージョンを 8.4 以上に切り替えてください。'];
+    $failChecks[2] = ['label' => 'var/ ディレクトリへの書き込み権限', 'detail' => '書き込み不可', 'ok' => false, 'fix' => 'ファイルマネージャまたは FTP で <code>var/</code> フォルダのパーミッションを「書き込み可（755 または 775）」に変更してください。'];
+    $acquireChecks = [
+        ['label' => 'PHP 8.4 以上', 'detail' => '現在: 8.4.23', 'ok' => true, 'fix' => ''],
+        ['label' => 'zip 拡張モジュール（ZipArchive）', 'detail' => '利用可', 'ok' => true, 'fix' => ''],
+        ['label' => 'var/ ディレクトリへの書き込み権限', 'detail' => '書き込み可', 'ok' => true, 'fix' => ''],
+        ['label' => 'ルートディレクトリへの書き込み権限', 'detail' => 'アプリ本体を展開します', 'ok' => true, 'fix' => ''],
+    ];
+
+    /** @var array<string, array<string, mixed>> $patterns */
+    $patterns = [
+        '01-requirements-pass' => ['view' => 'requirements', 'checks' => $passChecks, 'reqErrors' => []],
+        '02-requirements-fail' => ['view' => 'requirements', 'checks' => $failChecks, 'reqErrors' => array_values(array_filter($failChecks, static fn (array $c): bool => !$c['ok']))],
+        '03-database' => ['view' => 'database'],
+        '04-database-error' => ['view' => 'database', 'errors' => ["DB 接続エラー: SQLSTATE[HY000] [1045] Access denied for user '_nene_clear'@'10.0.0.8' (using password: YES)"], 'old' => ['db_adapter' => 'mysql', 'db_host' => 'mysql401.phy.heteml.lan', 'db_port' => '3306', 'db_name' => '_nene_clear', 'db_user' => '_nene_clear']],
+        '05-database-sqlite' => ['view' => 'database', 'old' => ['db_adapter' => 'sqlite']],
+        '06-admin-single' => ['view' => 'admin'],
+        '07-admin-multi' => ['view' => 'admin', 'old' => ['tenant_mode' => 'multi']],
+        '08-admin-errors' => ['view' => 'admin', 'errors' => ['入力内容に誤りがあります。'], 'fieldErrors' => ['org_name' => '組織名を入力してください。', 'admin_email' => '有効なメールアドレスを入力してください。', 'admin_password' => 'パスワードは 12 文字以上にしてください。'], 'old' => ['org_name' => '', 'org_slug' => 'nene-shoji', 'admin_email' => 'admin@example', 'tenant_mode' => 'single']],
+        '09-complete' => ['view' => 'complete', 'summary' => '組織「株式会社ねね商事」（#1）と管理者 admin@nene-shoji.co.jp を作成しました。'],
+        '10-acquire' => ['view' => 'acquire', 'checks' => $acquireChecks, 'reqErrors' => []],
+        '11-acquire-error' => ['view' => 'acquire', 'checks' => $acquireChecks, 'reqErrors' => [], 'errors' => ['SHA-256 が一致しません。公式配布元からダウンロードした ZIP と、そのページに記載のハッシュを確認してください。'], 'old' => ['expected_sha256' => '87ad144743f185bf19cbd15f678a54b65f8343e8dfc97ad93b5840972756bfd4']],
+        '12-blocked' => ['view' => 'blocked', 'blockedMessage' => 'インストール済みです。install.php を削除してください。'],
+    ];
+
+    foreach ($patterns as $name => $state) {
+        /** @var array{view: string} $state */
+        file_put_contents($outDir . '/' . $name . '.html', render_installer_page($state));
+        fwrite(STDOUT, "  {$name}.html\n");
+    }
+    copy(__DIR__ . '/installer.js', $outDir . '/installer.js');
+    fwrite(STDOUT, "  installer.js\n");
+    fwrite(STDOUT, "Exported to {$outDir}\n");
+    exit(0);
 }
 
-// --- Guard: refuse to run on an already-configured install ---------------------
-if (is_file($marker) || is_file($envFile)) {
-    render_page('インストール済み', '<p class="ok">この環境は既に構成済みです。'
-        . '再インストールするには <code>.env</code> と <code>var/.installed</code> を削除してください。</p>'
-        . '<p class="warn">セキュリティのため、この <code>install.php</code> は削除してください。</p>');
-    exit;
-}
+// -------------------------------------------------------------------------
+// Runtime flow
+// -------------------------------------------------------------------------
 
+$payloadPresent = is_file($root . '/vendor/autoload.php');
 $method = is_string($_SERVER['REQUEST_METHOD'] ?? null) ? $_SERVER['REQUEST_METHOD'] : 'GET';
+$step = (int) (is_string($_GET['step'] ?? null) ? $_GET['step'] : '0');
 
-if ($method === 'POST') {
-    try {
-        run_install($root, $envFile, $marker);
-    } catch (\Throwable $e) {
-        render_page('インストール失敗', '<p class="err">' . e($e->getMessage()) . '</p>'
-            . '<p><a href="install.php">戻る</a></p>');
+/** @var list<string> $errors */
+$errors = [];
+/** @var array<string, string> $fieldErrors */
+$fieldErrors = [];
+$success = false;
+$summary = '';
+
+// Entry guards (both phases): completed-marker + provisioned-database probe.
+if (is_file($marker)) {
+    refuse_install('インストール済みです。install.php を削除してください。');
+}
+if (database_already_provisioned($envFile)) {
+    refuse_install('既にプロビジョニング済みのデータベースが検出されました。再インストールはできません。install.php を削除してください。');
+}
+
+if (!$payloadPresent) {
+    // ---- Acquisition flow (pre-vendor; dependency-zero) ----
+    require_once $root . '/src/Install/PayloadAcquisition.php';
+
+    $checks = acquire_requirement_checks($root);
+    $reqErrors = array_values(array_filter($checks, static fn (array $c): bool => !$c['ok']));
+
+    if ($method === 'POST' && post('action') === 'acquire' && $reqErrors === []) {
+        try {
+            if (!isset($_FILES['payload']) || !is_array($_FILES['payload'])) {
+                throw new RuntimeException('ZIP ファイルが選択されていません。');
+            }
+            $err = (int) ($_FILES['payload']['error'] ?? UPLOAD_ERR_NO_FILE);
+            if ($err !== UPLOAD_ERR_OK) {
+                throw new RuntimeException(match ($err) {
+                    UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'アップロードされたファイルがサーバーの上限を超えています（php.ini の upload_max_filesize / post_max_size をご確認ください）。',
+                    UPLOAD_ERR_PARTIAL => 'アップロードが中断されました。もう一度お試しください。',
+                    UPLOAD_ERR_NO_FILE => 'ZIP ファイルが選択されていません。',
+                    default => 'ファイルのアップロードに失敗しました（コード: ' . $err . '）。',
+                });
+            }
+            $size = (int) ($_FILES['payload']['size'] ?? 0);
+            if ($size <= 0) {
+                throw new RuntimeException('アップロードされたファイルが空です。');
+            }
+            if ($size > PayloadAcquisition::MAX_UPLOAD_BYTES) {
+                throw new RuntimeException('ファイルサイズが上限（' . (int) (PayloadAcquisition::MAX_UPLOAD_BYTES / 1024 / 1024) . 'MB）を超えています。');
+            }
+            $origName = is_string($_FILES['payload']['name'] ?? null) ? (string) $_FILES['payload']['name'] : '';
+            if (strtolower((string) pathinfo($origName, PATHINFO_EXTENSION)) !== 'zip') {
+                throw new RuntimeException('.zip ファイルのみアップロードできます。');
+            }
+            $tmpName = is_string($_FILES['payload']['tmp_name'] ?? null) ? (string) $_FILES['payload']['tmp_name'] : '';
+            if ($tmpName === '' || !is_uploaded_file($tmpName)) {
+                throw new RuntimeException('アップロードされたファイルを検証できませんでした。');
+            }
+            $dest = $root . '/var/payload-upload-' . bin2hex(random_bytes(8)) . '.zip';
+            if (!move_uploaded_file($tmpName, $dest)) {
+                throw new RuntimeException('アップロードされたファイルを保存できませんでした。var/ の書き込み権限を確認してください。');
+            }
+            try {
+                PayloadAcquisition::verifyAndExtract($dest, post('expected_sha256'), $root);
+            } finally {
+                @unlink($dest);
+            }
+            header('Location: install.php');
+            exit;
+        } catch (RuntimeException $e) {
+            $errors[] = $e->getMessage();
+        }
+    } elseif (
+        $method === 'POST'
+        && $reqErrors === []
+        && $_POST === []
+        && (int) (is_string($_SERVER['CONTENT_LENGTH'] ?? null) ? $_SERVER['CONTENT_LENGTH'] : '0') > 0
+    ) {
+        // A POST body over post_max_size arrives with empty $_POST/$_FILES.
+        $errors[] = 'アップロードがサーバーの上限（post_max_size / upload_max_filesize）を超えた可能性があります。ホスティングの PHP 設定をご確認ください。';
     }
+
+    echo render_installer_page([
+        'view' => 'acquire',
+        'checks' => $checks,
+        'reqErrors' => $reqErrors,
+        'errors' => $errors,
+        'old' => ['expected_sha256' => post('expected_sha256')],
+    ]);
     exit;
 }
 
-render_form();
+// ---- Normal flow (vendor present) ----
+require_once $root . '/vendor/autoload.php';
 
-// ------------------------------------------------------------------------------
-
-function render_form(): void
-{
-    global $root;
-    $reqRows = '';
-    foreach (requirements($root) as $r) {
-        $mark = $r['ok'] ? '✅' : '❌';
-        $fix = $r['ok'] ? '' : ' <small>' . e($r['fix']) . '</small>';
-        $reqRows .= '<li>' . $mark . ' ' . e($r['label']) . $fix . '</li>';
-    }
-
-    render_page('NeNe Clear をインストール', <<<HTML
-    <p class="warn"><strong>注意:</strong> NeNe Clear は銀行入金・PII を扱います。共有ホスティングは推奨されません（VPS + Docker を推奨）。
-    運用時は <code>NENE_CLEAR_ENCRYPTION_KEY</code> の設定も検討してください。</p>
-    <fieldset><legend>1. 要件チェック</legend><ul>{$reqRows}</ul></fieldset>
-    <form method="post" action="install.php">
-      <fieldset><legend>2. データベース</legend>
-        <label>アダプタ</label>
-        <select name="db_adapter" onchange="document.getElementById('mysql').style.display=this.value==='mysql'?'block':'none'">
-          <option value="mysql">MySQL（共有ホスティング）</option>
-          <option value="sqlite">SQLite（お試し）</option>
-        </select>
-        <div id="mysql">
-          <label>ホスト</label><input name="db_host" value="127.0.0.1">
-          <label>ポート</label><input name="db_port" value="3306">
-          <label>データベース名</label><input name="db_name" value="nene_clear">
-          <label>ユーザー</label><input name="db_user" value="nene_clear">
-          <label>パスワード</label><input name="db_password" type="password">
-        </div>
-      </fieldset>
-      <fieldset><legend>3. テナント構成</legend>
-        <label><input type="radio" name="tenant_mode" value="single" checked> シングルテナント（組織1つ＋管理者）</label>
-        <label><input type="radio" name="tenant_mode" value="multi"> マルチテナント（横断superadmin・組織は後で追加）</label>
-        <label>組織名（シングル時）</label><input name="org_name" value="My Company">
-        <label>組織スラッグ（英数字・空なら組織名から生成）</label><input name="org_slug" placeholder="my-company">
-      </fieldset>
-      <fieldset><legend>4. 管理者アカウント</legend>
-        <label>メールアドレス</label><input name="admin_email" type="email" required>
-        <label>パスワード（12文字以上）</label><input name="admin_password" type="password" required>
-      </fieldset>
-      <button type="submit">インストールを実行</button>
-    </form>
-    HTML);
+if (!is_dir($root . '/var')) {
+    @mkdir($root . '/var', 0755, true);
 }
 
-function run_install(string $root, string $envFile, string $marker): void
-{
-    $adapter = post('db_adapter') === 'sqlite' ? 'sqlite' : 'mysql';
-    $tenantMode = post('tenant_mode') === 'multi' ? 'multi' : 'single';
-    $email = post('admin_email');
-    $password = post('admin_password');
-
-    if ($email === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
-        throw new RuntimeException('有効なメールアドレスを入力してください。');
-    }
-    if (strlen($password) < 12) {
-        throw new RuntimeException('パスワードは12文字以上にしてください。');
+$reinstallGuard = new ReInstallationGuard($marker, new class ($envFile) implements ProvisioningProbe {
+    public function __construct(private readonly string $envFile)
+    {
     }
 
-    // Database connection parameters (mysql from the form; sqlite path is fixed).
-    $sqlitePath = $root . '/database/nene_clear.sqlite3';
-    $db = $adapter === 'sqlite'
-        ? ['adapter' => 'sqlite', 'name' => $sqlitePath]
-        : [
-            'adapter' => 'mysql',
-            'host' => post('db_host') !== '' ? post('db_host') : '127.0.0.1',
-            'port' => (int) (post('db_port') !== '' ? post('db_port') : '3306'),
-            'name' => post('db_name') !== '' ? post('db_name') : 'nene_clear',
-            'user' => post('db_user') !== '' ? post('db_user') : 'nene_clear',
-            'pass' => post('db_password'),
-            'charset' => 'utf8mb4',
-        ];
+    public function isProvisioned(): bool
+    {
+        return database_already_provisioned($this->envFile);
+    }
+});
 
-    // 1) Migrate the schema into the target database (Phinx Manager, no shell).
-    migrate($root, $adapter, $db, $sqlitePath);
+$checks = requirement_checks($root);
+$reqErrors = array_values(array_filter($checks, static fn (array $c): bool => !$c['ok']));
 
-    // 2) Persist config so the app connects to the same database.
-    $jwtSecret = EnvironmentWriter::generateSecret(32);
-    write_env($envFile, $adapter, $db, $sqlitePath, $jwtSecret);
+if ($method === 'POST' && $reqErrors === []) {
+    if ($step === 1) {
+        // ---- Database step: validate → connection test → schema → .env → PRG ----
+        $adapter = post('db_adapter') === 'sqlite' ? 'sqlite' : 'mysql';
+        $dbHost = post('db_host') !== '' ? post('db_host') : 'localhost';
+        $dbPort = (int) (post('db_port') !== '' ? post('db_port') : '3306');
+        $dbName = post('db_name');
+        $dbUser = post('db_user');
+        $dbPass = post_raw('db_password');
+        $sqlitePath = $root . '/database/nene_clear.sqlite3';
 
-    // 3) Create the first organization + admin via the app's own use cases.
-    $summary = bootstrap_admin($adapter, $db, $sqlitePath, $jwtSecret, $tenantMode, $email, $password);
+        if ($adapter === 'mysql' && ($dbName === '' || $dbUser === '')) {
+            $errors[] = 'データベース名とユーザー名は必須です。';
+        }
+        if ($adapter === 'mysql' && ($dbPort < 1 || $dbPort > 65535)) {
+            $errors[] = 'ポート番号が正しくありません（1〜65535）。';
+        }
 
-    // 4) Lock further installs.
-    @mkdir($root . '/var', 0775, true);
-    file_put_contents($marker, gmdate('c') . "\n");
+        if ($errors === []) {
+            try {
+                if ($adapter === 'mysql') {
+                    // Connection test first — credential failures get the friendly banner.
+                    $dsn = "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4";
+                    new PDO($dsn, $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 5]);
+                    $environment = ['adapter' => 'mysql', 'host' => $dbHost, 'port' => $dbPort, 'name' => $dbName, 'user' => $dbUser, 'pass' => $dbPass, 'charset' => 'utf8mb4'];
+                } else {
+                    // Phinx appends `.sqlite3`; hand it the suffix-less name so it
+                    // resolves to the same file the app opens.
+                    $environment = ['adapter' => 'sqlite', 'name' => substr($sqlitePath, 0, -8)];
+                }
 
-    render_page('インストール完了', '<p class="ok">' . $summary . '</p>'
-        . '<p class="warn"><strong>今すぐ <code>public_html/install.php</code> を削除</strong>してください（再実行・情報漏えい防止）。</p>'
-        . '<p>管理 UI（Vite: <code>:5383</code> / 本番は同一オリジン）からログインできます。</p>');
+                (new DatabaseSchemaApplier())->apply(new PhinxConfig([
+                    'paths' => ['migrations' => $root . '/database/migrations'],
+                    'environments' => [
+                        'default_migration_table' => 'phinxlog',
+                        'default_environment' => 'install',
+                        'install' => $environment,
+                    ],
+                    // Keep in sync with phinx.php (the only duplicated values).
+                    'version_order' => 'creation',
+                ]));
+
+                $values = [
+                    'APP_ENV' => 'production',
+                    'APP_DEBUG' => 'false',
+                    'APP_NAME' => 'NeNe Clear',
+                    'DB_ADAPTER' => $adapter,
+                ];
+                if ($adapter === 'mysql') {
+                    $values['DB_HOST'] = $dbHost;
+                    $values['DB_PORT'] = (string) $dbPort;
+                    $values['DB_NAME'] = $dbName;
+                    $values['DB_USER'] = $dbUser;
+                    $values['DB_PASSWORD'] = $dbPass;
+                    $values['DB_CHARSET'] = 'utf8mb4';
+                } else {
+                    $values['DB_NAME'] = $sqlitePath;
+                }
+                $values['NENE_CLEAR_JWT_SECRET'] = EnvironmentWriter::generateSecret(32);
+
+                (new EnvironmentWriter())->write($envFile, $values);
+
+                header('Location: install.php?step=2');
+                exit;
+            } catch (PDOException $e) {
+                $errors[] = 'DB 接続エラー: ' . $e->getMessage();
+            } catch (\Throwable $e) {
+                $errors[] = $e->getMessage();
+            }
+        }
+    } elseif ($step === 2) {
+        // ---- Admin step: re-guard, validate with field errors, bootstrap ----
+        $blockedReason = $reinstallGuard->blockedReason();
+        if ($blockedReason !== null) {
+            refuse_install($blockedReason === 'marker_present'
+                ? 'インストール済みです。install.php を削除してください。'
+                : '既にプロビジョニング済みのデータベースが検出されました。再インストールはできません。install.php を削除してください。');
+        }
+
+        $tenantMode = post('tenant_mode') === 'multi' ? 'multi' : 'single';
+        $orgName = post('org_name');
+        $orgSlug = post('org_slug');
+        $email = post('admin_email');
+        $password = post_raw('admin_password');
+
+        if ($tenantMode === 'single' && $orgName === '') {
+            $fieldErrors['org_name'] = '組織名を入力してください。';
+        }
+        if ($tenantMode === 'single' && $orgSlug !== '' && preg_match('/^[a-z0-9][a-z0-9-]*$/', $orgSlug) !== 1) {
+            $fieldErrors['org_slug'] = 'スラッグは小文字英数字とハイフンのみ使えます。';
+        }
+        if ($email === '') {
+            $fieldErrors['admin_email'] = 'メールアドレスを入力してください。';
+        } elseif (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            $fieldErrors['admin_email'] = '有効なメールアドレスを入力してください。';
+        }
+        if ($password === '') {
+            $fieldErrors['admin_password'] = 'パスワードを入力してください。';
+        } elseif (strlen($password) < 12) {
+            $fieldErrors['admin_password'] = 'パスワードは 12 文字以上にしてください。';
+        }
+
+        if ($fieldErrors !== []) {
+            $errors[] = '入力内容に誤りがあります。';
+        }
+
+        if ($errors === []) {
+            if (!is_file($envFile)) {
+                $errors[] = '.env ファイルが見つかりません。ステップ 1 からやり直してください。';
+            } else {
+                try {
+                    $env = parse_ini_file($envFile);
+                    if ($env === false) {
+                        throw new RuntimeException('.env ファイルを読み込めませんでした。');
+                    }
+
+                    $adapter = (string) ($env['DB_ADAPTER'] ?? 'mysql');
+                    $config = $adapter === 'sqlite'
+                        ? DatabaseConfig::sqlite((string) ($env['DB_NAME'] ?? $root . '/database/nene_clear.sqlite3'))
+                        : new DatabaseConfig(
+                            url: null,
+                            environment: 'production',
+                            adapter: 'mysql',
+                            host: (string) ($env['DB_HOST'] ?? '127.0.0.1'),
+                            port: (int) ($env['DB_PORT'] ?? 3306),
+                            name: (string) ($env['DB_NAME'] ?? ''),
+                            user: (string) ($env['DB_USER'] ?? ''),
+                            password: (string) ($env['DB_PASSWORD'] ?? ''),
+                            charset: 'utf8mb4',
+                        );
+
+                    $factory = new PdoConnectionFactory($config);
+                    $query = new AdapterAwareQueryExecutor(new PdoDatabaseQueryExecutor($factory), $adapter);
+                    $transactionManager = new AdapterAwareTransactionManager(new PdoDatabaseTransactionManager($factory), $adapter);
+                    $container = ApplicationFactory::container($query, $transactionManager, (string) ($env['NENE_CLEAR_JWT_SECRET'] ?? ''));
+
+                    if ($tenantMode === 'multi') {
+                        ServiceResolver::get($container, CreateUserUseCaseInterface::class)->execute(
+                            new CreateUserInput(organizationId: null, email: $email, role: Role::Superadmin, password: $password, actorUserId: 0),
+                        );
+                        $summary = '横断管理者（superadmin）' . $email . ' を作成しました。組織はログイン後に追加できます。';
+                    } else {
+                        // Japanese org names yield an empty slug — fall back to a
+                        // stable default (invoice behavior) instead of failing.
+                        $slug = $orgSlug !== '' ? $orgSlug : (slugify($orgName) !== '' ? slugify($orgName) : 'default');
+                        $org = ServiceResolver::get($container, CreateOrganizationUseCaseInterface::class)->execute(
+                            new CreateOrganizationInput(slug: $slug, name: $orgName, actorUserId: 0),
+                        );
+                        ServiceResolver::get($container, CreateUserUseCaseInterface::class)->execute(
+                            new CreateUserInput(organizationId: $org->id, email: $email, role: Role::Admin, password: $password, actorUserId: 0),
+                        );
+                        $summary = '組織「' . $orgName . '」（#' . $org->id . '）と管理者 ' . $email . ' を作成しました。管理画面にログインして、銀行口座（CSV 取込プロファイル）の設定から始めましょう。';
+                    }
+
+                    $reinstallGuard->markInstalled(gmdate('c'));
+                    $success = true;
+                } catch (PDOException $e) {
+                    $errors[] = 'データベースエラー: ' . $e->getMessage();
+                } catch (\Throwable $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+        }
+    }
 }
 
-/**
- * @param array<string, mixed> $db
- */
-function migrate(string $root, string $adapter, array $db, string $sqlitePath): void
-{
-    // Phinx appends `.sqlite3`; hand it the name without the suffix so it resolves
-    // to the same file the app opens (database/nene_clear.sqlite3).
-    $environment = $adapter === 'sqlite'
-        ? ['adapter' => 'sqlite', 'name' => substr($sqlitePath, 0, -8)]
-        : $db;
-
-    $config = new PhinxConfig([
-        'paths' => ['migrations' => $root . '/database/migrations'],
-        'environments' => [
-            'default_migration_table' => 'phinxlog',
-            'default_environment' => 'install',
-            'install' => $environment,
-        ],
-    ]);
-
-    $manager = new PhinxManager($config, new StringInput(''), new BufferedOutput());
-    $manager->migrate('install');
+// Decide the view. Failed requirements always block on the requirements page.
+if ($reqErrors !== []) {
+    $view = 'requirements';
+} elseif ($success) {
+    $view = 'complete';
+} elseif ($step === 2) {
+    $view = 'admin';
+} elseif ($step === 1) {
+    $view = 'database';
+} else {
+    $view = 'requirements';
 }
 
-/**
- * @param array<string, mixed> $db
- */
-function write_env(string $envFile, string $adapter, array $db, string $sqlitePath, string $jwtSecret): void
-{
-    // .env は toolkit の EnvironmentWriter で原子書き込みする（chmod 0640 で fail-closed・
-    // 値を \\ " $ escape・改行/NUL 拒否）。従来の生連結 + rename と違い、DB パスワードに
-    // " $ # 空白・改行が含まれても .env が壊れず、同ホスト全ユーザからの読み取り（穴 #1）と
-    // .env インジェクション（穴 #2）を塞ぐ。KEY 順序と名前は既存のまま維持する。
-    $values = [
-        'APP_ENV' => 'production',
-        'APP_DEBUG' => 'false',
-        'DB_ADAPTER' => $adapter,
-    ];
-    if ($adapter === 'mysql') {
-        $values['DB_HOST'] = (string) $db['host'];
-        $values['DB_PORT'] = (string) $db['port'];
-        $values['DB_NAME'] = (string) $db['name'];
-        $values['DB_USER'] = (string) $db['user'];
-        $values['DB_PASSWORD'] = (string) $db['pass'];
-        $values['DB_CHARSET'] = 'utf8mb4';
-    } else {
-        $values['DB_NAME'] = $sqlitePath;
+// Preserve submitted values on re-render (#267).
+$oldValues = [];
+foreach (['db_adapter', 'db_host', 'db_port', 'db_name', 'db_user', 'db_password', 'tenant_mode', 'org_name', 'org_slug', 'admin_email'] as $key) {
+    $value = $key === 'db_password' ? post_raw($key) : post($key);
+    if ($value !== '') {
+        $oldValues[$key] = $value;
     }
-    $values['NENE_CLEAR_JWT_SECRET'] = $jwtSecret;
-
-    (new EnvironmentWriter())->write($envFile, $values);
 }
 
-/**
- * @param array<string, mixed> $db
- */
-function bootstrap_admin(
-    string $adapter,
-    array $db,
-    string $sqlitePath,
-    string $jwtSecret,
-    string $tenantMode,
-    string $email,
-    string $password,
-): string {
-    $config = $adapter === 'sqlite'
-        ? DatabaseConfig::sqlite($sqlitePath)
-        : new DatabaseConfig(
-            url: null,
-            environment: 'production',
-            adapter: 'mysql',
-            host: (string) $db['host'],
-            port: (int) $db['port'],
-            name: (string) $db['name'],
-            user: (string) $db['user'],
-            password: (string) $db['pass'],
-            charset: 'utf8mb4',
-        );
-
-    $factory = new PdoConnectionFactory($config);
-    $query = new AdapterAwareQueryExecutor(new PdoDatabaseQueryExecutor($factory), $adapter);
-    $transactionManager = new AdapterAwareTransactionManager(new PdoDatabaseTransactionManager($factory), $adapter);
-    $container = ApplicationFactory::container($query, $transactionManager, $jwtSecret);
-
-    if ($tenantMode === 'multi') {
-        ServiceResolver::get($container, CreateUserUseCaseInterface::class)->execute(
-            new CreateUserInput(organizationId: null, email: $email, role: Role::Superadmin, password: $password, actorUserId: 0),
-        );
-
-        return 'マルチテナントで横断管理者（superadmin）<' . e($email) . '> を作成しました。組織はログイン後に追加できます。';
-    }
-
-    $orgName = post('org_name') !== '' ? post('org_name') : 'My Company';
-    $orgSlug = post('org_slug') !== '' ? post('org_slug') : slugify($orgName);
-    if ($orgSlug === '') {
-        throw new RuntimeException('組織スラッグを生成できませんでした。英数字の --org-slug を指定してください。');
-    }
-
-    $org = ServiceResolver::get($container, CreateOrganizationUseCaseInterface::class)->execute(
-        new CreateOrganizationInput(slug: $orgSlug, name: $orgName, actorUserId: 0),
-    );
-    ServiceResolver::get($container, CreateUserUseCaseInterface::class)->execute(
-        new CreateUserInput(organizationId: $org->id, email: $email, role: Role::Admin, password: $password, actorUserId: 0),
-    );
-
-    return '組織「' . e($orgName) . '」（#' . $org->id . '）と管理者 <' . e($email) . '> を作成しました。';
-}
+echo render_installer_page([
+    'view' => $view,
+    'checks' => $checks,
+    'reqErrors' => $reqErrors,
+    'errors' => $errors,
+    'fieldErrors' => $fieldErrors,
+    'old' => $oldValues,
+    'summary' => $summary,
+]);
