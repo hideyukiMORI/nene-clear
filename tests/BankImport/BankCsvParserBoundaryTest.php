@@ -75,8 +75,8 @@ final class BankCsvParserBoundaryTest extends TestCase
         $lines = $this->parse($csv);
 
         self::assertCount(2, $lines);
-        self::assertSame(1000, $lines[0]->amountCents);
-        self::assertSame(2000, $lines[1]->amountCents);
+        self::assertSame(100000, $lines[0]->amountCents);
+        self::assertSame(200000, $lines[1]->amountCents);
     }
 
     public function test_multiple_header_rows_are_skipped(): void
@@ -107,7 +107,7 @@ final class BankCsvParserBoundaryTest extends TestCase
         $lines = $this->parse($csv);
 
         self::assertCount(1, $lines);
-        self::assertSame(1234567, $lines[0]->amountCents);
+        self::assertSame(123456700, $lines[0]->amountCents);
     }
 
     public function test_missing_amount_cell_is_skipped(): void
@@ -147,6 +147,6 @@ final class BankCsvParserBoundaryTest extends TestCase
         $lines = $this->parse($csv);
 
         self::assertCount(1, $lines);
-        self::assertSame(1000, $lines[0]->amountCents);
+        self::assertSame(100000, $lines[0]->amountCents);
     }
 }

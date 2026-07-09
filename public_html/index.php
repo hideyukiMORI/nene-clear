@@ -16,6 +16,8 @@ use NeneClear\Database\ApplicationDatabaseIdentity;
 use NeneClear\Database\CandidateProfiles;
 use NeneClear\Database\MigrationVersions;
 use NeneClear\Http\ApplicationFactory;
+use NeneClear\InvoiceUpstream\DemoInvoiceUpstreamFixture;
+use NeneClear\InvoiceUpstream\FakeInvoiceUpstreamClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7Server\ServerRequestCreator;
 
@@ -91,6 +93,17 @@ $transactionManager = $connectionFactory !== null
 $smtpHost = $env('SMTP_HOST') ?: null;
 $invoiceApiBaseUrl = $env('NENE_INVOICE_API_BASE_URL') ?: null;
 
+// Demo upstream fixture (#260): when NENE_CLEAR_DEMO_UPSTREAM=1 and no real
+// upstream is configured, pre-populate the standalone fake client with
+// T-relative demo invoices/clients so upstream match suggestions and live
+// dunning sends work in a standalone demo. Off by default; a configured real
+// upstream always wins. See NeneClear\InvoiceUpstream\DemoInvoiceUpstreamFixture.
+$invoiceClient = null;
+if ($env('NENE_CLEAR_DEMO_UPSTREAM') === '1' && $invoiceApiBaseUrl === null) {
+    $invoiceClient = new FakeInvoiceUpstreamClient();
+    DemoInvoiceUpstreamFixture::populate($invoiceClient, new DateTimeImmutable('today'));
+}
+
 // Machine surface (issue #182): the repo VERSION file is this app's release
 // version, surfaced on the auth-gated GET /machine/health so deployment tooling
 // (e.g. NeNe Suite update tracking) can read the installed version.
@@ -115,6 +128,7 @@ $application = ApplicationFactory::create(
     query: $query,
     transactionManager: $transactionManager,
     jwtSecret: $jwtSecret,
+    invoiceClient: $invoiceClient,
     smtpHost: $smtpHost,
     smtpPort: (int) $env('SMTP_PORT', '1025'),
     smtpUsername: $env('SMTP_USERNAME'),
@@ -137,6 +151,18 @@ $application = ApplicationFactory::create(
 
 $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
+
+// fromGlobals() fills parsedBody from $_POST (form/multipart) only. The SPA
+// posts application/json, so decode it once here; handlers keep reading
+// getParsedBody() and serve form and JSON clients alike (#262). Handlers that
+// parse the raw body themselves (JsonRequestBodyParser) are unaffected — the
+// body stream stays readable.
+if (str_contains($request->getHeaderLine('Content-Type'), 'application/json')) {
+    $decodedBody = json_decode((string) $request->getBody(), associative: true);
+    if (is_array($decodedBody)) {
+        $request = $request->withParsedBody($decodedBody);
+    }
+}
 
 // SPA fallback: serve the built index.html for browser navigation requests.
 // Browsers send Accept: text/html,... — API clients send Accept: application/json

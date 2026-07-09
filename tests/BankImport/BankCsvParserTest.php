@@ -42,10 +42,10 @@ final class BankCsvParserTest extends TestCase
 
         self::assertCount(2, $lines); // the withdrawal row is skipped
         self::assertSame('2026-04-20', $lines[0]->valueDate);
-        self::assertSame(110000, $lines[0]->amountCents);
+        self::assertSame(11000000, $lines[0]->amountCents); // ¥110,000 → cents (#261)
         self::assertSame('カ）アクメ', $lines[0]->counterpartyText);
         self::assertSame('2026-04-22', $lines[1]->valueDate);
-        self::assertSame(50000, $lines[1]->amountCents); // quoted "50,000"
+        self::assertSame(5000000, $lines[1]->amountCents); // quoted "50,000" → cents
         self::assertSame('フリコミ タロウ', $lines[1]->counterpartyText);
     }
 

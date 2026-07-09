@@ -175,7 +175,7 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 110000, 'INV-001'); // exact amount + invoice number in counterparty
+        $this->addInvoice(1, 11000000, 'INV-001'); // exact amount (¥110,000 in cents, #261) + invoice number in counterparty
 
         $response = $this->post($token, '/admin/reconciliations/propose', ['bank_transaction_id' => $txId]);
 
@@ -190,11 +190,11 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 110000);
+        $this->addInvoice(1, 11000000);
 
         $response = $this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]);
 
         self::assertSame(201, $response->getStatusCode());
@@ -228,14 +228,14 @@ final class ReconciliationHttpTest extends TestCase
     public function test_confirm_against_a_manual_receivable(): void
     {
         $token = $this->tokenFor('admin@acme.example');
-        $txId = $this->importCsv($token); // 110000 deposit
+        $txId = $this->importCsv($token); // ¥110,000 deposit (11000000 cents)
 
         // A receivable entered directly in Clear (no upstream invoice).
-        $mrId = $this->seedManualReceivable(110000);
+        $mrId = $this->seedManualReceivable(11000000);
 
         $response = $this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['source' => 'manual', 'manual_receivable_id' => $mrId, 'amount_cents' => 110000]],
+            'allocations' => [['source' => 'manual', 'manual_receivable_id' => $mrId, 'amount_cents' => 11000000]],
         ]);
 
         self::assertSame(201, $response->getStatusCode());
@@ -258,8 +258,8 @@ final class ReconciliationHttpTest extends TestCase
     public function test_propose_includes_manual_receivable_candidates(): void
     {
         $token = $this->tokenFor('admin@acme.example');
-        $txId = $this->importCsv($token); // 110000 deposit
-        $mrId = $this->seedManualReceivable(110000);
+        $txId = $this->importCsv($token); // ¥110,000 deposit (11000000 cents)
+        $mrId = $this->seedManualReceivable(11000000);
 
         $body = $this->decode($this->post($token, '/admin/reconciliations/propose', ['bank_transaction_id' => $txId]));
 
@@ -272,11 +272,11 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 110000);
+        $this->addInvoice(1, 11000000);
 
         $this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]);
 
         $response = $this->get($token, '/admin/reconciliations');
@@ -288,11 +288,11 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 110000);
+        $this->addInvoice(1, 11000000);
 
         $reconBody = $this->decode($this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]));
         $reconId = $reconBody['payment_reconciliation_id'];
 
@@ -305,11 +305,11 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 110000);
+        $this->addInvoice(1, 11000000);
 
         $reconId = $this->decode($this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]))['payment_reconciliation_id'];
 
         $reverseResponse = $this->post($token, '/admin/reconciliations/' . $reconId . '/reverse', [
@@ -326,12 +326,12 @@ final class ReconciliationHttpTest extends TestCase
     {
         $adminToken = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($adminToken);
-        $this->addInvoice(1, 110000);
+        $this->addInvoice(1, 11000000);
 
         $viewerToken = $this->tokenFor('viewer@acme.example');
         $response = $this->post($viewerToken, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]);
 
         self::assertSame(403, $response->getStatusCode());
@@ -349,17 +349,17 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 50000); // only 50k outstanding, tx is 110k
+        $this->addInvoice(1, 5000000); // only ¥50,000 outstanding, tx is ¥110,000
 
         $response = $this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]);
 
         self::assertSame(422, $response->getStatusCode());
         $body = $this->decode($response);
         self::assertSame(1, $body['invoice_id'] ?? null);
-        self::assertSame(50000, $body['outstanding_cents'] ?? null);
+        self::assertSame(5000000, $body['outstanding_cents'] ?? null);
     }
 
     public function test_upstream_unavailable_degrades_to_manual_candidates(): void
@@ -369,8 +369,8 @@ final class ReconciliationHttpTest extends TestCase
         $this->invoiceClient->makeUnavailable();
 
         $token = $this->tokenFor('admin@acme.example');
-        $txId = $this->importCsv($token); // 110000 deposit
-        $this->seedManualReceivable(110000);
+        $txId = $this->importCsv($token); // ¥110,000 deposit (11000000 cents)
+        $this->seedManualReceivable(11000000);
 
         $response = $this->post($token, '/admin/reconciliations/propose', ['bank_transaction_id' => $txId]);
 
@@ -385,11 +385,11 @@ final class ReconciliationHttpTest extends TestCase
     {
         $token = $this->tokenFor('admin@acme.example');
         $txId = $this->importCsv($token);
-        $this->addInvoice(1, 110000);
+        $this->addInvoice(1, 11000000);
 
         $reconId = $this->decode($this->post($token, '/admin/reconciliations', [
             'bank_transaction_id' => $txId,
-            'allocations' => [['invoice_id' => 1, 'amount_cents' => 110000]],
+            'allocations' => [['invoice_id' => 1, 'amount_cents' => 11000000]],
         ]))['payment_reconciliation_id'];
 
         $this->post($token, '/admin/reconciliations/' . $reconId . '/reverse', ['reversal_reason' => 'first']);
