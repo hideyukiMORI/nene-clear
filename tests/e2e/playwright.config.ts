@@ -26,8 +26,9 @@ export default defineConfig({
   webServer: {
     // --base=/ overrides the backend-serving default ('/assets/', #268):
     // `vite preview` mounts the outDir at the root, so the root base is the
-    // self-consistent one here.
-    command: 'npm run build -- --base=/ && npm run preview -- --port 4174 --strictPort',
+    // self-consistent one here. The E2E build goes to its own outDir so it
+    // never clobbers public_html/assets/ (the backend-served build).
+    command: 'npm run build -- --base=/ --outDir=dist-e2e && npm run preview -- --outDir=dist-e2e --port 4174 --strictPort',
     cwd: '../../frontend',
     url: 'http://localhost:4174',
     reuseExistingServer: !process.env.CI,
