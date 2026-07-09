@@ -94,9 +94,11 @@ $config = new DemoConfig(
     maxOrgs: (int) ($env('DEMO_MAX_ORGS') ?: '200'),
 );
 
-$likePrefix = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $config->slugPrefix) . '%';
+// ESCAPE '|' — a backslash escape char is parsed differently by MySQL string
+// literals vs SQLite (#277); '|' needs no literal-level escaping anywhere.
+$likePrefix = str_replace(['|', '%', '_'], ['||', '|%', '|_'], $config->slugPrefix) . '%';
 $rows = $query->fetchAll(
-    "SELECT id, created_at FROM organizations WHERE slug LIKE ? ESCAPE '\\'",
+    "SELECT id, created_at FROM organizations WHERE slug LIKE ? ESCAPE '|'",
     [$likePrefix],
 );
 
