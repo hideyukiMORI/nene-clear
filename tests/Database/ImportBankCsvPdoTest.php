@@ -94,7 +94,7 @@ final class ImportBankCsvPdoTest extends TestCase
         $rows = (new PdoBankTransactionRepository($this->query))->findByBatch($output->bankImportBatchId);
         self::assertCount(2, $rows);
         self::assertSame('2026-04-20', $rows[0]->valueDate);
-        self::assertSame(110000, $rows[0]->amountCents);
+        self::assertSame(11000000, $rows[0]->amountCents); // ¥110,000 → cents (#261)
         self::assertSame('unmatched', $rows[0]->status->value);
 
         $audit = $this->query->fetchOne('SELECT action, actor_id FROM audit_events WHERE action = ?', ['bank_import']);

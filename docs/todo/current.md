@@ -1,18 +1,20 @@
 # Current Work
 
-Last updated: 2026-07-03
+Last updated: 2026-07-09
 
-> **Latest handoff: [`handoff-2026-07-03.md`](handoff-2026-07-03.md)** — a
-> screenshot-production session for the Qiita article (#224): shots 1, 2, 6
-> done (assets + reusable pipeline in `_work/assets/`), **shots 3, 4, 5, 7
-> remaining**, and the local env is deliberately non-default (upstream stub on
-> 8390 + `.env` pointing at it — **read the handoff §3 revert checklist before
-> running backend tests**). No code changes. Dev work still resumes at
-> **installer Slice 3 (install.php fetches the release from `nene-origin.dev`)**
-> — actionable spec in [handoff-2026-07-02 §3](handoff-2026-07-02.md); that
-> session shipped `create-admin` (#228), the phinx `.env` fix (#226), the
-> installer PoC (#232), the release build (#236) and the Tier A stance (#234).
-> Cross-repo / business context: `_work/discussion-log/2026-07-01.md` (議題2).
+> **Latest: demo enablement shipped (#260–#262, 2026-07-09)** — one-command
+> T-relative demo seeder (`tools/seed-demo.php`), env-gated demo upstream
+> fixture (`NENE_CLEAR_DEMO_UPSTREAM=1`), and the demo runbook
+> **[`docs/demo.md`](../demo.md)**. Two real product bugs found and fixed on
+> the way: the bank CSV parser stored yen ×1 while everything else is ¥1=100
+> (#261), and JSON POST bodies were never parsed at the entry point, so the
+> SPA's propose/confirm/dunning-send failed against the real backend (#262).
+> The 2026-07-03 screenshot session's `.env` (dead stub on 8390) has been
+> reverted. Publication target `clear.ayane.co.jp` is prepared owner-side
+> (subdomain + `_nene_clear` DB exist); actual deploy awaits the owner's
+> go — steps in `docs/demo.md` §6. Qiita shots 3, 4, 5, 7 are still open
+> ([handoff-2026-07-03](handoff-2026-07-03.md)); dev work otherwise resumes at
+> **installer Slice 3** ([handoff-2026-07-02 §3](handoff-2026-07-02.md)).
 
 ## Status
 

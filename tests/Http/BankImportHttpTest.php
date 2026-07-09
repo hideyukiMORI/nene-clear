@@ -145,10 +145,10 @@ final class BankImportHttpTest extends TestCase
         self::assertSame(1, $byCounterparty['total'] ?? null);
         self::assertSame('ACME', $byCounterparty['items'][0]['counterparty_text'] ?? null);
 
-        // Amount range filter (TARO 50,000 < ACME 110,000).
-        $byAmount = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?amount_max_cents=100000'));
+        // Amount range filter (TARO ¥50,000 < ACME ¥110,000, in cents).
+        $byAmount = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?amount_max_cents=10000000'));
         self::assertSame(1, $byAmount['total'] ?? null);
-        self::assertSame(50000, $byAmount['items'][0]['amount_cents'] ?? null);
+        self::assertSame(5000000, $byAmount['items'][0]['amount_cents'] ?? null);
 
         // Sort by amount ascending → smallest (TARO 50,000) first.
         $sorted = $this->decode($this->get($token, '/admin/bank-transactions/unmatched?sort_by=amount_cents&sort_dir=asc'));

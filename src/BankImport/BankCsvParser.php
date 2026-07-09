@@ -10,8 +10,10 @@ use DateTimeImmutable;
  * Parses a bank CSV into deposit lines using a {@see BankAccount}'s profile.
  *
  * Only credits (deposits) are kept: rows whose amount column is empty or not a
- * positive value are skipped (they are withdrawals). The amount is read as an
- * integer in the smallest currency unit (¥1 = 1). Deposit rows with an
+ * positive value are skipped (they are withdrawals). Bank CSV cells carry
+ * integer yen; the parsed amount is stored in the app-wide `_cents` unit
+ * (1 yen = 100 cents, terminology registry §3), so imported deposits compare
+ * directly against receivable `outstanding_cents` (#261). Deposit rows with an
  * unparseable value date fail the whole import rather than being dropped
  * silently (compliance §3.1 — no silent loss of evidence).
  */
@@ -72,7 +74,7 @@ final readonly class BankCsvParser
 
         $digits = preg_replace('/[^\d-]/', '', $raw) ?? '';
 
-        return $digits === '' || $digits === '-' ? 0 : (int) $digits;
+        return $digits === '' || $digits === '-' ? 0 : (int) $digits * 100;
     }
 
     /**
