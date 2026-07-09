@@ -82,9 +82,11 @@ final readonly class DemoServiceProvider implements ServiceProviderInterface
 
                     return new CountingDemoCapacityGuard(
                         demoOrgCount: static function () use ($query, $config): int {
+                            // ESCAPE '|' — a backslash escape char is itself escaped
+                            // differently by MySQL string literals vs SQLite (#277).
                             $row = $query->fetchOne(
-                                "SELECT COUNT(*) AS n FROM organizations WHERE slug LIKE ? ESCAPE '\\'",
-                                [str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $config->slugPrefix) . '%'],
+                                "SELECT COUNT(*) AS n FROM organizations WHERE slug LIKE ? ESCAPE '|'",
+                                [str_replace(['|', '%', '_'], ['||', '|%', '|_'], $config->slugPrefix) . '%'],
                             );
 
                             return is_array($row) ? (int) $row['n'] : 0;
