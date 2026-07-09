@@ -1,6 +1,6 @@
 # Current Work
 
-Last updated: 2026-07-09
+Last updated: 2026-07-10
 
 > **Latest: demo enablement shipped (#260–#262, 2026-07-09)** — one-command
 > T-relative demo seeder (`tools/seed-demo.php`), env-gated demo upstream
@@ -13,11 +13,16 @@ Last updated: 2026-07-09
 > reverted. **The demo is live at `https://clear.ayane.co.jp` (deployed
 > 2026-07-09 evening, owner GO)** — HETEML, MySQL `_nene_clear`, invoice-shaped
 > docroot; the deployment surfaced and fixed two more Tier A bugs (#265
-> Authorization stripped by the front proxy, #268 SPA asset base). Remaining
-> owner step: register the nightly reset cron (`~/bin/reseed-clear-demo.sh`)
-> in the HETEML panel. SMTP is unset (dunning channel `log`), and the
+> Authorization stripped by the front proxy, #268 SPA asset base).
+> **2026-07-10: the disposable-org demo is live too** (`/demo/standard`,
+> `Nene2\Demo` v1.9.0 consumer, #275; MySQL LIKE-escape fix #277) — hand out
+> `https://clear.ayane.co.jp/demo/standard` and every visitor gets a fresh
+> throttled, TTL-swept org. Remaining owner steps (HETEML panel, cron):
+> nightly fixed-org reset `~/bin/reseed-clear-demo.sh` and hourly demo sweep
+> `~/bin/sweep-clear-demo.sh`. SMTP is unset (dunning channel `log`), and the
 > `client_credit.status` registry/enum drift is #264. Details:
-> [`docs/journal/2026-07-09.md`](../journal/2026-07-09.md).
+> [`docs/journal/2026-07-09.md`](../journal/2026-07-09.md) and
+> [`docs/journal/2026-07-10.md`](../journal/2026-07-10.md).
 > Qiita shots 3, 4, 5, 7 are still open
 > ([handoff-2026-07-03](handoff-2026-07-03.md)); dev work otherwise resumes at
 > **installer Slice 3** ([handoff-2026-07-02 §3](handoff-2026-07-02.md)).
