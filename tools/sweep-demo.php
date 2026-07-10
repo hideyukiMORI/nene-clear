@@ -106,7 +106,12 @@ $records = [];
 foreach ($rows as $row) {
     $records[] = new DemoOrgRecord(
         orgId: (int) $row['id'],
-        createdAt: new DateTimeImmutable((string) $row['created_at']),
+        // created_at is written in UTC (MySQL CURRENT_TIMESTAMP on a UTC
+        // server; SQLite CURRENT_TIMESTAMP is always UTC). Parse it as UTC
+        // explicitly: on a host whose default timezone is ahead of UTC
+        // (production runs Asia/Tokyo) a bare parse would read every fresh
+        // org as hours old and expire it on the spot (#280, deal #72).
+        createdAt: new DateTimeImmutable((string) $row['created_at'], new DateTimeZone('UTC')),
     );
 }
 
