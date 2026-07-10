@@ -19,6 +19,36 @@
 
 Operators who need both install **two sibling apps** connected via HTTP.
 
+## Live demo
+
+Try it now — no sign-up. The link provisions a **brand-new disposable organization** seeded with bank deposits, receivables, and dunning history, and drops you straight into its dashboard. Demo organizations are deleted automatically after about 3 hours; hit the link again for a fresh one.
+
+- <https://clear.ayane.co.jp/demo/standard>
+
+### Screenshots
+
+From a disposable demo organization. Japanese UI shown — the admin UI is bilingual (ja/en, one-click switch).
+
+**Dashboard — 30 unmatched deposits, overdue invoices, cleared-this-month total, and advance-payment balance at a glance.**
+
+![Dashboard with unmatched-deposit, overdue, cleared-this-month, and advance-payment KPI cards](./docs/images/demo-01-dashboard.png)
+
+**Bank transactions — every imported deposit tracked by status, unmatched and cleared side by side.**
+
+![Bank transaction list with unmatched and cleared status badges, filters, and CSV export](./docs/images/demo-02-bank-transactions.png)
+
+**Reconciliation — deposits with kana payer-name mismatches still get match-candidate badges; confirm with one click.**
+
+![Reconciliation screen with match-candidate badges on unmatched deposits, including kana name-mismatch payers](./docs/images/demo-03-reconciliation.png)
+
+**Dunning — operator-controlled reminders with days overdue, per-invoice pause (with reason), and full send history.**
+
+![Dunning screen with a paused-invoice banner, days-overdue column, and send history](./docs/images/demo-04-dunning.png)
+
+**Audit log — who changed what, when, with expandable before/after JSON for every operation.**
+
+![Audit log with expanded before/after JSON diff for a dunning send and a bank CSV import](./docs/images/demo-05-audit-log.png)
+
 ## Goals
 
 - **Bank reconciliation** — CSV import, human-confirmed match, audit trail
