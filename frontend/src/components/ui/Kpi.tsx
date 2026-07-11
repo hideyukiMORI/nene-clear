@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 type KpiAccent = 'default' | 'accent' | 'warn' | 'bad'
 
@@ -32,6 +32,6 @@ export function Kpi({ icon, label, value, sub, accent = 'default', testId }: Kpi
   )
 }
 
-export function KpiGrid({ children }: { children: ReactNode }) {
-  return <div className="kpi-grid">{children}</div>
+export function KpiGrid({ children, style }: { children: ReactNode; style?: CSSProperties }) {
+  return <div className="kpi-grid" style={style}>{children}</div>
 }

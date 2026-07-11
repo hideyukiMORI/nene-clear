@@ -205,7 +205,7 @@ export default function DunningPage() {
                 <tr key={inv.invoice_id} data-kbd-row={index} className={[paused ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                   <td className="strong mono">{inv.invoice_number}</td>
                   <td>
-                    {inv.status === 'overdue' ? <Badge variant="bad" dot>{t('dunning.status.overdue')}</Badge> : <Badge variant="warn" dot>{t('dunning.status.partial')}</Badge>}
+                    {daysNum > 0 ? <Badge variant="bad" dot>{t('dunning.status.overdue')}</Badge> : <Badge variant="warn" dot>{t('dunning.status.partial')}</Badge>}
                   </td>
                   <td className="num">{yen(inv.outstanding_cents)}</td>
                   <td className="muted">{inv.due_at ?? '—'}</td>
