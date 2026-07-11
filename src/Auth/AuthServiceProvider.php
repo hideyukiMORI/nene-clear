@@ -10,6 +10,7 @@ use Nene2\Auth\BearerTokenMiddleware;
 use Nene2\Auth\GuardedJwtSecretResolver;
 use Nene2\Auth\JwtSecretException;
 use Nene2\Auth\TokenVerifierInterface;
+use Nene2\Config\AppConfig;
 use Nene2\Config\AppEnvironment;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
@@ -57,6 +58,20 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
      * explicit NENE2_ALLOW_DEV_SECRET opt-in and is never honoured in
      * production ({@see GuardedJwtSecretResolver}).
      */
+    /**
+     * {@see resolveJwtSecret()} over typed config — the fleet-standard
+     * `GuardedJwtSecretResolver::fromConfig()` path used by the composition
+     * root ({@see \NeneClear\Http\RuntimeBootstrap}).
+     */
+    public static function resolveJwtSecretFromConfig(AppConfig $config): ?string
+    {
+        try {
+            return GuardedJwtSecretResolver::fromConfig($config, self::DEFAULT_DEV_SECRET);
+        } catch (JwtSecretException) {
+            return null;
+        }
+    }
+
     public static function resolveJwtSecret(
         string $configuredSecret,
         AppEnvironment $environment,
