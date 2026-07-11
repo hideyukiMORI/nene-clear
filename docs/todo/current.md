@@ -1,6 +1,11 @@
 # Current Work
 
-Last updated: 2026-07-10
+Last updated: 2026-07-11
+
+> **2026-07-11: fleet structural-uniformity audit recorded** — Clear findings,
+> strengths, and tracking issues (#285 JWT stack, #286 NENE2 `@dev` dependency,
+> #287 checklist) in
+> [`docs/audit/2026-07-11-structural-uniformity.md`](../audit/2026-07-11-structural-uniformity.md) (#288).
 
 > **Latest: demo enablement shipped (#260–#262, 2026-07-09)** — one-command
 > T-relative demo seeder (`tools/seed-demo.php`), env-gated demo upstream
