@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Mfa;
 
 use Closure;
+use Nene2\Auth\TotpAuthenticator as Rfc6238Totp;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\Http\ClockInterface;
@@ -17,6 +18,8 @@ use NeneClear\User\UserRepositoryInterface;
  */
 final readonly class SetupTotpUseCase
 {
+    private const string ISSUER = 'NeNe Clear';
+
     /**
      * @param Closure(DatabaseQueryExecutorInterface): TotpSecretRepositoryInterface $secrets
      * @param Closure(DatabaseQueryExecutorInterface): UsedTotpStepRepositoryInterface $usedSteps
@@ -28,7 +31,7 @@ final readonly class SetupTotpUseCase
         private Closure $usedSteps,
         private Closure $recovery,
         private UserRepositoryInterface $users,
-        private TotpGenerator $generator,
+        private Rfc6238Totp $totp,
         private ClockInterface $clock,
     ) {
     }
@@ -38,7 +41,7 @@ final readonly class SetupTotpUseCase
     {
         $user = $this->users->findById($userId);
         $account = $user !== null ? $user->email : ('user-' . $userId);
-        $secret = $this->generator->generateSecret();
+        $secret = $this->totp->generateSecret();
         $now = $this->clock->now()->format('Y-m-d H:i:s');
 
         $this->transactionManager->transactional(function (DatabaseQueryExecutorInterface $ex) use ($userId, $secret, $now): void {
@@ -49,7 +52,7 @@ final readonly class SetupTotpUseCase
 
         return [
             'secret' => $secret,
-            'otpauth_uri' => $this->generator->buildOtpAuthUri($secret, $account),
+            'otpauth_uri' => $this->totp->provisioningUri($secret, $account, self::ISSUER),
         ];
     }
 }

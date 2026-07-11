@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Mfa;
 
+use Nene2\Auth\RecoveryCodes;
 use Nene2\Testing\DatabaseTestKit;
 use NeneClear\Mfa\PdoRecoveryCodeRepository;
 use NeneClear\Mfa\RecoveryCodeService;
@@ -20,8 +21,26 @@ final class RecoveryCodeServiceTest extends TestCase
         self::assertCount(RecoveryCodeService::COUNT, $r['hashes']);
         self::assertCount(RecoveryCodeService::COUNT, array_unique($r['plain']));
         foreach ($r['plain'] as $i => $code) {
-            self::assertTrue(password_verify($code, $r['hashes'][$i]));
+            // 80-bit codes hashed with the upstream sha256 scheme (#292).
+            self::assertSame(20, strlen(str_replace('-', '', $code)));
+            self::assertTrue(RecoveryCodes::verify($code, $r['hashes'][$i]));
         }
+    }
+
+    public function testMatchAcceptsALegacyBcryptHashedCode(): void
+    {
+        // Codes issued before #292 were bcrypt-hashed in the old 2×5-hex shape;
+        // they must stay redeemable until the user re-enrolls.
+        $svc = new RecoveryCodeService();
+        $legacyCode = 'a1b2c-3d4e5';
+        $unused = [
+            ['id' => 1, 'code_hash' => password_hash('other-code1', PASSWORD_DEFAULT)],
+            ['id' => 2, 'code_hash' => password_hash($legacyCode, PASSWORD_DEFAULT)],
+        ];
+
+        self::assertSame(2, $svc->match($legacyCode, $unused));
+        self::assertSame(2, $svc->match("  {$legacyCode}  ", $unused)); // legacy trim behaviour
+        self::assertNull($svc->match('a1b2c-00000', $unused));
     }
 
     public function testMatchFindsTheCorrectUnusedCodeAndRejectsWrong(): void

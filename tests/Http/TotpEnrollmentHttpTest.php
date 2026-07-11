@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Http;
 
+use Nene2\Auth\TotpAuthenticator as Rfc6238Totp;
 use Nene2\Testing\DatabaseTestKit;
 use NeneClear\Auth\Role;
 use NeneClear\Http\ApplicationFactory;
-use NeneClear\Mfa\TotpGenerator;
 use NeneClear\Tests\Support\SchemaFixture;
 use NeneClear\User\PdoUserRepository;
 use NeneClear\User\User;
@@ -25,7 +25,7 @@ final class TotpEnrollmentHttpTest extends TestCase
     private string $dbPath;
     private RequestHandlerInterface $app;
     private Psr17Factory $psr17;
-    private TotpGenerator $gen;
+    private Rfc6238Totp $gen;
 
     protected function setUp(): void
     {
@@ -48,7 +48,7 @@ final class TotpEnrollmentHttpTest extends TestCase
 
         $this->app = ApplicationFactory::create(query: $query, transactionManager: $kit->transactionManager, jwtSecret: self::SECRET);
         $this->psr17 = new Psr17Factory();
-        $this->gen = new TotpGenerator();
+        $this->gen = new Rfc6238Totp();
     }
 
     protected function tearDown(): void
