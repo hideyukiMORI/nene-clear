@@ -7,7 +7,11 @@ import {
   confirmMatch,
   reverseReconciliation,
   sendDunningNotice,
+  downloadCsv,
+  importBankCsv,
+  importManualReceivables,
 } from './endpoints'
+import { storeToken } from './client'
 
 /**
  * These tests drive the endpoint functions through the real api client and a
@@ -127,5 +131,53 @@ describe('endpoint request construction', () => {
     await sendDunningNotice(123)
     expect(calledUrl()).toBe('/admin/dunning-notices')
     expect(JSON.parse(calledInit().body!)).toEqual({ invoice_id: 123, stage: 'initial' })
+  })
+})
+
+/**
+ * The multipart upload and CSV export helpers call fetch through apiFetch rather
+ * than the JSON request(). They must still carry the Authorization +
+ * X-Authorization mirror, or they 401 behind the production proxy (#265, #312).
+ */
+describe('file-I/O endpoints carry the auth mirror (#312)', () => {
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    storeToken('jwt-file')
+    fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ created: 0, skipped: 0, errors: [] }),
+      blob: () => Promise.resolve(new Blob(['csv'])),
+    } as unknown as Response)
+    vi.stubGlobal('fetch', fetchMock)
+    URL.createObjectURL = vi.fn(() => 'blob:mock')
+    URL.revokeObjectURL = vi.fn()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function sentHeaders(): Record<string, string> {
+    return fetchMock.mock.calls[0][1].headers
+  }
+
+  it('importBankCsv sends both auth headers', async () => {
+    await importBankCsv(1, new File(['a,b'], 'bank.csv', { type: 'text/csv' }))
+    expect(sentHeaders()['Authorization']).toBe('Bearer jwt-file')
+    expect(sentHeaders()['X-Authorization']).toBe('Bearer jwt-file')
+  })
+
+  it('importManualReceivables sends both auth headers', async () => {
+    await importManualReceivables(new File(['a,b'], 'mr.csv', { type: 'text/csv' }))
+    expect(sentHeaders()['Authorization']).toBe('Bearer jwt-file')
+    expect(sentHeaders()['X-Authorization']).toBe('Bearer jwt-file')
+  })
+
+  it('downloadCsv (CSV export) sends both auth headers', async () => {
+    await downloadCsv('/admin/export/bank-transactions', 'bank.csv')
+    expect(sentHeaders()['Authorization']).toBe('Bearer jwt-file')
+    expect(sentHeaders()['X-Authorization']).toBe('Bearer jwt-file')
   })
 })

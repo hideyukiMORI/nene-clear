@@ -112,25 +112,39 @@ export function isAdmin(): boolean {
   return role === 'admin' || role === 'superadmin'
 }
 
+// The token goes to both headers: some shared-hosting front proxies (Tier A;
+// observed on HETEML) strip the standard `Authorization` header before it
+// reaches PHP, so the backend falls back to the `X-Authorization` mirror when
+// the standard header is missing (#265). Every request MUST carry the mirror —
+// this helper is the single place that applies it, so no call site can drop it.
+function withAuthHeaders(headers: Record<string, string> = {}): Record<string, string> {
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+    headers['X-Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
+/**
+ * `fetch()` with the auth-header mirror applied, for the few calls that can't go
+ * through `request()` — multipart uploads and binary downloads. Callers own the
+ * response (blob / multipart error parsing); the mirror is guaranteed here so it
+ * can't be forgotten (see #265, #312). Content-Type is intentionally left unset
+ * so the browser can add the multipart boundary for FormData bodies.
+ */
+export function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const headers = withAuthHeaders({ ...(init.headers as Record<string, string> | undefined) })
+  return fetch(path, { ...init, headers })
+}
+
 async function request<T>(
   method: string,
   path: string,
   body?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
-  const headers: Record<string, string> = {
-    Accept: 'application/json',
-  }
-
-  // The token goes to both headers: some shared-hosting front proxies (Tier A;
-  // observed on HETEML) strip the standard `Authorization` header before it
-  // reaches PHP, so the backend falls back to the `X-Authorization` mirror
-  // when the standard header is missing (#265).
-  const token = getToken()
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-    headers['X-Authorization'] = `Bearer ${token}`
-  }
+  const headers = withAuthHeaders({ Accept: 'application/json' })
 
   if (body !== undefined) {
     headers['Content-Type'] = 'application/json'
