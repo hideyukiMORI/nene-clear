@@ -354,4 +354,33 @@ and `src/` first** and reuse it (§7).
 `quality-tools.md`. `docs/integrations/`: `openapi.md`, `mcp-tools.md`.
 ADRs: `0007-put-vs-patch-policy`, `0008-jwt-authentication`, `0010-rate-limiting`.
 
-Last updated: 2026-05-30
+---
+
+## Local framework development (NENE2 checkout)
+
+`hideyukimori/nene2` is consumed from **Packagist as a tagged dist** (`^1.10`).
+Do **not** commit a path repository or `@dev` constraint back into
+`composer.json` — that made releases non-reproducible and shipped whatever the
+local NENE2 checkout happened to contain (#286).
+
+To hack on NENE2 and Clear together, switch your working tree to the sibling
+checkout locally and revert before committing:
+
+```bash
+# switch to the local NENE2 checkout (working tree only — do not commit)
+composer config repositories.nene2-local path ../NENE2
+composer config repositories.nene2-local.options.symlink true
+composer require hideyukimori/nene2:@dev
+
+# ...develop against ../NENE2 HEAD...
+
+# revert to the tagged Packagist dist before committing
+git checkout composer.json composer.lock
+composer install
+```
+
+Release builds resolve their vendor from `composer.json` + `composer.lock` in
+a clean staging tree and fail on any symlink, so a forgotten override cannot
+ship.
+
+Last updated: 2026-07-11

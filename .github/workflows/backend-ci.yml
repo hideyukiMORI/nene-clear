@@ -34,9 +34,6 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
-      - name: Clone NENE2 (local path dependency)
-        run: git clone --depth=1 https://github.com/hideyukiMORI/NENE2.git ../NENE2
-
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
@@ -80,9 +77,6 @@ jobs:
           php-version: '8.4'
           extensions: pdo, pdo_pgsql, mbstring
           coverage: none
-
-      - name: Clone NENE2 (local path dependency)
-        run: git clone --depth=1 https://github.com/hideyukiMORI/NENE2.git ../NENE2
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader

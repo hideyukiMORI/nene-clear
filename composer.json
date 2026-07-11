@@ -7,7 +7,7 @@
         "php": ">=8.4.1 <9.0",
         "ext-curl": "*",
         "firebase/php-jwt": "^7",
-        "hideyukimori/nene2": "@dev",
+        "hideyukimori/nene2": "^1.10",
         "robmorgan/phinx": "^0.16.11",
         "symfony/console": "^8.0",
         "symfony/mailer": "^8.1"
@@ -28,16 +28,6 @@
             "NeneClear\\Tests\\": "tests/"
         }
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../NENE2",
-            "options": {
-                "symlink": true
-            }
-        }
-    ],
-    "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
         "sort-packages": true,

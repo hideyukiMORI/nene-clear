@@ -35,6 +35,10 @@ Entry point for AI agents working on **NeNe Clear** (public repo `nene-clear`).
 
 ## Framework
 
-[NENE2](https://github.com/hideyukiMORI/NENE2) — wired via Composer as a local
-path dependency (`../NENE2`, `hideyukimori/nene2: @dev`). Runtime is live: PSR-15
-HTTP stack, DI via per-domain `ServiceProvider` + `ServiceResolver`, PHP 8.4.
+[NENE2](https://github.com/hideyukiMORI/NENE2) — consumed from Packagist as a
+tagged dist (`hideyukimori/nene2: ^1.10`), same as nene-invoice / nene-deal.
+Runtime: PSR-15 HTTP stack, DI via per-domain `ServiceProvider` +
+`ServiceResolver`, PHP 8.4. To develop against a local NENE2 checkout, use a
+git-ignored override (see `docs/development/nene2-compliance.md` §Local
+framework development) — never commit a path repository back into
+`composer.json` (#286).
