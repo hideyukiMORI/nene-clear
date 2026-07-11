@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Demo;
 
+use Nene2\Auth\TokenIssuerInterface;
 use Nene2\Demo\ProvisionedDemoOrg;
+use Nene2\Http\UtcClock;
 use NeneClear\Auth\Role;
-use NeneClear\Auth\TokenIssuerInterface;
+use NeneClear\Auth\SessionTokens;
 use NeneClear\Demo\DemoSessionSeater;
 use NeneClear\User\User;
 use NeneClear\User\UserRepositoryInterface;
@@ -60,13 +62,13 @@ final class DemoSessionSeaterTest extends TestCase
         };
 
         $issuer = new class () implements TokenIssuerInterface {
-            public function issueForUser(User $user): string
+            public function issue(array $claims): string
             {
-                return 'demo-jwt-for-' . ($user->id ?? 0);
+                return 'demo-jwt-for-' . (is_scalar($claims['sub'] ?? null) ? (string) $claims['sub'] : '0');
             }
         };
 
-        return new DemoSessionSeater($users, $issuer, new Psr17Factory());
+        return new DemoSessionSeater($users, new SessionTokens($issuer, new UtcClock()), new Psr17Factory());
     }
 
     private function request(): \Psr\Http\Message\ServerRequestInterface

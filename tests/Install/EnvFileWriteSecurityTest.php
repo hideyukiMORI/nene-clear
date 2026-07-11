@@ -58,7 +58,7 @@ final class EnvFileWriteSecurityTest extends TestCase
             'DB_USER' => 'nene_clear',
             'DB_PASSWORD' => $dbPassword,
             'DB_CHARSET' => 'utf8mb4',
-            'NENE_CLEAR_JWT_SECRET' => $jwtSecret,
+            'NENE2_LOCAL_JWT_SECRET' => $jwtSecret,
         ];
     }
 
@@ -105,7 +105,7 @@ final class EnvFileWriteSecurityTest extends TestCase
         $env = \Dotenv\Dotenv::parse($contents);
         self::assertSame($password, $env['DB_PASSWORD'] ?? null);
         self::assertSame('nene_clear', $env['DB_USER'] ?? null);
-        self::assertArrayHasKey('NENE_CLEAR_JWT_SECRET', $env);
+        self::assertArrayHasKey('NENE2_LOCAL_JWT_SECRET', $env);
         // Exactly the 10 keys we wrote — no extra lines injected via the value.
         self::assertCount(10, $env);
     }

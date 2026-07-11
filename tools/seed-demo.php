@@ -255,7 +255,7 @@ $transactionManager->transactional(static function (DatabaseQueryExecutorInterfa
 fwrite(STDOUT, ($existing !== null ? "Deleted previous demo organization.\n" : "No previous demo organization found.\n"));
 
 // --- 2) Recreate org + hand-out users via the app's own use cases --------------
-$container = ApplicationFactory::container($query, $transactionManager, $env('NENE_CLEAR_JWT_SECRET'));
+$container = ApplicationFactory::container($query, $transactionManager, $env('NENE2_LOCAL_JWT_SECRET') ?: $env('NENE_CLEAR_JWT_SECRET'));
 
 $organization = ServiceResolver::get($container, CreateOrganizationUseCaseInterface::class)
     ->execute(new CreateOrganizationInput(slug: $orgSlug, name: $orgName, actorUserId: 0));

@@ -6,7 +6,7 @@ namespace NeneClear\Demo;
 
 use Nene2\Demo\DemoSessionSeaterInterface;
 use Nene2\Demo\ProvisionedDemoOrg;
-use NeneClear\Auth\TokenIssuerInterface;
+use NeneClear\Auth\SessionTokens;
 use NeneClear\User\UserRepositoryInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Http\Message\ResponseInterface;
@@ -22,7 +22,7 @@ use RuntimeException;
  * and sends it on every API call — there is no cookie session to set, so the
  * invoice cookie seater does not transplant. Instead the seater mints a
  * normal access token for the demo admin via the app's own
- * {@see TokenIssuerInterface} (same claims, TTL and secret as a login) and
+ * {@see SessionTokens} (same claims, TTL and secret as a login) and
  * serves a one-shot **seat page**: a nonce'd inline script stores the token
  * and `location.replace('/')` into the SPA. Auth code is untouched.
  *
@@ -42,7 +42,7 @@ final readonly class DemoSessionSeater implements DemoSessionSeaterInterface
 {
     public function __construct(
         private UserRepositoryInterface $users,
-        private TokenIssuerInterface $tokenIssuer,
+        private SessionTokens $tokenIssuer,
         private Psr17Factory $psr17,
     ) {
     }

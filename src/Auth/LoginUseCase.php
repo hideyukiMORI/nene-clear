@@ -21,7 +21,7 @@ final readonly class LoginUseCase implements LoginUseCaseInterface
 
     public function __construct(
         private UserRepositoryInterface $users,
-        private TokenIssuerInterface $tokens,
+        private SessionTokens $tokens,
         private AuditRecorderInterface $auditRecorder,
         private ClockInterface $clock,
         private TotpAuthenticator $mfa,

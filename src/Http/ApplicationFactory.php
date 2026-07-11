@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace NeneClear\Http;
 
 use LogicException;
+use Nene2\Auth\LocalBearerTokenVerifier;
+use Nene2\Auth\TokenIssuerInterface;
 use Nene2\Auth\TokenVerifierInterface;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
@@ -21,9 +23,8 @@ use Nene2\Http\UtcClock;
 use Nene2\Log\MonologLoggerFactory;
 use Nene2\Log\RequestIdHolder;
 use NeneClear\Auth\AuthServiceProvider;
-use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\MfaChallengeTokens;
-use NeneClear\Auth\TokenIssuerInterface;
+use NeneClear\Auth\SessionTokens;
 use NeneClear\Dunning\DunningMailerInterface;
 use NeneClear\Dunning\LogOnlyDunningMailer;
 use NeneClear\Dunning\SmtpDunningMailer;
@@ -273,9 +274,24 @@ final class ApplicationFactory
             ->set(DatabaseQueryExecutorInterface::class, static fn (ContainerInterface $c): DatabaseQueryExecutorInterface => $query)
             ->set(DatabaseTransactionManagerInterface::class, static fn (ContainerInterface $c): DatabaseTransactionManagerInterface => $transactionManager)
             ->set(ClockInterface::class, static fn (ContainerInterface $c): ClockInterface => new UtcClock())
-            ->set(JwtTokenService::class, static fn (ContainerInterface $c): JwtTokenService => new JwtTokenService($jwtSecret))
-            ->set(TokenIssuerInterface::class, static fn (ContainerInterface $c): TokenIssuerInterface => ServiceResolver::get($c, JwtTokenService::class))
-            ->set(TokenVerifierInterface::class, static fn (ContainerInterface $c): TokenVerifierInterface => ServiceResolver::get($c, JwtTokenService::class))
+            // Fleet-standard JWT stack (#285): the framework HS256 verifier doubles
+            // as the issuer; SessionTokens owns only Clear's claim shape + TTL.
+            ->set(
+                LocalBearerTokenVerifier::class,
+                static fn (ContainerInterface $c): LocalBearerTokenVerifier => new LocalBearerTokenVerifier(
+                    $jwtSecret,
+                    ServiceResolver::get($c, ClockInterface::class),
+                ),
+            )
+            ->set(TokenIssuerInterface::class, static fn (ContainerInterface $c): TokenIssuerInterface => ServiceResolver::get($c, LocalBearerTokenVerifier::class))
+            ->set(TokenVerifierInterface::class, static fn (ContainerInterface $c): TokenVerifierInterface => ServiceResolver::get($c, LocalBearerTokenVerifier::class))
+            ->set(
+                SessionTokens::class,
+                static fn (ContainerInterface $c): SessionTokens => new SessionTokens(
+                    ServiceResolver::get($c, TokenIssuerInterface::class),
+                    ServiceResolver::get($c, ClockInterface::class),
+                ),
+            )
             ->set(MfaChallengeTokens::class, static fn (ContainerInterface $c): MfaChallengeTokens => new MfaChallengeTokens($jwtSecret))
             ->set(InvoiceUpstreamClientInterface::class, static fn (ContainerInterface $c): InvoiceUpstreamClientInterface => $invoiceClient)
             ->set(DunningMailerInterface::class, static fn (ContainerInterface $c): DunningMailerInterface => $mailer)

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Dotenv\Dotenv;
+use Nene2\Config\AppEnvironment;
 use Nene2\Config\DatabaseConfig;
 use Nene2\Database\DatabaseConnectionFactoryInterface;
 use Nene2\Database\PdoConnectionFactory;
@@ -11,6 +12,7 @@ use Nene2\Database\PdoDatabaseTransactionManager;
 use Nene2\Database\Preflight\DefaultDatabaseCandidateInspector;
 use Nene2\Demo\DemoConfig;
 use Nene2\Http\ResponseEmitter;
+use NeneClear\Auth\AuthServiceProvider;
 use NeneClear\Database\AdapterAwareQueryExecutor;
 use NeneClear\Database\AdapterAwareTransactionManager;
 use NeneClear\Database\ApplicationDatabaseIdentity;
@@ -46,7 +48,19 @@ if (is_file($root . '/.env')) {
 $env = static fn (string $key, string $default = ''): string => (string) ($_ENV[$key] ?? getenv($key) ?: $default);
 
 $debug = $env('APP_DEBUG', 'false') === 'true';
-$jwtSecret = $env('NENE_CLEAR_JWT_SECRET') ?: null;
+
+// JWT secret — fleet-standard resolution (#285): the canonical env is
+// NENE2_LOCAL_JWT_SECRET; NENE_CLEAR_JWT_SECRET remains a transitional
+// fallback for one release (deployed demo migration, see docs/demo.md).
+// GuardedJwtSecretResolver fails closed: without a configured secret the dev
+// path needs an explicit NENE2_ALLOW_DEV_SECRET opt-in (never honoured in
+// production). An unresolvable secret keeps the admin surface unmounted
+// (health-only branch in ApplicationFactory) — same semantics as before.
+$jwtSecret = AuthServiceProvider::resolveJwtSecret(
+    configuredSecret: $env('NENE2_LOCAL_JWT_SECRET') ?: $env('NENE_CLEAR_JWT_SECRET'),
+    environment: AppEnvironment::fromConfigValue($env('APP_ENV', 'local')),
+    allowDevSecret: in_array(strtolower(trim($env('NENE2_ALLOW_DEV_SECRET'))), ['1', 'true', 'yes'], true),
+);
 
 // Resilient DB wiring: if the database is unconfigured or unreachable, the app
 // still boots and serves /health. Authenticated routes activate only when the

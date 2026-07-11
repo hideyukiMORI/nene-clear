@@ -6,7 +6,6 @@
     "require": {
         "php": ">=8.4.1 <9.0",
         "ext-curl": "*",
-        "firebase/php-jwt": "^7",
         "hideyukimori/nene2": "^1.10",
         "robmorgan/phinx": "^0.16.11",
         "symfony/console": "^8.0",

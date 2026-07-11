@@ -33,7 +33,7 @@ final readonly class VerifyMfaLoginUseCase
         private TotpAuthenticator $authenticator,
         private RecoveryCodeService $recoveryService,
         private DatabaseQueryExecutorInterface $reader,
-        private TokenIssuerInterface $tokens,
+        private SessionTokens $tokens,
         private DatabaseTransactionManagerInterface $transactionManager,
         private Closure $recovery,
         private AuditRecorderFactoryInterface $auditFactory,
