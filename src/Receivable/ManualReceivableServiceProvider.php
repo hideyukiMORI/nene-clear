@@ -13,6 +13,7 @@ use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -83,26 +84,32 @@ final readonly class ManualReceivableServiceProvider implements ServiceProviderI
                     new ListManualReceivablesHandler(
                         ServiceResolver::get($c, ListManualReceivablesUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new CreateManualReceivableHandler(
                         ServiceResolver::get($c, CreateManualReceivableUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new GetManualReceivableHandler(
                         ServiceResolver::get($c, GetManualReceivableByIdUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new UpdateManualReceivableHandler(
                         ServiceResolver::get($c, UpdateManualReceivableUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new CancelManualReceivableHandler(
                         ServiceResolver::get($c, CancelManualReceivableUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ImportManualReceivablesHandler(
                         ServiceResolver::get($c, ImportManualReceivablesUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             )

@@ -7,7 +7,7 @@ namespace NeneClear\Reconciliation;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
-use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,6 +16,7 @@ final readonly class ProposeMatchHandler
     public function __construct(
         private ProposeMatchUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -31,7 +32,7 @@ final readonly class ProposeMatchHandler
         }
 
         $output = $this->useCase->execute(new ProposeMatchInput(
-            organizationId: AuthContext::organizationId($request) ?? 0,
+            organizationId: $this->organization->id(),
             bankTransactionId: $bankTransactionId,
         ));
 

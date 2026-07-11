@@ -9,6 +9,7 @@ use Nene2\Routing\Router;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -17,6 +18,7 @@ final readonly class ApplyCreditHandler
     public function __construct(
         private ApplyCreditUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -43,7 +45,7 @@ final readonly class ApplyCreditHandler
         }
 
         $output = $this->useCase->execute(new ApplyCreditInput(
-            organizationId: AuthContext::organizationId($request) ?? 0,
+            organizationId: $this->organization->id(),
             creditId: $creditId,
             invoiceId: $invoiceId,
             amountCents: $amountCents,

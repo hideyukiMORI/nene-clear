@@ -7,6 +7,7 @@ namespace NeneClear\Receivable;
 use Nene2\Http\JsonRequestBodyParser;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -15,6 +16,7 @@ final readonly class CreateManualReceivableHandler
     public function __construct(
         private CreateManualReceivableUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -23,7 +25,7 @@ final readonly class CreateManualReceivableHandler
         $fields = ManualReceivableValidator::validate(JsonRequestBodyParser::parse($request));
 
         $receivable = $this->useCase->execute(new CreateManualReceivableInput(
-            organizationId: AuthContext::organizationId($request) ?? 0,
+            organizationId: $this->organization->id(),
             referenceNumber: $fields['reference_number'],
             clientName: $fields['client_name'],
             recipientEmail: $fields['recipient_email'],

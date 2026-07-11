@@ -26,6 +26,7 @@ use NeneClear\Mfa\PdoRecoveryCodeRepository;
 use NeneClear\Mfa\RecoveryCodeRepositoryInterface;
 use NeneClear\Mfa\RecoveryCodeService;
 use NeneClear\Mfa\TotpAuthenticator;
+use NeneClear\Tenancy\OrgScopeMiddleware;
 use NeneClear\User\UserRepositoryInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -210,8 +211,12 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                         ],
                     );
 
+                    // Organization scope resolves from the verified claim between
+                    // bearer auth and capability checks (#300).
+                    $orgScope = ServiceResolver::get($c, OrgScopeMiddleware::class);
+
                     /** @var list<MiddlewareInterface> $stack */
-                    $stack = [$bearer, $capabilities];
+                    $stack = [$bearer, $orgScope, $capabilities];
 
                     return $stack;
                 },

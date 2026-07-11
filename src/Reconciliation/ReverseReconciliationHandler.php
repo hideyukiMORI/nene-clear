@@ -9,6 +9,7 @@ use Nene2\Routing\Router;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -18,6 +19,7 @@ final readonly class ReverseReconciliationHandler
         private ReverseReconciliationUseCaseInterface $useCase,
         private ReconciliationRepositoryInterface $reconciliations,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -33,7 +35,7 @@ final readonly class ReverseReconciliationHandler
             throw new ValidationException([new ValidationError('reversal_reason', 'A reversal reason is required.', 'required')]);
         }
 
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
 
         $this->useCase->execute(new ReverseReconciliationInput(
             organizationId: $organizationId,

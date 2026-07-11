@@ -62,6 +62,8 @@ use NeneClear\Reconciliation\ReconciliationAlreadyReversedExceptionHandler;
 use NeneClear\Reconciliation\ReconciliationNotFoundExceptionHandler;
 use NeneClear\Reconciliation\ReconciliationRouteRegistrar;
 use NeneClear\Reconciliation\ReconciliationServiceProvider;
+use NeneClear\Tenancy\MissingOrganizationScopeExceptionHandler;
+use NeneClear\Tenancy\TenancyServiceProvider;
 use NeneClear\User\InvitationExpiredExceptionHandler;
 use NeneClear\User\InvitationInvalidExceptionHandler;
 use NeneClear\User\InvitationRouteRegistrar;
@@ -100,6 +102,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
             ->addProvider(new ExportServiceProvider())
             ->addProvider(new DunningServiceProvider())
             ->addProvider(new MfaServiceProvider())
+            ->addProvider(new TenancyServiceProvider())
             ->addProvider(new DemoServiceProvider());
 
         $builder
@@ -166,6 +169,7 @@ final readonly class ApplicationServiceProvider implements ServiceProviderInterf
                     ServiceResolver::get($c, TotpLockedExceptionHandler::class),
                     ServiceResolver::get($c, TotpNotEnabledExceptionHandler::class),
                     ServiceResolver::get($c, TotpAlreadyEnabledExceptionHandler::class),
+                    ServiceResolver::get($c, MissingOrganizationScopeExceptionHandler::class),
                 ];
 
                 return $handlers;

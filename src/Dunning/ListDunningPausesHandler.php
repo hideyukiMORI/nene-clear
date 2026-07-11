@@ -6,7 +6,7 @@ namespace NeneClear\Dunning;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationResponse;
-use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -15,12 +15,13 @@ final readonly class ListDunningPausesHandler
     public function __construct(
         private DunningPauseRepositoryInterface $pauses,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $q = (array) $request->getQueryParams();
         $activeOnly = ($q['active_only'] ?? null) === 'true';
         $limit = is_numeric($q['limit'] ?? null) ? (int) $q['limit'] : 50;

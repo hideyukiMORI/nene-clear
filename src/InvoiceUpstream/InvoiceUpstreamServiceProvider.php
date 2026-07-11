@@ -9,6 +9,7 @@ use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -27,6 +28,7 @@ final readonly class InvoiceUpstreamServiceProvider implements ServiceProviderIn
                     new ListUpstreamInvoicesHandler(
                         ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             )

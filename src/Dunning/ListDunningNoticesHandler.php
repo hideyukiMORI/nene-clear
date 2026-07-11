@@ -7,7 +7,7 @@ namespace NeneClear\Dunning;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
 use Nene2\Http\PaginationResponse;
-use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,12 +16,13 @@ final readonly class ListDunningNoticesHandler
     public function __construct(
         private DunningNoticeRepositoryInterface $notices,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $page = PaginationQueryParser::parse($request, 50, 200);
         $filter = DunningNoticeFilter::fromQueryParams($request->getQueryParams());
 

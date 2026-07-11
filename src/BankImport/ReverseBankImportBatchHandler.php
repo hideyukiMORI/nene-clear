@@ -9,6 +9,7 @@ use Nene2\Routing\Router;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -17,6 +18,7 @@ final readonly class ReverseBankImportBatchHandler
     public function __construct(
         private ReverseBankImportBatchUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -33,7 +35,7 @@ final readonly class ReverseBankImportBatchHandler
         }
 
         $output = $this->useCase->execute(new ReverseBankImportBatchInput(
-            organizationId: AuthContext::organizationId($request) ?? 0,
+            organizationId: $this->organization->id(),
             batchId: $batchId,
             actorUserId: AuthContext::userId($request),
             reversalReason: $reversalReason,

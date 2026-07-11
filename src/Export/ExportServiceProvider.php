@@ -11,6 +11,7 @@ use NeneClear\Dunning\DunningNoticeRepositoryInterface;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\Reconciliation\ClientCreditRepositoryInterface;
 use NeneClear\Reconciliation\ReconciliationRepositoryInterface;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -32,21 +33,25 @@ final readonly class ExportServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
                     ServiceResolver::get($c, ResponseFactoryInterface::class),
                     ServiceResolver::get($c, StreamFactoryInterface::class),
+                    ServiceResolver::get($c, CurrentOrganization::class),
                 ),
                 new ExportClientCreditsCsvHandler(
                     ServiceResolver::get($c, ClientCreditRepositoryInterface::class),
                     ServiceResolver::get($c, ResponseFactoryInterface::class),
                     ServiceResolver::get($c, StreamFactoryInterface::class),
+                    ServiceResolver::get($c, CurrentOrganization::class),
                 ),
                 new ExportBankTransactionsCsvHandler(
                     ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
                     ServiceResolver::get($c, ResponseFactoryInterface::class),
                     ServiceResolver::get($c, StreamFactoryInterface::class),
+                    ServiceResolver::get($c, CurrentOrganization::class),
                 ),
                 new ExportDunningNoticesCsvHandler(
                     ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
                     ServiceResolver::get($c, ResponseFactoryInterface::class),
                     ServiceResolver::get($c, StreamFactoryInterface::class),
+                    ServiceResolver::get($c, CurrentOrganization::class),
                 ),
             ),
         );

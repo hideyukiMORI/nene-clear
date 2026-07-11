@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace NeneClear\Dunning;
 
 use Nene2\Http\JsonResponseFactory;
-use NeneClear\Auth\AuthContext;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -21,12 +21,13 @@ final readonly class PreviewDunningNoticeHandler
         private InvoiceUpstreamClientInterface $invoiceClient,
         private DunningMessageRenderer $renderer,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $query = $request->getQueryParams();
         $invoiceId = (int) ($query['invoice_id'] ?? 0);
         $stage = DunningStage::fromString(is_string($query['stage'] ?? null) ? $query['stage'] : null);

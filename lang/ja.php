@@ -34,6 +34,8 @@ return [
     'problem.insufficient-capability.title'  => '権限不足',
     'problem.insufficient-capability.detail' => 'このアクションに必要な権限がありません。',
 
+    'problem.organization-not-resolved.title'  => 'アクセスできません',
+    'problem.organization-not-resolved.detail' => 'この操作には組織に所属するセッションが必要です。',
     'problem.organization-not-found.title'  => '組織が見つかりません',
     'problem.organization-not-found.detail' => '指定された組織は存在しません。',
 

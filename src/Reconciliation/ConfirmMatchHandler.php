@@ -9,6 +9,7 @@ use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
 use NeneClear\Receivable\ReceivableSource;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -18,6 +19,7 @@ final readonly class ConfirmMatchHandler
         private ConfirmMatchUseCaseInterface $useCase,
         private ReconciliationRepositoryInterface $reconciliations,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -72,7 +74,7 @@ final readonly class ConfirmMatchHandler
         }
 
         $reasonCode = isset($body['reason_code']) && is_string($body['reason_code']) ? $body['reason_code'] : null;
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
 
         $idempotencyKey = $request->getHeaderLine('Idempotency-Key');
         $idempotencyKey = $idempotencyKey !== '' ? $idempotencyKey : null;

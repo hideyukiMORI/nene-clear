@@ -34,6 +34,8 @@ return [
     'problem.insufficient-capability.title'  => 'Insufficient Capability',
     'problem.insufficient-capability.detail' => 'Your role lacks the capability required for this action.',
 
+    'problem.organization-not-resolved.title'  => 'Forbidden',
+    'problem.organization-not-resolved.detail' => 'This operation requires an organization-scoped session.',
     'problem.organization-not-found.title'  => 'Organization Not Found',
     'problem.organization-not-found.detail' => 'The requested organization was not found.',
 

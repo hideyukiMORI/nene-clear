@@ -10,6 +10,7 @@ use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
 use NeneClear\BankImport\AccountType;
 use NeneClear\BankImport\BankAccount;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -18,12 +19,13 @@ final readonly class UpdateClearSettingsHandler
     public function __construct(
         private UpdateClearSettingsUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $body = (array) $request->getParsedBody();
         $errors = [];
 
