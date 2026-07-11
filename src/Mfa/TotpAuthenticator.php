@@ -6,11 +6,13 @@ namespace NeneClear\Mfa;
 
 use DateInterval;
 use DateTimeImmutable;
+use Nene2\Auth\TotpAuthenticator as Rfc6238Totp;
 use Nene2\Http\ClockInterface;
 
 /**
- * Verifies a TOTP code with replay protection and brute-force lockout — the
- * security core shared by enrolment confirmation and (later) login.
+ * TOTP verification policy: replay protection and brute-force lockout around
+ * the framework RFC 6238 primitive ({@see Rfc6238Totp}, #292) — shared by
+ * enrolment confirmation and login.
  *
  * Order matters: a locked enrolment is rejected *before* the code is checked, so
  * the response time can't be used as a timing oracle. A matched-but-already-used
@@ -26,7 +28,7 @@ final readonly class TotpAuthenticator
     public function __construct(
         private TotpSecretRepositoryInterface $secrets,
         private UsedTotpStepRepositoryInterface $usedSteps,
-        private TotpGenerator $generator,
+        private Rfc6238Totp $totp,
         private ClockInterface $clock,
     ) {
     }
@@ -80,7 +82,9 @@ final readonly class TotpAuthenticator
             throw new TotpLockedException($secret->lockedUntil);
         }
 
-        $step = $this->generator->verify($secret->secret, trim($code));
+        // The upstream RFC 6238 primitive owns the cryptography (#292); the
+        // clock's timestamp keeps step evaluation deterministic in tests.
+        $step = $this->totp->verify($secret->secret, $code, $now->getTimestamp());
         if ($step === null || $this->usedSteps->isStepUsed($userId, $step)) {
             $this->registerFailure($userId, $lockExpired ? 0 : $secret->failedAttempts, $now);
             throw new TotpInvalidCodeException();

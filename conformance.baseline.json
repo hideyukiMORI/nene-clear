@@ -1,12 +1,5 @@
 {
     "version": 1,
     "allow": [],
-    "ignore": [
-        {
-            "rule": "D4",
-            "file": "src/Mfa/TotpGenerator.php",
-            "message": "Raw current-time read time(). Inject Nene2\\Http\\ClockInterface (Nene2\\Http\\UtcClock in production) instead of reading the wall clock directly.",
-            "count": 1
-        }
-    ]
+    "ignore": []
 }

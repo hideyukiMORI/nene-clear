@@ -6,6 +6,7 @@ namespace NeneClear\Tests\Auth;
 
 use Nene2\Audit\AuditRecorder;
 use Nene2\Auth\LocalBearerTokenVerifier;
+use Nene2\Auth\TotpAuthenticator as Rfc6238Totp;
 use NeneClear\Auth\InvalidCredentialsException;
 use NeneClear\Auth\LoginInput;
 use NeneClear\Auth\LoginUseCase;
@@ -13,7 +14,6 @@ use NeneClear\Auth\MfaChallengeTokens;
 use NeneClear\Auth\Role;
 use NeneClear\Auth\SessionTokens;
 use NeneClear\Mfa\TotpAuthenticator;
-use NeneClear\Mfa\TotpGenerator;
 use NeneClear\Mfa\TotpSecret;
 use NeneClear\Tests\Audit\InMemoryAuditEventRepository;
 use NeneClear\Tests\Mfa\InMemoryTotpSecretRepository;
@@ -46,7 +46,7 @@ final class LoginUseCaseTest extends TestCase
             $mfa ?? new TotpAuthenticator(
                 new InMemoryTotpSecretRepository(),
                 new InMemoryUsedTotpStepRepository(),
-                new TotpGenerator(),
+                new Rfc6238Totp(),
                 new FixedClock('2026-06-01T10:00:00+00:00'),
             ),
             new MfaChallengeTokens('test-secret-test-secret-32chars!'),
@@ -83,11 +83,11 @@ final class LoginUseCaseTest extends TestCase
         $userId = (int) $found->id;
 
         $secrets = new InMemoryTotpSecretRepository();
-        $secrets->byUser[$userId] = new TotpSecret($userId, (new TotpGenerator())->generateSecret(), isEnabled: true);
+        $secrets->byUser[$userId] = new TotpSecret($userId, (new Rfc6238Totp())->generateSecret(), isEnabled: true);
         $mfa = new TotpAuthenticator(
             $secrets,
             new InMemoryUsedTotpStepRepository(),
-            new TotpGenerator(),
+            new Rfc6238Totp(),
             new FixedClock('2026-06-01T10:00:00+00:00'),
         );
 

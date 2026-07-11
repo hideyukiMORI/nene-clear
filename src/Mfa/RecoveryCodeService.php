@@ -4,10 +4,19 @@ declare(strict_types=1);
 
 namespace NeneClear\Mfa;
 
+use Nene2\Auth\RecoveryCodes;
+
 /**
- * Generates and matches one-time recovery codes. Codes are shown to the user
- * once at enrolment and stored only as password hashes (one-way), so a database
- * read never reveals a usable code.
+ * Generates and matches one-time recovery codes on the framework
+ * {@see RecoveryCodes} primitive (#292). Codes are shown to the user once at
+ * enrolment and stored only as hashes, so a database read never reveals a
+ * usable code.
+ *
+ * New codes carry 80 bits of entropy and are stored as the upstream unsalted
+ * SHA-256 hash (safe at that entropy — see the upstream security notes).
+ * Codes issued before #292 were 40-bit and bcrypt-hashed; {@see match()}
+ * keeps a legacy bcrypt fallback so they stay redeemable until re-enrolment
+ * (remove the fallback in a later release).
  */
 final readonly class RecoveryCodeService
 {
@@ -19,15 +28,9 @@ final readonly class RecoveryCodeService
      */
     public function generate(): array
     {
-        $plain = [];
-        $hashes = [];
-        for ($i = 0; $i < self::COUNT; $i++) {
-            $code = $this->randomCode();
-            $plain[] = $code;
-            $hashes[] = password_hash($code, PASSWORD_DEFAULT);
-        }
+        $plain = RecoveryCodes::generate(self::COUNT);
 
-        return ['plain' => $plain, 'hashes' => $hashes];
+        return ['plain' => $plain, 'hashes' => array_map(RecoveryCodes::hash(...), $plain)];
     }
 
     /**
@@ -37,20 +40,17 @@ final readonly class RecoveryCodeService
      */
     public function match(string $code, array $unused): ?int
     {
-        $code = trim($code);
         foreach ($unused as $row) {
-            if (password_verify($code, $row['code_hash'])) {
+            if (RecoveryCodes::verify($code, $row['code_hash'])) {
+                return $row['id'];
+            }
+
+            // Legacy fallback (#292): pre-migration codes were bcrypt-hashed.
+            if (str_starts_with($row['code_hash'], '$2') && password_verify(trim($code), $row['code_hash'])) {
                 return $row['id'];
             }
         }
 
         return null;
-    }
-
-    private function randomCode(): string
-    {
-        $hex = bin2hex(random_bytes(5)); // 10 hex chars
-
-        return substr($hex, 0, 5) . '-' . substr($hex, 5, 5);
     }
 }

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace NeneClear\Tests\Mfa;
 
+use Nene2\Auth\TotpAuthenticator as Rfc6238Totp;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Http\UtcClock;
 use Nene2\Testing\DatabaseTestKit;
 use NeneClear\Mfa\PdoTotpSecretRepository;
 use NeneClear\Mfa\PdoUsedTotpStepRepository;
 use NeneClear\Mfa\TotpAuthenticator;
-use NeneClear\Mfa\TotpGenerator;
 use NeneClear\Mfa\TotpInvalidCodeException;
 use NeneClear\Mfa\TotpLockedException;
 use NeneClear\Mfa\TotpNotEnabledException;
@@ -23,7 +23,7 @@ final class TotpAuthenticatorTest extends TestCase
 {
     private string $dbPath;
     private DatabaseQueryExecutorInterface $query;
-    private TotpGenerator $gen;
+    private Rfc6238Totp $gen;
     private PdoTotpSecretRepository $secrets;
     private TotpAuthenticator $auth;
 
@@ -33,7 +33,7 @@ final class TotpAuthenticatorTest extends TestCase
         $this->query = DatabaseTestKit::sqlite($this->dbPath)->queryExecutor;
         SchemaFixture::createTotpTables($this->query);
 
-        $this->gen = new TotpGenerator();
+        $this->gen = new Rfc6238Totp();
         $key = base64_encode(str_repeat("\x05", SODIUM_CRYPTO_SECRETBOX_KEYBYTES));
         $this->secrets = new PdoTotpSecretRepository($this->query, new Encryptor($key));
         $this->auth = new TotpAuthenticator(

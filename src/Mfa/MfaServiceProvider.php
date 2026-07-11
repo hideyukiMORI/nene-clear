@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NeneClear\Mfa;
 
 use Nene2\Audit\AuditRecorderFactoryInterface;
+use Nene2\Auth\TotpAuthenticator as Rfc6238Totp;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
@@ -18,7 +19,8 @@ use NeneClear\User\UserRepositoryInterface;
 use Psr\Container\ContainerInterface;
 
 /**
- * Wires self-service TOTP MFA enrolment (#195): the generator, the encrypted
+ * Wires self-service TOTP MFA enrolment (#195): the framework RFC 6238
+ * primitive (#292), the encrypted
  * secret / used-step / recovery-code stores, the authenticator (verify with
  * lockout + replay), the setup/enable/status/disable use cases + handlers, and
  * the TOTP exception → Problem Details handlers.
@@ -32,7 +34,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
     public function register(ContainerBuilder $builder): void
     {
         $builder
-            ->set(TotpGenerator::class, static fn (ContainerInterface $c): TotpGenerator => new TotpGenerator())
+            ->set(Rfc6238Totp::class, static fn (ContainerInterface $c): Rfc6238Totp => new Rfc6238Totp())
             ->set(RecoveryCodeService::class, static fn (ContainerInterface $c): RecoveryCodeService => new RecoveryCodeService())
             ->set(
                 TotpAuthenticator::class,
@@ -42,7 +44,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
                         ServiceResolver::get($c, Encryptor::class),
                     ),
                     new PdoUsedTotpStepRepository(ServiceResolver::get($c, DatabaseQueryExecutorInterface::class)),
-                    ServiceResolver::get($c, TotpGenerator::class),
+                    ServiceResolver::get($c, Rfc6238Totp::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
@@ -54,7 +56,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
                     static fn (DatabaseQueryExecutorInterface $ex): UsedTotpStepRepositoryInterface => new PdoUsedTotpStepRepository($ex),
                     static fn (DatabaseQueryExecutorInterface $ex): RecoveryCodeRepositoryInterface => new PdoRecoveryCodeRepository($ex),
                     ServiceResolver::get($c, UserRepositoryInterface::class),
-                    ServiceResolver::get($c, TotpGenerator::class),
+                    ServiceResolver::get($c, Rfc6238Totp::class),
                     ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
