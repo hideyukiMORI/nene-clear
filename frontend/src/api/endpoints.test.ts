@@ -108,11 +108,11 @@ describe('endpoint request construction', () => {
   })
 
   it('confirmMatch posts snake_case allocation payload', async () => {
-    await confirmMatch(99, [{ invoice_id: 1, amount_cents: 110000 }], 'fee_absorption')
+    await confirmMatch(99, [{ source: 'invoice_upstream', invoice_id: 1, amount_cents: 110000 }], 'fee_absorption')
     expect(calledUrl()).toBe('/admin/reconciliations')
     expect(JSON.parse(calledInit().body!)).toEqual({
       bank_transaction_id: 99,
-      allocations: [{ invoice_id: 1, amount_cents: 110000 }],
+      allocations: [{ source: 'invoice_upstream', invoice_id: 1, amount_cents: 110000 }],
       reason_code: 'fee_absorption',
     })
   })

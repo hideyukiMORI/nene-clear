@@ -350,7 +350,7 @@ export default function ReconciliationPage() {
               <option value="reversed">{t('reconciliation.status.reversed')}</option>
             </select>
           </FilterField>
-          <FilterField label={t('table.invoiceId')}>
+          <FilterField label={t('reconciliation.invoiceId')}>
             <input className="inp tnum" data-kbd="search" type="number" placeholder="#" style={{ width: 110 }} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
           </FilterField>
           <FilterField label={t('table.confirmedAt')}>
