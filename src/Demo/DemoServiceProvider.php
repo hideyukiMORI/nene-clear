@@ -100,6 +100,14 @@ final readonly class DemoServiceProvider implements ServiceProviderInterface
                 },
             )
             ->set(
+                DemoBrowserErrorPage::class,
+                static fn (ContainerInterface $c): DemoBrowserErrorPage => new DemoBrowserErrorPage(
+                    ServiceResolver::get($c, Psr17Factory::class),
+                    throttleLimit: self::THROTTLE_LIMIT,
+                    throttleWindowSeconds: self::THROTTLE_WINDOW_SECONDS,
+                ),
+            )
+            ->set(
                 StartDisposableDemoHandler::class,
                 static fn (ContainerInterface $c): StartDisposableDemoHandler => new StartDisposableDemoHandler(
                     config: ServiceResolver::get($c, DemoConfig::class),
@@ -109,6 +117,9 @@ final readonly class DemoServiceProvider implements ServiceProviderInterface
                     seater: ServiceResolver::get($c, DemoSessionSeater::class),
                     problemDetails: ServiceResolver::get($c, ProblemDetailsResponseFactory::class),
                     templateKeyClass: DemoTemplate::class,
+                    // Branded browser error page (#296): HTML-preferring clients get
+                    // this card on 429/503/404; API clients keep raw Problem Details.
+                    errorPageRenderer: ServiceResolver::get($c, DemoBrowserErrorPage::class),
                 ),
             )
             ->set(
