@@ -188,7 +188,8 @@ Per [`domain-model.md`](../explanation/domain-model.md). Enforced in UseCases:
   return `invalid-state-transition`.
 - `payment_reconciliation`: `confirmed → reversed` (reversing an already-reversed
   one is `invalid-state-transition`).
-- `client_credit`: `open → partially_applied → applied`.
+- `client_credit`: `open → voided`. Application progress is tracked by
+  `remaining_cents`, not by a status value (#264).
 
 ---
 

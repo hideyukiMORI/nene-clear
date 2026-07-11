@@ -2350,7 +2350,9 @@ components:
 
     ClientCreditStatus:
       type: string
-      enum: [open, partially_applied, applied]
+      # Matches the ClientCreditStatus enum. Application progress is expressed by
+      # remaining_cents, not a status value (#264).
+      enum: [open, voided]
     ClientCredit:
       type: object
       required: [client_credit_id, organization_id, client_id, amount_cents, remaining_cents, status]

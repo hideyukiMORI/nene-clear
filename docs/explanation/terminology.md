@@ -85,7 +85,7 @@ Stored and transmitted **exactly** as written (lowercase snake_case).
 | `bank_transaction.status` | `unmatched`, `partially_matched`, `matched`, `voided` |
 | `bank_import_batch.status` | `imported`, `reversed` |
 | `payment_reconciliation.status` | `confirmed`, `reversed` |
-| `client_credit.status` | `open`, `partially_applied`, `applied` |
+| `client_credit.status` | `open`, `voided` |
 | `manual_receivable.status` | `open`, `partially_paid`, `paid`, `cancelled` (ADR 0014; Clear-computed) |
 | Receivable `source` (allocations, dunning, credits, receivable reads) | `invoice_upstream`, `manual` (ADR 0014) |
 | `dunning_notice.status` | `sent`, `failed` |
