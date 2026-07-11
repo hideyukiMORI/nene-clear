@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderWithProviders } from '@/test/render'
 import type { ManualReceivable } from '@/types'
 
 const row: ManualReceivable = {
@@ -31,7 +32,7 @@ import ManualReceivablesPage from './ManualReceivablesPage'
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(
+  return renderWithProviders(
     <QueryClientProvider client={qc}>
       <ManualReceivablesPage />
     </QueryClientProvider>,

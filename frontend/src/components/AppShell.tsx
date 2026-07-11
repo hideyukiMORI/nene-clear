@@ -45,7 +45,7 @@ function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; la
 }
 
 export default function AppShell() {
-  const { t, locale, switchLocale } = useTranslation()
+  const { t, locale, setLocale } = useTranslation()
   const navigate = useNavigate()
   const admin = isAdmin()
   const adminNav = ADMIN_NAV.filter(item => !item.adminOnly || admin)
@@ -114,8 +114,8 @@ export default function AppShell() {
           </nav>
           <div className="topbar-r">
             <div className="lang">
-              <button className={locale === 'ja' ? 'on' : ''} onClick={() => switchLocale('ja')}>JA</button>
-              <button className={locale === 'en' ? 'on' : ''} onClick={() => switchLocale('en')}>EN</button>
+              <button className={locale === 'ja' ? 'on' : ''} onClick={() => setLocale('ja')}>JA</button>
+              <button className={locale === 'en' ? 'on' : ''} onClick={() => setLocale('en')}>EN</button>
             </div>
             <button
               className="iconbtn"
