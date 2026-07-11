@@ -217,7 +217,7 @@ $query = new AdapterAwareQueryExecutor(new PdoDatabaseQueryExecutor($connectionF
 $transactionManager = new AdapterAwareTransactionManager(new PdoDatabaseTransactionManager($connectionFactory), $adapter);
 
 // --- Create org + admin via the same use cases the HTTP app uses ---------------
-$container = ApplicationFactory::container($query, $transactionManager, $env('NENE_CLEAR_JWT_SECRET'));
+$container = ApplicationFactory::container($query, $transactionManager, $env('NENE2_LOCAL_JWT_SECRET') ?: $env('NENE_CLEAR_JWT_SECRET'));
 
 // Fail before creating an organization if the email is taken, so a re-run does
 // not leave an orphan organization behind (the create-user step guards it too).

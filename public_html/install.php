@@ -1165,7 +1165,7 @@ if ($method === 'POST' && $reqErrors === []) {
                 } else {
                     $values['DB_NAME'] = $sqlitePath;
                 }
-                $values['NENE_CLEAR_JWT_SECRET'] = EnvironmentWriter::generateSecret(32);
+                $values['NENE2_LOCAL_JWT_SECRET'] = EnvironmentWriter::generateSecret(32);
 
                 (new EnvironmentWriter())->write($envFile, $values);
 
@@ -1241,7 +1241,7 @@ if ($method === 'POST' && $reqErrors === []) {
                     $factory = new PdoConnectionFactory($config);
                     $query = new AdapterAwareQueryExecutor(new PdoDatabaseQueryExecutor($factory), $adapter);
                     $transactionManager = new AdapterAwareTransactionManager(new PdoDatabaseTransactionManager($factory), $adapter);
-                    $container = ApplicationFactory::container($query, $transactionManager, (string) ($env['NENE_CLEAR_JWT_SECRET'] ?? ''));
+                    $container = ApplicationFactory::container($query, $transactionManager, (string) (($env['NENE2_LOCAL_JWT_SECRET'] ?? '') !== '' ? $env['NENE2_LOCAL_JWT_SECRET'] : ($env['NENE_CLEAR_JWT_SECRET'] ?? '')));
 
                     if ($tenantMode === 'multi') {
                         ServiceResolver::get($container, CreateUserUseCaseInterface::class)->execute(

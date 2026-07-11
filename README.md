@@ -100,7 +100,7 @@ Phase 4 (MCP tools, accounting-software CSV export). See [`docs/roadmap.md`](./d
 ```bash
 # 1. Infrastructure (MySQL 8.4 on :3383, Mailpit SMTP :1383 / web UI :8383)
 docker compose up -d
-cp .env.example .env            # adjust DB_*, NENE_CLEAR_JWT_SECRET as needed
+cp .env.example .env            # adjust DB_*, NENE2_LOCAL_JWT_SECRET as needed
 
 # 2. Backend (PHP 8.4 with ext-curl — required by the Invoice upstream client).
 composer install

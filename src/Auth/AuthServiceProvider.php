@@ -7,7 +7,10 @@ namespace NeneClear\Auth;
 use Nene2\Audit\AuditRecorderFactoryInterface;
 use Nene2\Audit\AuditRecorderInterface;
 use Nene2\Auth\BearerTokenMiddleware;
+use Nene2\Auth\GuardedJwtSecretResolver;
+use Nene2\Auth\JwtSecretException;
 use Nene2\Auth\TokenVerifierInterface;
+use Nene2\Config\AppEnvironment;
 use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Database\DatabaseTransactionManagerInterface;
 use Nene2\DependencyInjection\ContainerBuilder;
@@ -35,6 +38,41 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
 {
     /** Container key for the ordered authentication middleware stack. */
     public const string AUTH_MIDDLEWARE = 'nene_clear.auth_middleware';
+
+    /**
+     * Development-only fallback secret, used **only** in local/test when
+     * NENE2_LOCAL_JWT_SECRET is unset and the operator opted in via
+     * NENE2_ALLOW_DEV_SECRET (#285). Production must set its own secret — see
+     * {@see GuardedJwtSecretResolver}, which hard-fails the dev path in
+     * production. This constant is public in the OSS repository, so signing
+     * real tokens with it would be a full auth bypass.
+     */
+    private const string DEFAULT_DEV_SECRET = 'nene-clear-dev-secret';
+
+    /**
+     * Fleet-standard JWT-secret resolution (#285), fail-close preserved: an
+     * unresolvable secret returns null so the composition root keeps the admin
+     * surface unmounted (health-only branch in ApplicationFactory) instead of
+     * booting with a predictable signing key. The development path requires an
+     * explicit NENE2_ALLOW_DEV_SECRET opt-in and is never honoured in
+     * production ({@see GuardedJwtSecretResolver}).
+     */
+    public static function resolveJwtSecret(
+        string $configuredSecret,
+        AppEnvironment $environment,
+        bool $allowDevSecret,
+    ): ?string {
+        try {
+            return (new GuardedJwtSecretResolver(
+                configuredSecret: $configuredSecret,
+                environment: $environment,
+                allowDevSecret: $allowDevSecret,
+                devSecret: self::DEFAULT_DEV_SECRET,
+            ))->resolve();
+        } catch (JwtSecretException) {
+            return null;
+        }
+    }
 
     /**
      * Public paths that never require a bearer token.
@@ -66,7 +104,7 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                 LoginUseCaseInterface::class,
                 static fn (ContainerInterface $c): LoginUseCaseInterface => new LoginUseCase(
                     ServiceResolver::get($c, UserRepositoryInterface::class),
-                    ServiceResolver::get($c, TokenIssuerInterface::class),
+                    ServiceResolver::get($c, SessionTokens::class),
                     ServiceResolver::get($c, AuditRecorderInterface::class),
                     ServiceResolver::get($c, ClockInterface::class),
                     ServiceResolver::get($c, TotpAuthenticator::class),
@@ -81,7 +119,7 @@ final readonly class AuthServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, TotpAuthenticator::class),
                     ServiceResolver::get($c, RecoveryCodeService::class),
                     ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
-                    ServiceResolver::get($c, TokenIssuerInterface::class),
+                    ServiceResolver::get($c, SessionTokens::class),
                     ServiceResolver::get($c, DatabaseTransactionManagerInterface::class),
                     static fn (DatabaseQueryExecutorInterface $ex): RecoveryCodeRepositoryInterface => new PdoRecoveryCodeRepository($ex),
                     ServiceResolver::get($c, AuditRecorderFactoryInterface::class),

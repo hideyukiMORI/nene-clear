@@ -13,7 +13,7 @@ use Nene2\DependencyInjection\ContainerBuilder;
 use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Error\ProblemDetailsResponseFactory;
 use Nene2\Http\ClockInterface;
-use NeneClear\Auth\TokenIssuerInterface;
+use NeneClear\Auth\SessionTokens;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\Organization\CreateOrganizationUseCaseInterface;
 use NeneClear\User\CreateUserUseCaseInterface;
@@ -27,7 +27,7 @@ use Psr\Container\ContainerInterface;
  * creation-time capacity guard (per-IP file-backed throttle + instance-wide
  * org ceiling), and the framework handler + route registrar. Everything is
  * reused from existing providers — no auth code is added; the seater mints a
- * token through the same {@see TokenIssuerInterface} a login uses.
+ * token through the same {@see SessionTokens} a login uses.
  *
  * The registrar is registered unconditionally: {@see StartDisposableDemoHandler}
  * answers 404 while {@see DemoConfig::$demoMode} is off (fail-close).
@@ -64,7 +64,7 @@ final readonly class DemoServiceProvider implements ServiceProviderInterface
                 DemoSessionSeater::class,
                 static fn (ContainerInterface $c): DemoSessionSeater => new DemoSessionSeater(
                     ServiceResolver::get($c, UserRepositoryInterface::class),
-                    ServiceResolver::get($c, TokenIssuerInterface::class),
+                    ServiceResolver::get($c, SessionTokens::class),
                     ServiceResolver::get($c, Psr17Factory::class),
                 ),
             )

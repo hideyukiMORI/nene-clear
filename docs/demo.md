@@ -16,7 +16,7 @@ docker compose up -d mailpit               # local: catches dunning mail on :838
 `.env` (see `.env.example` for the full comments):
 
 ```dotenv
-NENE_CLEAR_JWT_SECRET=<64 hex chars>            # required — fail-close without it
+NENE2_LOCAL_JWT_SECRET=<64 hex chars>           # required — fail-close without it (#285)
 NENE_CLEAR_DEMO_UPSTREAM=1                      # live upstream suggestions + dunning
 NENE_CLEAR_DEMO_ADMIN_PASSWORD="…12+ chars…"    # quote values containing #
 NENE_CLEAR_DEMO_VIEWER_PASSWORD="…12+ chars…"
@@ -125,7 +125,7 @@ sharing). Publishing itself is a separate owner decision; the pieces are ready:
 3. Run `public_html/install.php` once (requirements → DB → migrate → first
    admin), then **delete it**.
 4. `.env` on the host: MySQL `_nene_clear` credentials, `APP_DEBUG=false`,
-   real `NENE_CLEAR_JWT_SECRET`, demo variables as above; HETEML SMTP or leave
+   real `NENE2_LOCAL_JWT_SECRET`, demo variables as above; HETEML SMTP or leave
    `SMTP_HOST` empty (log-only) until deliverability is decided.
 5. Seed: `php8.4 tools/seed-demo.php --force` over SSH; add a daily cron with
    the same command as the reset.
@@ -136,3 +136,22 @@ bank / PII: no root, throttled SMTP, weak backup story) — not a technical
 blocker. A demo org holds only fictional seed data, is reset nightly, and sends
 mail to `.example` addresses, so none of those risks apply to this deployment.
 Production installs should still go to VPS + Docker (Tier B).
+
+## Migration runbook — JWT secret env rename (#285, owner's step)
+
+Since #285 the canonical env name is the fleet-standard
+`NENE2_LOCAL_JWT_SECRET`. The deployed demo's `.env` still says
+`NENE_CLEAR_JWT_SECRET`; the app reads it as a **transitional fallback for one
+release**, so nothing breaks on deploy. To finish the migration on HETEML
+(production `.env` edits are the owner's step — never automated):
+
+1. SSH in and edit the deployment `.env`: rename the key
+   `NENE_CLEAR_JWT_SECRET=` → `NENE2_LOCAL_JWT_SECRET=` **keeping the same
+   value** (same value ⇒ already-issued tokens keep verifying; the demo's 1 h
+   sessions are unaffected).
+2. No other change: `NENE2_ALLOW_DEV_SECRET` must stay **unset** in
+   production (the resolver ignores it there anyway — hard fail-close).
+3. Verify: `curl -s https://clear.ayane.co.jp/health` is `ok`, then start a
+   `/demo/standard` session and confirm the SPA lands authenticated.
+4. Rollback: rename the key back. The fallback read stays until the next
+   release removes it.

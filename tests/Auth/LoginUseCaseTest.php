@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace NeneClear\Tests\Auth;
 
 use Nene2\Audit\AuditRecorder;
+use Nene2\Auth\LocalBearerTokenVerifier;
 use NeneClear\Auth\InvalidCredentialsException;
-use NeneClear\Auth\JwtTokenService;
 use NeneClear\Auth\LoginInput;
 use NeneClear\Auth\LoginUseCase;
 use NeneClear\Auth\MfaChallengeTokens;
 use NeneClear\Auth\Role;
+use NeneClear\Auth\SessionTokens;
 use NeneClear\Mfa\TotpAuthenticator;
 use NeneClear\Mfa\TotpGenerator;
 use NeneClear\Mfa\TotpSecret;
@@ -36,7 +37,10 @@ final class LoginUseCaseTest extends TestCase
     {
         return new LoginUseCase(
             $users,
-            new JwtTokenService(secret: 'test-secret-test-secret-32chars!'),
+            new SessionTokens(
+                new LocalBearerTokenVerifier('test-secret-test-secret-32chars!'),
+                new FixedClock('2026-06-01T10:00:00+00:00'),
+            ),
             new AuditRecorder($this->audit, new FixedClock('2026-06-01T10:00:00+00:00')),
             new FixedClock('2026-06-01T10:00:00+00:00'),
             $mfa ?? new TotpAuthenticator(
