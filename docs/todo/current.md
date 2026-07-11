@@ -7,6 +7,19 @@ Last updated: 2026-07-11
 > #287 checklist) in
 > [`docs/audit/2026-07-11-structural-uniformity.md`](../audit/2026-07-11-structural-uniformity.md) (#288).
 
+> **2026-07-11: audit remediation — backend done, frontend/installer remain.**
+> Merged: #286 NENE2 → Packagist `^1.10` + hardened release build (#290);
+> #285 JWT layer → fleet-standard NENE2 stack, `firebase/php-jwt` dropped (#291);
+> #287 checklist — MFA core on NENE2 primitives (#293), ConfigLoader/AppConfig +
+> 48-line front controller (#295), branded demo error page (#297), OpenAPI/MCP
+> `composer check` gates (#299), **tenant scoping: `CurrentOrganization`
+> injected into all 38 handler sites (no more `?? 0` → org-0 coercion; org-less
+> tokens fail closed as 403 `organization-not-resolved`) + 11 tenant-resolution
+> tests (#300, #301 / PR #302)**. **Remaining #287 items: (i) frontend
+> divergence** — OpenAPI codegen, React-connected i18n, font double-load,
+> `knip`/`--max-warnings 0`, and the **FSD migration (stop-gate — plan as its
+> own issue)**; **(j) installer self-delete** (deal/vault shape).
+
 > **Latest: demo enablement shipped (#260–#262, 2026-07-09)** — one-command
 > T-relative demo seeder (`tools/seed-demo.php`), env-gated demo upstream
 > fixture (`NENE_CLEAR_DEMO_UPSTREAM=1`), and the demo runbook
@@ -45,7 +58,7 @@ Last updated: 2026-07-11
 
 | Layer | Count | Tool |
 | --- | --- | --- |
-| Backend | 352 (6 skipped) | PHPUnit; PHPStan level 8; PHP-CS-Fixer |
+| Backend | 436 (6 skipped) | PHPUnit; PHPStan level 8; PHP-CS-Fixer |
 | Frontend unit | 27 | Vitest |
 | Browser E2E | 43 | Playwright (API mocked) |
 
