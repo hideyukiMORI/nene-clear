@@ -7,7 +7,7 @@ namespace NeneClear\Receivable;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
 use Nene2\Http\PaginationResponse;
-use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,6 +16,7 @@ final readonly class ListManualReceivablesHandler
     public function __construct(
         private ListManualReceivablesUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -23,7 +24,7 @@ final readonly class ListManualReceivablesHandler
     {
         $page = PaginationQueryParser::parse($request, 50, 200);
         $filter = ManualReceivableFilter::fromQueryParams((array) $request->getQueryParams());
-        $output = $this->useCase->execute(AuthContext::organizationId($request) ?? 0, $filter, $page->limit, $page->offset);
+        $output = $this->useCase->execute($this->organization->id(), $filter, $page->limit, $page->offset);
 
         return $this->response->create((new PaginationResponse(
             items: array_map(ManualReceivableResponse::toArray(...), $output->items),

@@ -16,6 +16,7 @@ use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\Security\Encryptor;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -50,14 +51,17 @@ final readonly class ClearSettingsServiceProvider implements ServiceProviderInte
                     new GetClearSettingsHandler(
                         ServiceResolver::get($c, ClearSettingsRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new UpdateClearSettingsHandler(
                         ServiceResolver::get($c, UpdateClearSettingsUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new TestUpstreamConnectionHandler(
                         ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             );

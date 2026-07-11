@@ -9,6 +9,7 @@ use Nene2\Routing\Router;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -17,12 +18,13 @@ final readonly class ResumeDunningHandler
     public function __construct(
         private ResumeDunningUseCase $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $actorUserId = AuthContext::userId($request);
         $params = (array) $request->getAttribute(Router::PARAMETERS_ATTRIBUTE, []);
         $invoiceId = (int) ($params['invoiceId'] ?? 0);

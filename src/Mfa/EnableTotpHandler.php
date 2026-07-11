@@ -8,6 +8,7 @@ use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,6 +17,7 @@ final readonly class EnableTotpHandler
     public function __construct(
         private EnableTotpUseCase $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -24,7 +26,7 @@ final readonly class EnableTotpHandler
         $code = self::code($request);
         $recoveryCodes = $this->useCase->execute(
             AuthContext::userId($request),
-            AuthContext::organizationId($request) ?? 0,
+            $this->organization->id(),
             $code,
         );
 

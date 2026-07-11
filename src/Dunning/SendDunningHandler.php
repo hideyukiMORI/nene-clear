@@ -8,6 +8,7 @@ use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -17,6 +18,7 @@ final readonly class SendDunningHandler
         private SendDunningUseCaseInterface $useCase,
         private DunningNoticeRepositoryInterface $notices,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -29,7 +31,7 @@ final readonly class SendDunningHandler
             throw new ValidationException([new ValidationError('invoice_id', 'A valid invoice id is required.', 'required')]);
         }
 
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $output = $this->useCase->execute(new SendDunningInput(
             organizationId: $organizationId,
             invoiceId: $invoiceId,

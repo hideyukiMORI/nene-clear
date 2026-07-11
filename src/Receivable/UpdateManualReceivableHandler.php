@@ -8,6 +8,7 @@ use Nene2\Http\JsonRequestBodyParser;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Routing\Router;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,6 +17,7 @@ final readonly class UpdateManualReceivableHandler
     public function __construct(
         private UpdateManualReceivableUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -27,7 +29,7 @@ final readonly class UpdateManualReceivableHandler
 
         $receivable = $this->useCase->execute(new UpdateManualReceivableInput(
             id: $id,
-            callerOrganizationId: AuthContext::organizationId($request) ?? 0,
+            callerOrganizationId: $this->organization->id(),
             referenceNumber: $fields['reference_number'],
             clientName: $fields['client_name'],
             recipientEmail: $fields['recipient_email'],

@@ -7,7 +7,7 @@ namespace NeneClear\Reconciliation;
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Http\PaginationQueryParser;
 use Nene2\Http\PaginationResponse;
-use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -16,12 +16,13 @@ final readonly class ListClientCreditsHandler
     public function __construct(
         private ClientCreditRepositoryInterface $clientCredits,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $page = PaginationQueryParser::parse($request, 50, 200);
         $filter = ClientCreditFilter::fromQueryParams($request->getQueryParams());
 

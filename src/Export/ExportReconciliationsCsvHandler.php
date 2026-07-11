@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace NeneClear\Export;
 
 use Nene2\Export\CsvWriter;
-use NeneClear\Auth\AuthContext;
 use NeneClear\BankImport\BankTransactionRepositoryInterface;
 use NeneClear\Reconciliation\ReconciliationFilter;
 use NeneClear\Reconciliation\ReconciliationRepositoryInterface;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -23,12 +23,13 @@ final readonly class ExportReconciliationsCsvHandler
         private BankTransactionRepositoryInterface $transactions,
         private ResponseFactoryInterface $responseFactory,
         private StreamFactoryInterface $streamFactory,
+        private CurrentOrganization $organization,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $organizationId = AuthContext::organizationId($request) ?? 0;
+        $organizationId = $this->organization->id();
         $filter = ReconciliationFilter::fromQueryParams($request->getQueryParams());
 
         $rows = [];

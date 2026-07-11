@@ -14,6 +14,7 @@ use Nene2\Http\JsonResponseFactory;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\Security\Encryptor;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -72,26 +73,32 @@ final readonly class BankImportServiceProvider implements ServiceProviderInterfa
                     new ImportBankCsvHandler(
                         ServiceResolver::get($c, ImportBankCsvUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListBankImportBatchesHandler(
                         ServiceResolver::get($c, BankImportBatchRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ReverseBankImportBatchHandler(
                         ServiceResolver::get($c, ReverseBankImportBatchUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListBankTransactionsHandler(
                         ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListUnmatchedTransactionsHandler(
                         ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new GetBankTransactionByIdHandler(
                         ServiceResolver::get($c, BankTransactionRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             )

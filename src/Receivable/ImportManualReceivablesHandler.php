@@ -8,6 +8,7 @@ use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -17,6 +18,7 @@ final readonly class ImportManualReceivablesHandler
     public function __construct(
         private ImportManualReceivablesUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -28,7 +30,7 @@ final readonly class ImportManualReceivablesHandler
         }
 
         $output = $this->useCase->execute(new ImportManualReceivablesInput(
-            organizationId: AuthContext::organizationId($request) ?? 0,
+            organizationId: $this->organization->id(),
             contents: (string) $file->getStream(),
             actorUserId: AuthContext::userId($request),
         ));

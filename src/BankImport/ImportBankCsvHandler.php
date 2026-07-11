@@ -8,6 +8,7 @@ use Nene2\Http\JsonResponseFactory;
 use Nene2\Validation\ValidationError;
 use Nene2\Validation\ValidationException;
 use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UploadedFileInterface;
@@ -17,6 +18,7 @@ final readonly class ImportBankCsvHandler
     public function __construct(
         private ImportBankCsvUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -41,7 +43,7 @@ final readonly class ImportBankCsvHandler
         }
 
         $output = $this->useCase->execute(new ImportBankCsvInput(
-            organizationId: AuthContext::organizationId($request) ?? 0,
+            organizationId: $this->organization->id(),
             bankAccountId: $bankAccountId,
             sourceFilename: $file->getClientFilename() ?? 'upload.csv',
             contents: (string) $file->getStream(),

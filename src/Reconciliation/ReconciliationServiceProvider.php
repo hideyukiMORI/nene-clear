@@ -18,6 +18,7 @@ use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\Receivable\ManualReceivableRepositoryInterface;
 use NeneClear\Receivable\PdoManualReceivableRepository;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -94,32 +95,39 @@ final readonly class ReconciliationServiceProvider implements ServiceProviderInt
                     new ProposeMatchHandler(
                         ServiceResolver::get($c, ProposeMatchUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ConfirmMatchHandler(
                         ServiceResolver::get($c, ConfirmMatchUseCaseInterface::class),
                         ServiceResolver::get($c, ReconciliationRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListReconciliationsHandler(
                         ServiceResolver::get($c, ReconciliationRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new GetReconciliationByIdHandler(
                         ServiceResolver::get($c, ReconciliationRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ReverseReconciliationHandler(
                         ServiceResolver::get($c, ReverseReconciliationUseCaseInterface::class),
                         ServiceResolver::get($c, ReconciliationRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListClientCreditsHandler(
                         ServiceResolver::get($c, ClientCreditRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ApplyCreditHandler(
                         ServiceResolver::get($c, ApplyCreditUseCaseInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             )

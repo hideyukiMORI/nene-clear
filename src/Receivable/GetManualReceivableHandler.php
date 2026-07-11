@@ -6,7 +6,7 @@ namespace NeneClear\Receivable;
 
 use Nene2\Http\JsonResponseFactory;
 use Nene2\Routing\Router;
-use NeneClear\Auth\AuthContext;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -15,6 +15,7 @@ final readonly class GetManualReceivableHandler
     public function __construct(
         private GetManualReceivableByIdUseCaseInterface $useCase,
         private JsonResponseFactory $response,
+        private CurrentOrganization $organization,
     ) {
     }
 
@@ -23,7 +24,7 @@ final readonly class GetManualReceivableHandler
         $params = (array) $request->getAttribute(Router::PARAMETERS_ATTRIBUTE, []);
         $id = (int) ($params['id'] ?? 0);
 
-        $receivable = $this->useCase->execute($id, AuthContext::organizationId($request) ?? 0);
+        $receivable = $this->useCase->execute($id, $this->organization->id());
 
         return $this->response->create(ManualReceivableResponse::toArray($receivable));
     }

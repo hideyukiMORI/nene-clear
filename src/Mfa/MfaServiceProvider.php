@@ -15,6 +15,7 @@ use Nene2\Http\JsonResponseFactory;
 use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\Security\Encryptor;
+use NeneClear\Tenancy\CurrentOrganization;
 use NeneClear\User\UserRepositoryInterface;
 use Psr\Container\ContainerInterface;
 
@@ -96,6 +97,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
                     new EnableTotpHandler(
                         ServiceResolver::get($c, EnableTotpUseCase::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new GetTotpStatusHandler(
                         ServiceResolver::get($c, TotpAuthenticator::class),
@@ -105,6 +107,7 @@ final readonly class MfaServiceProvider implements ServiceProviderInterface
                     new DisableTotpHandler(
                         ServiceResolver::get($c, DisableTotpUseCase::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             )

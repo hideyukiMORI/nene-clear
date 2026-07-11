@@ -19,6 +19,7 @@ use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
 use NeneClear\Security\Encryptor;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -83,31 +84,38 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                         ServiceResolver::get($c, SendDunningUseCaseInterface::class),
                         ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new PreviewDunningNoticeHandler(
                         ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
                         new DunningMessageRenderer(ServiceResolver::get($c, MessageCatalog::class)),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListDunningNoticesHandler(
                         ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new GetDunningNoticeByIdHandler(
                         ServiceResolver::get($c, DunningNoticeRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new PauseDunningHandler(
                         ServiceResolver::get($c, PauseDunningUseCase::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ResumeDunningHandler(
                         ServiceResolver::get($c, ResumeDunningUseCase::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new ListDunningPausesHandler(
                         ServiceResolver::get($c, DunningPauseRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                     new TestSendDunningHandler(
                         new SendTestDunningUseCase(
@@ -116,6 +124,7 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                             ServiceResolver::get($c, DunningMailerInterface::class),
                         ),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             )

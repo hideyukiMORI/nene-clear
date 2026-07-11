@@ -16,6 +16,7 @@ use Nene2\DependencyInjection\ServiceProviderInterface;
 use Nene2\Http\ClockInterface;
 use Nene2\Http\JsonResponseFactory;
 use NeneClear\Http\ServiceResolver;
+use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
 
 /**
@@ -78,6 +79,7 @@ final readonly class AuditServiceProvider implements ServiceProviderInterface
                     new ListAuditEventsHandler(
                         ServiceResolver::get($c, AuditReadRepositoryInterface::class),
                         ServiceResolver::get($c, JsonResponseFactory::class),
+                        ServiceResolver::get($c, CurrentOrganization::class),
                     ),
                 ),
             );
