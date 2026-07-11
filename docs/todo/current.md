@@ -7,18 +7,21 @@ Last updated: 2026-07-11
 > #287 checklist) in
 > [`docs/audit/2026-07-11-structural-uniformity.md`](../audit/2026-07-11-structural-uniformity.md) (#288).
 
-> **2026-07-11: audit remediation — backend done, frontend/installer remain.**
-> Merged: #286 NENE2 → Packagist `^1.10` + hardened release build (#290);
-> #285 JWT layer → fleet-standard NENE2 stack, `firebase/php-jwt` dropped (#291);
-> #287 checklist — MFA core on NENE2 primitives (#293), ConfigLoader/AppConfig +
-> 48-line front controller (#295), branded demo error page (#297), OpenAPI/MCP
-> `composer check` gates (#299), **tenant scoping: `CurrentOrganization`
-> injected into all 38 handler sites (no more `?? 0` → org-0 coercion; org-less
-> tokens fail closed as 403 `organization-not-resolved`) + 11 tenant-resolution
-> tests (#300, #301 / PR #302)**. **Remaining #287 items: (i) frontend
-> divergence** — OpenAPI codegen, React-connected i18n, font double-load,
-> `knip`/`--max-warnings 0`, and the **FSD migration (stop-gate — plan as its
-> own issue)**; **(j) installer self-delete** (deal/vault shape).
+> **2026-07-11: audit remediation — complete (2 stop-gates planned).**
+> Backend merged earlier: #286 NENE2 → Packagist `^1.10` + hardened release
+> build (#290); #285 JWT → fleet-standard NENE2 stack (#291); #287 checklist —
+> MFA core (#293), ConfigLoader/AppConfig + 48-line front controller (#295),
+> branded demo error page (#297), OpenAPI/MCP `composer check` gates (#299),
+> tenant scoping via injected `CurrentOrganization` (#300, #301 / PR #302).
+> **(j) installer self-delete (#308).** **(i) frontend divergence:** font
+> dedup (#309), `knip` + `--max-warnings 0` (#310), a real `type-check`
+> (`tsc -b`) + the 13 latent errors it had hidden (#311), React-connected
+> i18n → `I18nProvider`/`useTranslation` (#316). **OpenAPI codegen** is a
+> **stop-gate — plan #317** (23 spec↔impl divergences need reconciling first);
+> the `client_credit.status` conflict was fixed (#264 → #319). **FSD migration**
+> is a **stop-gate — plan #318**. Also fixed 2 production sales-blockers from
+> the browser walkthrough: X-Authorization mirror on file I/O (#312 / #313) and
+> the no-op settings-save 500 (#314 / #315).
 
 > **Latest: demo enablement shipped (#260–#262, 2026-07-09)** — one-command
 > T-relative demo seeder (`tools/seed-demo.php`), env-gated demo upstream
