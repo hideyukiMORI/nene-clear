@@ -33,7 +33,13 @@ declare(strict_types=1);
  * WARNING: NeNe Clear handles bank deposits and PII. Shared hosting is NOT
  * recommended for production data (roadmap Phase 3 / #193) — VPS + Docker is
  * the recommended target. This installer surfaces that warning but does not
- * block. DELETE this file immediately after a successful install.
+ * block.
+ *
+ * On a successful install this file self-deletes via @unlink(__FILE__)
+ * (#306 / audit finding (j) — deal/vault/invoice shape). If the unlink fails
+ * (FS permissions), the completion screen falls back to the manual-delete
+ * notice. Either way the re-install guard (var/.installed marker +
+ * adapter-aware database probe) refuses any re-run as defense in depth.
  */
 
 use Nene2\Config\DatabaseConfig;
@@ -299,6 +305,7 @@ function database_already_provisioned(string $envFile): bool
  *   fieldErrors?: array<string, string>,
  *   old?: array<string, string>,
  *   summary?: string,
+ *   selfDeleted?: bool,
  *   blockedMessage?: string
  * } $state
  */
@@ -311,6 +318,7 @@ function render_installer_page(array $state): string
     $fieldErrors = $state['fieldErrors'] ?? [];
     $oldValues = $state['old'] ?? [];
     $summary = $state['summary'] ?? '';
+    $selfDeleted = (bool) ($state['selfDeleted'] ?? false);
     $blockedMessage = $state['blockedMessage'] ?? '';
 
     $old = static fn (string $k, string $default = ''): string => h($oldValues[$k] ?? $default);
@@ -544,19 +552,31 @@ function render_installer_page(array $state): string
             . '<button type="submit" class="btn btn-primary">インストールを実行' . ico('arrow') . '</button></div>'
             . '</form>';
     } else { // complete
+        // Success self-deletes install.php (#306); the completion screen
+        // reflects whether the unlink actually landed. On failure we keep the
+        // original manual-delete instruction and the "delete first" step.
+        if ($selfDeleted) {
+            $secWarn = '<div class="sec-warn"><span class="sw-ico">' . ico('trash') . '</span><div>'
+                . '<div class="sw-t">install.php は自動的に削除されました</div>'
+                . '<div class="sw-d">このページを離れると再表示できません。もしファイルが残っている場合は、FTP またはファイルマネージャから <code>install.php</code> を<b>手動で削除</b>してください。</div>'
+                . '</div></div>';
+            $nextList = '<li><span class="nl-n">1</span><div><b>管理画面にログイン</b><div class="nl-d">先ほど設定した管理者メール・パスワードで。</div></div></li>'
+                . '<li><span class="nl-n">2</span><div><b>銀行口座（CSV 取込プロファイル）を設定</b><div class="nl-d">設定画面で口座と CSV 列の対応を登録すると、入金 CSV の取込と消込を始められます。</div></div></li>';
+        } else {
+            $secWarn = '<div class="sec-warn"><span class="sw-ico">' . ico('trash') . '</span><div>'
+                . '<div class="sw-t">セキュリティ: 必ず install.php を削除してください</div>'
+                . '<div class="sw-d">自動削除に失敗しました（ファイル権限をご確認ください）。放置すると第三者に再セットアップされる恐れがあります。FTP またはファイルマネージャから <code>install.php</code> を<b>削除（またはリネーム）</b>してください。</div>'
+                . '</div></div>';
+            $nextList = '<li><span class="nl-n">1</span><div><b><code>install.php</code> を削除する</b><div class="nl-d">最優先。サーバーからこのファイルを消します。</div></div></li>'
+                . '<li><span class="nl-n">2</span><div><b>管理画面にログイン</b><div class="nl-d">先ほど設定した管理者メール・パスワードで。</div></div></li>'
+                . '<li><span class="nl-n">3</span><div><b>銀行口座（CSV 取込プロファイル）を設定</b><div class="nl-d">設定画面で口座と CSV 列の対応を登録すると、入金 CSV の取込と消込を始められます。</div></div></li>';
+        }
         $body = '<div class="done-mark">' . ico('check') . '</div>'
             . '<div class="done-title">インストール完了</div>'
             . '<div class="done-sub">' . h($summary) . '</div>'
-            . '<div class="sec-warn"><span class="sw-ico">' . ico('trash') . '</span><div>'
-            . '<div class="sw-t">セキュリティ: 必ず install.php を削除してください</div>'
-            . '<div class="sw-d">放置すると第三者に再セットアップされる恐れがあります。FTP またはファイルマネージャから <code>install.php</code> を<b>削除（またはリネーム）</b>してください。</div>'
-            . '</div></div>'
+            . $secWarn
             . '<div class="next-h">次のステップ</div>'
-            . '<ol class="next-list">'
-            . '<li><span class="nl-n">1</span><div><b><code>install.php</code> を削除する</b><div class="nl-d">最優先。サーバーからこのファイルを消します。</div></div></li>'
-            . '<li><span class="nl-n">2</span><div><b>管理画面にログイン</b><div class="nl-d">先ほど設定した管理者メール・パスワードで。</div></div></li>'
-            . '<li><span class="nl-n">3</span><div><b>銀行口座（CSV 取込プロファイル）を設定</b><div class="nl-d">設定画面で口座と CSV 列の対応を登録すると、入金 CSV の取込と消込を始められます。</div></div></li>'
-            . '</ol>'
+            . '<ol class="next-list">' . $nextList . '</ol>'
             . '<a class="btn btn-primary btn-block btn-lg" href="./">' . ico('login') . '管理画面にログイン</a>';
     }
 
@@ -976,7 +996,8 @@ if (PHP_SAPI === 'cli') {
         '06-admin-single' => ['view' => 'admin'],
         '07-admin-multi' => ['view' => 'admin', 'old' => ['tenant_mode' => 'multi']],
         '08-admin-errors' => ['view' => 'admin', 'errors' => ['入力内容に誤りがあります。'], 'fieldErrors' => ['org_name' => '組織名を入力してください。', 'admin_email' => '有効なメールアドレスを入力してください。', 'admin_password' => 'パスワードは 12 文字以上にしてください。'], 'old' => ['org_name' => '', 'org_slug' => 'nene-shoji', 'admin_email' => 'admin@example', 'tenant_mode' => 'single']],
-        '09-complete' => ['view' => 'complete', 'summary' => '組織「株式会社ねね商事」（#1）と管理者 admin@nene-shoji.co.jp を作成しました。'],
+        '09-complete' => ['view' => 'complete', 'selfDeleted' => true, 'summary' => '組織「株式会社ねね商事」（#1）と管理者 admin@nene-shoji.co.jp を作成しました。'],
+        '09-complete-manual' => ['view' => 'complete', 'selfDeleted' => false, 'summary' => '組織「株式会社ねね商事」（#1）と管理者 admin@nene-shoji.co.jp を作成しました。'],
         '10-acquire' => ['view' => 'acquire', 'checks' => $acquireChecks, 'reqErrors' => []],
         '11-acquire-error' => ['view' => 'acquire', 'checks' => $acquireChecks, 'reqErrors' => [], 'errors' => ['SHA-256 が一致しません。公式配布元からダウンロードした ZIP と、そのページに記載のハッシュを確認してください。'], 'old' => ['expected_sha256' => '87ad144743f185bf19cbd15f678a54b65f8343e8dfc97ad93b5840972756bfd4']],
         '12-blocked' => ['view' => 'blocked', 'blockedMessage' => 'インストール済みです。install.php を削除してください。'],
@@ -1006,6 +1027,7 @@ $errors = [];
 /** @var array<string, string> $fieldErrors */
 $fieldErrors = [];
 $success = false;
+$selfDeleted = false;
 $summary = '';
 
 // Entry guards (both phases): completed-marker + provisioned-database probe.
@@ -1263,6 +1285,13 @@ if ($method === 'POST' && $reqErrors === []) {
 
                     $reinstallGuard->markInstalled(gmdate('c'));
                     $success = true;
+
+                    // Self-delete (#306 — deal/vault/invoice shape): a completed
+                    // install must not leave the installer behind. On failure
+                    // (FS permissions) the completion screen falls back to the
+                    // manual-delete notice; the marker (var/.installed) + DB
+                    // probe re-install guard still refuses any re-run.
+                    $selfDeleted = @unlink(__FILE__);
                 } catch (PDOException $e) {
                     $errors[] = 'データベースエラー: ' . $e->getMessage();
                 } catch (\Throwable $e) {
@@ -1303,4 +1332,5 @@ echo render_installer_page([
     'fieldErrors' => $fieldErrors,
     'old' => $oldValues,
     'summary' => $summary,
+    'selfDeleted' => $selfDeleted,
 ]);
