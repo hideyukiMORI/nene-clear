@@ -51,7 +51,7 @@ describe('api request', () => {
     expect(init.body).toBeUndefined()
   })
 
-  it('injects the bearer token when present', async () => {
+  it('injects the bearer token on both headers (Authorization + X-Authorization mirror, #265)', async () => {
     storeToken('jwt-xyz')
     fetchMock.mockResolvedValue(mockResponse({ ok: true, status: 200, json: {} }))
 
@@ -59,6 +59,8 @@ describe('api request', () => {
 
     const init = fetchMock.mock.calls[0][1]
     expect(init.headers.Authorization).toBe('Bearer jwt-xyz')
+    // The proxy strips Authorization in production; the mirror must ride along.
+    expect(init.headers['X-Authorization']).toBe('Bearer jwt-xyz')
   })
 
   it('omits Authorization when no token', async () => {

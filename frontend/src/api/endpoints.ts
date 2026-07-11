@@ -1,10 +1,7 @@
-import { api } from './client'
+import { api, apiFetch } from './client'
 
 export async function downloadCsv(path: string, filename: string): Promise<void> {
-  const token = sessionStorage.getItem('nene_clear_token')
-  const res = await fetch(path, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  })
+  const res = await apiFetch(path)
   if (!res.ok) throw new Error(`Export failed: ${res.status}`)
   const blob = await res.blob()
   const url = URL.createObjectURL(blob)
@@ -77,10 +74,8 @@ export async function importBankCsv(bankAccountId: number, file: File) {
   const form = new FormData()
   form.append('bank_account_id', String(bankAccountId))
   form.append('file', file)
-  const token = sessionStorage.getItem('nene_clear_token')
-  const res = await fetch(`${BASE}/bank-import-batches`, {
+  const res = await apiFetch(`${BASE}/bank-import-batches`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   })
 
@@ -351,10 +346,8 @@ export function cancelManualReceivable(id: number) {
 export async function importManualReceivables(file: File): Promise<ManualReceivableImportResult> {
   const form = new FormData()
   form.append('file', file)
-  const token = sessionStorage.getItem('nene_clear_token')
-  const res = await fetch(`${BASE}/manual-receivable-imports`, {
+  const res = await apiFetch(`${BASE}/manual-receivable-imports`, {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: form,
   })
   const data = await res.json().catch(() => null)
