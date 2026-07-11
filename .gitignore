@@ -19,3 +19,4 @@
 /frontend/apps/*/dist/
 /frontend/dist-e2e/
 /sec-router.php
+/composer.local.json

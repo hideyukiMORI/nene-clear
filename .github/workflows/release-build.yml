@@ -30,13 +30,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Clone NENE2 (sibling path for Composer)
-        run: |
-          if [ ! -f ../NENE2/composer.json ]; then
-            git clone --depth=1 https://github.com/hideyukiMORI/NENE2.git ../NENE2
-          fi
-          test -f ../NENE2/composer.json
-
       - name: Build release ZIP
         run: composer release:zip
 
@@ -47,6 +40,10 @@ jobs:
           unzip -l "$ZIP" | grep -E 'nene-clear/vendor/autoload.php'
           unzip -l "$ZIP" | grep -E 'nene-clear/vendor/robmorgan/phinx/src/Phinx/Migration/Manager.php'
           unzip -l "$ZIP" | grep -E 'nene-clear/vendor/hideyukimori/nene2/src/'
+          # v1.10.0 demo error-page renderer must be vendored (#286)
+          unzip -l "$ZIP" | grep -E 'nene-clear/vendor/hideyukimori/nene2/src/Demo/MinimalDemoErrorPageRenderer.php'
+          # SHA-256 sidecar must accompany the artifact (#286)
+          test -f "$ZIP.sha256"
           unzip -l "$ZIP" | grep -E 'nene-clear/public_html/install.php'
           unzip -l "$ZIP" | grep -E 'nene-clear/public_html/index.php'
           unzip -l "$ZIP" | grep -E 'nene-clear/public_html/assets/index.html'
@@ -59,5 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nene-clear-release
-          path: build/release/nene-clear-*.zip
+          path: |
+            build/release/nene-clear-*.zip
+            build/release/nene-clear-*.zip.sha256
           if-no-files-found: error
