@@ -9,17 +9,17 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from '@/app/App'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import { getLocale } from '@/locales'
-
-document.documentElement.lang = getLocale()
+import { I18nProvider } from '@/contexts/I18nContext'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root element not found')
 
 createRoot(root).render(
   <StrictMode>
-    <ThemeProvider>
-      <App />
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
+    </I18nProvider>
   </StrictMode>,
 )
