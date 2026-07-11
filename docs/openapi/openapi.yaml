@@ -207,7 +207,7 @@ paths:
         '410':
           description: Invitation token expired (`invitation-expired`).
         '422':
-          $ref: '#/components/responses/ValidationError'
+          $ref: '#/components/responses/ValidationFailed'
 
   /admin/organizations:
     get:
