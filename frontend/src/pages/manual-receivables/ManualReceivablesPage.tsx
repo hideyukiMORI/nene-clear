@@ -60,7 +60,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
       </div>
       <div className="field">
         <label>{t('manualReceivables.clientName')}</label>
-        <input className="inp" value={clientName} onChange={e => setClientName(e.target.value)} placeholder="カ）アクメ" />
+        <input className="inp" value={clientName} onChange={e => setClientName(e.target.value)} placeholder={t('manualReceivables.clientNamePlaceholder')} />
       </div>
       <div className="field">
         <label>{t('manualReceivables.total')}</label>
@@ -73,7 +73,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
       </div>
       <div className="field">
         <label>{t('manualReceivables.recipientEmail')}</label>
-        <div className="inp-icon"><Icon name="mail" /><input className="inp" type="email" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} placeholder="ar@example.com" /></div>
+        <div className="inp-icon"><Icon name="mail" /><input className="inp" type="email" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} placeholder={t('manualReceivables.emailPlaceholder')} /></div>
         <span className="hint">{t('manualReceivables.emailHint')}</span>
       </div>
       {error && <Notice variant="bad">{error}</Notice>}

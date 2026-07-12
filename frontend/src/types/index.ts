@@ -168,6 +168,7 @@ export type AuditAction =
   | 'dunning_paused'
   | 'dunning_resumed'
   | 'user_created'
+  | 'invitation_accepted'
   | 'user_updated'
   | 'user_deleted'
   | 'organization_created'

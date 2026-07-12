@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit, downloadCsv, clientCreditsExportPath } from '@/api/endpoints'
 import type { ClientCredit } from '@/types'
-import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
+import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, InfoDot, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
@@ -114,6 +114,10 @@ export default function ClientCreditsPage() {
       <PageHead
         title={t('clientCredit.title')}
         sub={t('clientCredit.subtitle')}
+        info={<InfoDot label={t('glossary.label')} entries={[
+          { term: t('glossary.clientCredit.term'), def: t('glossary.clientCredit.def') },
+          { term: t('glossary.allocate.term'), def: t('glossary.allocate.def') },
+        ]} />}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv(clientCreditsExportPath(creditFilter), 'client-credits.csv')}>
             <Icon name="export" />{t('export.csv')}

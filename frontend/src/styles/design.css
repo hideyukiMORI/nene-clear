@@ -207,6 +207,32 @@ svg.ic-lg{ width:22px; height:22px; }
 .page-head h1{ margin:0; font-size:21px; font-weight:700; letter-spacing:.01em; }
 .page-head p{ margin:4px 0 0; font-size:12.5px; opacity:.72; }
 [data-theme="c"] .page-head h1{ font-size:23px; }
+.page-head-title{ display:inline-flex; align-items:center; gap:8px; }
+
+/* ───────── Glossary InfoDot (annotation tooltip — never renames a term) ───────── */
+.infodot{ position:relative; display:inline-flex; vertical-align:middle; }
+.infodot-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:20px; height:20px; padding:0; border:1px solid var(--line-strong);
+  border-radius:999px; background:var(--surface); color:var(--muted);
+  cursor:help; line-height:0;
+}
+.infodot-btn:hover, .infodot-btn:focus-visible{ color:var(--accent); border-color:var(--accent); }
+.infodot-pop{
+  position:absolute; top:calc(100% + 8px); left:0; z-index:60;
+  width:min(320px, 78vw); padding:12px 14px;
+  background:var(--surface); color:var(--ink);
+  border:1px solid var(--line-strong); border-radius:var(--radius-sm);
+  box-shadow:var(--shadow-pop);
+  opacity:0; visibility:hidden; transform:translateY(-3px);
+  transition:opacity .12s ease, transform .12s ease, visibility .12s;
+  font-weight:400; letter-spacing:normal; text-align:left;
+}
+.infodot:hover .infodot-pop,
+.infodot:focus-within .infodot-pop{ opacity:1; visibility:visible; transform:translateY(0); }
+.glossary{ margin:0; display:grid; gap:10px; }
+.glossary-row dt{ font-size:12.5px; font-weight:700; color:var(--ink); }
+.glossary-row dd{ margin:2px 0 0; font-size:12px; line-height:1.55; color:var(--muted); }
 
 /* ───────── Buttons ───────── */
 .btn{ display:inline-flex; align-items:center; gap:7px; border:1px solid transparent;

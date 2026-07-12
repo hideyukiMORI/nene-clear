@@ -25,6 +25,7 @@ const EVENT_META: Record<AuditAction, StatusMeta> = {
   dunning_paused:              { v: 'warn', labelKey: 'audit.event.dunning_paused' },
   dunning_resumed:             { v: 'ok',   labelKey: 'audit.event.dunning_resumed' },
   user_created:                { v: 'ok',   labelKey: 'audit.event.user_created' },
+  invitation_accepted:         { v: 'ok',   labelKey: 'audit.event.invitation_accepted' },
   user_updated:                { v: 'info', labelKey: 'audit.event.user_updated' },
   user_deleted:                { v: 'bad',  labelKey: 'audit.event.user_deleted' },
   organization_created:        { v: 'ok',   labelKey: 'audit.event.organization_created' },
