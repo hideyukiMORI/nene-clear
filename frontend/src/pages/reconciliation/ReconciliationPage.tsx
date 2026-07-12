@@ -8,7 +8,7 @@ import {
 import type { BankTransaction, Reconciliation } from '@/types'
 import type { AllocationInput, MatchSuggestion } from '@/api/endpoints'
 import { describeApiError } from '@/api/client'
-import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
+import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead, InfoDot, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -263,6 +263,10 @@ export default function ReconciliationPage() {
       <PageHead
         title={t('reconciliation.title')}
         sub={t('reconciliation.subtitle')}
+        info={<InfoDot label={t('glossary.label')} entries={[
+          { term: t('glossary.reconcile.term'), def: t('glossary.reconcile.def') },
+          { term: t('glossary.match.term'), def: t('glossary.match.def') },
+        ]} />}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv(reconciliationsExportPath(reconFilter), 'reconciliations.csv')}>
             <Icon name="export" />{t('export.csv')}
