@@ -358,7 +358,7 @@ export const ja = {
   'manualReceivables.import': 'CSV取込',
   'manualReceivables.importSub': '売掛をCSVで一括登録します。',
   'manualReceivables.importColumns': 'CSVのヘッダー列: reference_number, client_name, total_cents（任意: recipient_email, due_at, issued_at, currency）。freee・マネーフォワード・弥生・Misoca 等のよくある日本語ヘッダー（請求書番号・取引先名・金額・期日 など）も自動認識し、Shift-JIS や ¥・カンマ付きの金額にも対応します。重複する請求書番号はスキップされます。',
-  'manualReceivables.importResult': '作成 {created} 件 / スキップ {skipped} 件 / エラー {errors} 件',
+  'manualReceivables.importResult': '作成 {{created}} 件 / スキップ {{skipped}} 件 / エラー {{errors}} 件',
   'manualReceivables.csvRow': 'CSV行',
   'manualReceivables.referenceNumber': '請求書番号',
   'manualReceivables.referenceHint': '他ツールで発行した請求書の番号（消込の参照キー）。',

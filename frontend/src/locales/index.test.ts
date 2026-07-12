@@ -16,6 +16,15 @@ describe('translate (pure)', () => {
     )
   })
 
+  it('interpolates the manual-receivable import result banner (regression #322)', () => {
+    expect(translate('ja', 'manualReceivables.importResult', { created: 2, skipped: 1, errors: 0 })).toBe(
+      '作成 2 件 / スキップ 1 件 / エラー 0 件',
+    )
+    expect(translate('en', 'manualReceivables.importResult', { created: 2, skipped: 1, errors: 0 })).toBe(
+      'Created 2 / skipped 1 / errors 0',
+    )
+  })
+
   it('falls back to the authoritative ja catalog and never returns the raw key', () => {
     expect(translate('en', 'nav.dashboard')).not.toBe('nav.dashboard')
   })
