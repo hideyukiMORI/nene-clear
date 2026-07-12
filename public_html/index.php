@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Nene2\Http\ResponseEmitter;
 use NeneClear\Http\AuthorizationHeaderFallback;
+use NeneClear\Http\DemoAnalyticsInjection;
 use NeneClear\Http\JsonRequestBody;
 use NeneClear\Http\RuntimeBootstrap;
 use NeneClear\Http\SpaFallback;
@@ -40,8 +41,20 @@ $request = JsonRequestBody::normalize($request);
 // SPA fallback: browser navigation requests receive the built shell.
 $spaShell = SpaFallback::shellPath($request, __DIR__);
 if ($spaShell !== null) {
+    // Demo-only, env-gated cookieless analytics (#324). Injection happens here,
+    // server-side, so the beacon is never baked into the committed frontend
+    // build or the release ZIP: when DEMO_ANALYTICS_ENDPOINT is unset (the OSS
+    // default) the shell is served byte-identically with no analytics CSP.
+    $analytics = DemoAnalyticsInjection::fromEnv($_ENV);
+    $html = (string) file_get_contents($spaShell);
+
     header('Content-Type: text/html; charset=utf-8');
-    readfile($spaShell);
+    $csp = $analytics->contentSecurityPolicy();
+    if ($csp !== null) {
+        header('Content-Security-Policy: ' . $csp);
+    }
+
+    echo $analytics->injectHead($html);
     exit;
 }
 

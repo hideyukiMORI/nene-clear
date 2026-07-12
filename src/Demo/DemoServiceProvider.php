@@ -20,6 +20,7 @@ use NeneClear\User\CreateUserUseCaseInterface;
 use NeneClear\User\UserRepositoryInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Container\ContainerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Wires the disposable-demo domain as a `Nene2\Demo` consumer (#275): the
@@ -124,8 +125,15 @@ final readonly class DemoServiceProvider implements ServiceProviderInterface
             )
             ->set(
                 DemoRouteRegistrar::class,
+                // Wrap the framework handler in the entry-logging decorator (#324):
+                // Referer + UTM are captured server-side before the seat-page
+                // landing drops them. The registrar accepts any PSR-15 handler
+                // (ADR 0018), so no auth/orchestration code is touched.
                 static fn (ContainerInterface $c): DemoRouteRegistrar => new DemoRouteRegistrar(
-                    ServiceResolver::get($c, StartDisposableDemoHandler::class),
+                    new DemoEntryLoggingHandler(
+                        ServiceResolver::get($c, StartDisposableDemoHandler::class),
+                        ServiceResolver::get($c, LoggerInterface::class),
+                    ),
                 ),
             );
     }
