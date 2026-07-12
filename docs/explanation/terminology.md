@@ -211,6 +211,18 @@ pure calendar dates use `_date` (documented exception: `value_date`); booleans
 use `is_` / `has_`; foreign keys are `{singular_entity}_id`. See
 `naming-conventions.md` for the full pattern set.
 
+### Demo analytics (#324)
+
+Env-gated, demo-only cookieless analytics. Not a domain entity — an env key
+plus the fixed context keys of the server-side demo-entry log line. UTM keys use
+the standard Google Analytics spelling (external contract; do not rename).
+
+| Term | Canonical | Never |
+| --- | --- | --- |
+| Analytics endpoint env var (bare https origin) | `DEMO_ANALYTICS_ENDPOINT` | `ANALYTICS_URL`, `GOATCOUNTER_URL`, `DEMO_ANALYTICS_SITE` |
+| Demo-entry log message | `Demo entry recorded.` | `demo_entry`, `demo hit` |
+| Entry log context keys | `template`, `referer`, `utm_source`, `utm_medium`, `utm_campaign` | `referrer`, `utm_src`, `campaign`, `source` |
+
 ---
 
 ## 4. Problem Details type slugs (kebab-case)
