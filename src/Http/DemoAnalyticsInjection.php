@@ -64,8 +64,11 @@ final readonly class DemoAnalyticsInjection
     }
 
     /**
-     * The demo-only CSP for the shell: the framework-proven `default-src 'self'`
-     * baseline (the sibling SPA runs under it) plus the analytics origin on the
+     * The demo-only CSP for the shell: **invoice's production-proven BASE_CSP**
+     * (nene-invoice `SpaShell::BASE_CSP`, its #659 — the identical React/Vite
+     * stack ships under it, so `style-src 'self' 'unsafe-inline'` and
+     * `font-src 'self' data:` keep inline styles and self-hosted @fontsource
+     * fonts working) with the analytics origin added to exactly the three
      * directives GoatCounter needs — `count.js` (script), the hit beacon
      * (`navigator.sendBeacon` → connect; `<img>` pixel fallback → img). Returns
      * null when disabled so the OSS shell keeps its current header set unchanged.
@@ -80,9 +83,11 @@ final readonly class DemoAnalyticsInjection
 
         return "default-src 'self'; "
             . "script-src 'self' {$origin}; "
-            . "connect-src 'self' {$origin}; "
+            . "style-src 'self' 'unsafe-inline'; "
             . "img-src 'self' data: {$origin}; "
-            . "base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+            . "font-src 'self' data:; "
+            . "connect-src 'self' {$origin}; "
+            . "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'";
     }
 
     /**

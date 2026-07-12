@@ -46,17 +46,23 @@ final class DemoAnalyticsInjectionTest extends TestCase
         self::assertStringContainsString('<body></body>', $out);
     }
 
-    public function test_enabled_csp_allows_only_self_and_the_endpoint_origin(): void
+    public function test_enabled_csp_is_invoice_base_csp_plus_the_endpoint_origin(): void
     {
         $csp = DemoAnalyticsInjection::fromEnv(['DEMO_ANALYTICS_ENDPOINT' => 'https://stats.ayane.co.jp'])
             ->contentSecurityPolicy();
 
-        self::assertNotNull($csp);
-        self::assertStringContainsString("default-src 'self'", $csp);
-        self::assertStringContainsString("script-src 'self' https://stats.ayane.co.jp", $csp);
-        self::assertStringContainsString("connect-src 'self' https://stats.ayane.co.jp", $csp);
-        self::assertStringContainsString("img-src 'self' data: https://stats.ayane.co.jp", $csp);
-        self::assertStringContainsString("frame-ancestors 'none'", $csp);
+        // Exactly invoice's production-proven BASE_CSP (nene-invoice
+        // SpaShell::BASE_CSP, #659) with the origin added to script/img/connect.
+        self::assertSame(
+            "default-src 'self'; "
+            . "script-src 'self' https://stats.ayane.co.jp; "
+            . "style-src 'self' 'unsafe-inline'; "
+            . "img-src 'self' data: https://stats.ayane.co.jp; "
+            . "font-src 'self' data:; "
+            . "connect-src 'self' https://stats.ayane.co.jp; "
+            . "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
+            $csp,
+        );
     }
 
     /**
