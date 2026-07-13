@@ -20,7 +20,6 @@ use NeneClear\User\CreateUserUseCaseInterface;
 use NeneClear\User\UserRepositoryInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Psr\Container\ContainerInterface;
-use Psr\Log\LoggerInterface;
 
 /**
  * Wires the disposable-demo domain as a `Nene2\Demo` consumer (#275): the
@@ -129,10 +128,16 @@ final readonly class DemoServiceProvider implements ServiceProviderInterface
                 // Referer + UTM are captured server-side before the seat-page
                 // landing drops them. The registrar accepts any PSR-15 handler
                 // (ADR 0018), so no auth/orchestration code is touched.
+                //
+                // The entry log uses its own file-backed logger (#330), not the
+                // app's shared LoggerInterface: on Tier A hosting the shared
+                // logger's php://stderr lands in the HETEML control-panel
+                // error_log, which isn't SSH-readable — unsuited to precise UTM
+                // analysis. See DemoEntryLoggerFactory.
                 static fn (ContainerInterface $c): DemoRouteRegistrar => new DemoRouteRegistrar(
                     new DemoEntryLoggingHandler(
                         ServiceResolver::get($c, StartDisposableDemoHandler::class),
-                        ServiceResolver::get($c, LoggerInterface::class),
+                        (new DemoEntryLoggerFactory())->create(dirname(__DIR__, 2) . '/var'),
                     ),
                 ),
             );
