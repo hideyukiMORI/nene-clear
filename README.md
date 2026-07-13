@@ -57,6 +57,17 @@ From a disposable demo organization. Japanese UI shown — the admin UI is bilin
 - **AI-readable** — OpenAPI + MCP; human confirms, AI proposes
 - **Optional upstream: NeNe Invoice** — when connected, invoice/payment truth via HTTP API (not a shared DB); without it, Clear reconciles and duns directly-entered / CSV-imported receivables ([ADR 0014](./docs/adr/0014-accept-manual-receivables.md))
 
+## Non-goals
+
+- Not quote, invoice, or qualified-invoice PDF (→ [NeNe Invoice](https://github.com/hideyukiMORI/nene-invoice))
+- Not upper compatible with or a replacement for `nene-invoice`
+- Not full accounting / general ledger
+- Not a debt collection agency
+- Not embedded inside NeNe Invoice or Records
+- Not a shared database with Invoice
+
+Full list: [`docs/explanation/product-vision.md#non-goals`](./docs/explanation/product-vision.md#non-goals)
+
 ## Documentation
 
 | Topic | Document |
@@ -74,23 +85,24 @@ From a disposable demo organization. Japanese UI shown — the admin UI is bilin
 
 ## Status
 
-**Phase 1 (Reconciliation API) and Phase 2 (Admin UI + Dunning) complete.**
+| Phase | Scope | Status |
+| --- | --- | --- |
+| 0 | Governance + product docs | ✅ |
+| 1 | Reconciliation API — multi-tenant JWT/RBAC, bank CSV import, reconciliation (propose / confirm / reverse), client credit, audit trail | ✅ |
+| 2 | Admin UI (React, ja/en) + dunning | ✅ |
+| Sec | Security assessment — 2-round multi-tenant pentest, findings incl. one critical privilege escalation fixed | ✅ |
+| 3 | Distribution — managed / install-service on VPS + Docker; Tier A install possible via web installer but not recommended for this data | 🔲 Next |
+| 4 | Ecosystem — MCP tools, accounting-software CSV export | 🔲 |
 
-- Multi-tenant JWT/RBAC, bank CSV import, reconciliation (propose / confirm /
-  reverse), client credit, dunning, immutable audit trail — all live.
-- React + TypeScript admin UI (`frontend/`), Japanese + English.
-- Invoice upstream HTTP client + contract tests (activate by setting
-  `NENE_INVOICE_API_BASE_URL` / `NENE_INVOICE_BEARER_TOKEN`).
-- Tests: 336 backend (PHPUnit, 6 skipped; PHPStan level 8), 46 frontend (Vitest),
-  43 browser E2E (Playwright). CI runs all three on every push/PR.
-- Login throttling, optional **TOTP two-factor auth** (per-user enrolment +
-  recovery codes; API-complete, enrolment UI in progress), and
-  **encryption-at-rest** for the bank account number (libsodium, opt-in key);
-  security assessment in
-  [`docs/security/assessment-2026-05.md`](./docs/security/assessment-2026-05.md).
+Key shipped features:
 
-Next: Phase 3 (distribution — managed / install-service on VPS + Docker) and
-Phase 4 (MCP tools, accounting-software CSV export). See [`docs/roadmap.md`](./docs/roadmap.md).
+- **Invoice upstream** HTTP client + contract tests — activate by setting `NENE_INVOICE_API_BASE_URL` / `NENE_INVOICE_BEARER_TOKEN`; a live connection against a real Invoice instance has not been exercised yet
+- **Adoption Readiness milestone** (nearly complete) — UI polish, bank-account-number masking, standalone-receivables discoverability, dunning hardening, and **encryption-at-rest** for the bank account number (libsodium); the Tier A shared-hosting recommendation was retracted in favor of VPS + Docker
+- **Login throttling** and optional **TOTP two-factor auth** — backend complete (enrolment + login challenge); a frontend enrolment UI and a break-glass CLI for lockout recovery are the remaining slice
+- Backend (PHPUnit + PHPStan level 8), frontend (Vitest), and browser E2E (Playwright) suites all run in CI on every push/PR; a handful of Invoice-upstream contract tests auto-activate once the env vars above are set
+- Security assessment: [`docs/security/assessment-2026-05.md`](./docs/security/assessment-2026-05.md)
+
+In progress / designed: MFA frontend + break-glass CLI, real Invoice-upstream activation, CSV export tax-advisor sign-off, Phase 4 MCP tools. Details and sequencing: [`docs/roadmap.md`](./docs/roadmap.md) and [`docs/todo/current.md`](./docs/todo/current.md).
 
 **Billing documents (見積・請求・入金):** [`nene-invoice`](https://github.com/hideyukiMORI/nene-invoice) — not this repo.
 
