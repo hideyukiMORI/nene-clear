@@ -1,3 +1,4 @@
+@layer legacy {
 /* =========================================================================
    NeNe Clear — 入金消込・督促管理
    Design system + 3 directions (A 台帳 / B パネル / C ヘッダー帯)
@@ -957,4 +958,5 @@ tr.is-cursor, .is-cursor { background: var(--navy-100); box-shadow: inset 3px 0 
   .help-toc{ display:none; }
   .terms, .opt3, .kgrid, .deflist .row{ grid-template-columns:1fr; }
   .deflist .row{ gap:4px; }
+}
 }
