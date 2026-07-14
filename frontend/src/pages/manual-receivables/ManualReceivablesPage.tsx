@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listManualReceivables, createManualReceivable, cancelManualReceivable, importManualReceivables,
 } from '@/api/endpoints'
+import { describeApiError } from '@/api/client'
 import type { ManualReceivable, ManualReceivableImportResult } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
@@ -91,7 +92,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   const mut = useMutation({
     mutationFn: () => importManualReceivables(file as File),
     onSuccess: (r) => { setResult(r); void qc.invalidateQueries({ queryKey: ['manual-receivables'] }) },
-    onError: (e: Error) => setError(e.message),
+    onError: (e: Error) => setError(describeApiError(e)),
   })
 
   return (

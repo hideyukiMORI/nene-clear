@@ -1,6 +1,11 @@
+import {
+  createNene2Transport,
+  createSessionTokenStore,
+  isNene2ClientError,
+  isValidationProblemDetails,
+  type Nene2ClientError,
+} from '@hideyukimori/nene2-client'
 import type { ProblemDetails } from '@/types'
-
-const STORAGE_KEY = 'nene_clear_token'
 
 export class ApiError extends Error {
   constructor(
@@ -27,37 +32,24 @@ export function describeApiError(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-function getToken(): string | null {
-  return sessionStorage.getItem(STORAGE_KEY)
-}
-
-// Reactive auth store: the token lives in sessionStorage (so it survives a
-// reload), but mutations also notify subscribers. The auth shell (RequireAuth)
-// subscribes via useSyncExternalStore, so storing a token reveals the app and
-// clearing it (logout or an expired 401) shows the login screen in place —
-// without a hard navigation that would blank the page and lose the route.
-const authListeners = new Set<() => void>()
-
-function notifyAuthChange(): void {
-  for (const listener of authListeners) listener()
-}
+/**
+ * Fleet-standard bearer token store (`@hideyukimori/nene2-client`,
+ * `createSessionTokenStore`): sessionStorage, same key as before this
+ * migration (`nene_clear_token`) so an in-flight session survives a deploy.
+ * The transport below is handed this same instance, so there is exactly one
+ * store — one source of truth for get/set/clear.
+ */
+export const tokenStore = createSessionTokenStore({ key: 'nene_clear_token' })
 
 /** Subscribe to token changes (for useSyncExternalStore in the auth shell). */
-export function subscribeAuthChange(listener: () => void): () => void {
-  authListeners.add(listener)
-  return () => {
-    authListeners.delete(listener)
-  }
-}
+export const subscribeAuthChange = tokenStore.subscribe
 
 export function storeToken(token: string): void {
-  sessionStorage.setItem(STORAGE_KEY, token)
-  notifyAuthChange()
+  tokenStore.setToken(token)
 }
 
 export function clearToken(): void {
-  sessionStorage.removeItem(STORAGE_KEY)
-  notifyAuthChange()
+  tokenStore.clearToken()
 }
 
 /**
@@ -83,7 +75,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
  * useSyncExternalStore snapshot (it never mutates state).
  */
 export function isAuthenticated(): boolean {
-  const token = getToken()
+  const token = tokenStore.getToken()
   if (token === null) return false
 
   const claims = decodeJwtPayload(token)
@@ -99,7 +91,7 @@ export function isAuthenticated(): boolean {
  * stub token).
  */
 export function getUserRole(): string | null {
-  const token = getToken()
+  const token = tokenStore.getToken()
   if (token === null) return null
 
   const claims = decodeJwtPayload(token)
@@ -112,86 +104,90 @@ export function isAdmin(): boolean {
   return role === 'admin' || role === 'superadmin'
 }
 
-// The token goes to both headers: some shared-hosting front proxies (Tier A;
-// observed on HETEML) strip the standard `Authorization` header before it
-// reaches PHP, so the backend falls back to the `X-Authorization` mirror when
-// the standard header is missing (#265). Every request MUST carry the mirror —
-// this helper is the single place that applies it, so no call site can drop it.
-function withAuthHeaders(headers: Record<string, string> = {}): Record<string, string> {
-  const token = getToken()
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-    headers['X-Authorization'] = `Bearer ${token}`
-  }
-  return headers
-}
-
 /**
- * `fetch()` with the auth-header mirror applied, for the few calls that can't go
- * through `request()` — multipart uploads and binary downloads. Callers own the
- * response (blob / multipart error parsing); the mirror is guaranteed here so it
- * can't be forgotten (see #265, #312). Content-Type is intentionally left unset
- * so the browser can add the multipart boundary for FormData bodies.
+ * Fleet-standard transport (`@hideyukimori/nene2-client`, issue #102): every
+ * request mirrors the bearer token onto `Authorization` *and*
+ * `X-Authorization` so shared-hosting proxies that strip the standard header
+ * still authenticate (#265, #312) — structurally, not via a hand-maintained
+ * helper that a new call site could forget. `api` below is a thin adapter
+ * that keeps this product's existing surface (`get/post/put/delete`) verbatim
+ * so call sites did not need to change; `upload`/`getBlob` replace the old
+ * `apiFetch` multipart/binary escape hatch — the mirror is structural now, so
+ * a separate escape hatch is no longer needed (see
+ * nene2-js/docs-site/howto/migrate-product-client.md).
+ *
+ * A 401 on a request that carried a token clears the token store
+ * automatically (default `clearTokenOnStatuses: [401]`); the auth shell
+ * (`RequireAuth`) reacts via `subscribeAuthChange`/`isAuthenticated` and shows
+ * the login screen in place — no hard redirect. The login endpoint's own 401
+ * (wrong credentials) never carries a token, so it is left alone and surfaces
+ * as a normal `ApiError` to the login form, same as before.
  */
-export function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const headers = withAuthHeaders({ ...(init.headers as Record<string, string> | undefined) })
-  return fetch(path, { ...init, headers })
+const transport = createNene2Transport({
+  baseUrl: '',
+  tokenStore,
+  // Look up `fetch` at call time (not bind it once at module load): tests
+  // patch `globalThis.fetch` via `vi.stubGlobal`, which can run after this
+  // module has already been imported (nene2-js #105).
+  fetch: (input, init) => globalThis.fetch(input, init),
+})
+
+/** Maps the package's `Nene2ClientError` to this product's `ApiError` (unchanged shape for callers). */
+function toApiError(error: Nene2ClientError): ApiError {
+  const problem = error.problem
+  if (problem === undefined) {
+    return new ApiError(error.status, {
+      type: 'unknown',
+      title: 'Unknown error',
+      status: error.status,
+    })
+  }
+
+  const mapped: ProblemDetails = {
+    type: problem.type,
+    title: problem.title,
+    status: problem.status,
+  }
+  if (problem.detail !== undefined) {
+    mapped.detail = problem.detail
+  }
+  if (isValidationProblemDetails(problem)) {
+    mapped.errors = problem.errors
+  }
+  return new ApiError(error.status, mapped)
 }
 
-async function request<T>(
-  method: string,
-  path: string,
-  body?: unknown,
-  signal?: AbortSignal,
-): Promise<T> {
-  const headers = withAuthHeaders({ Accept: 'application/json' })
-
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json'
-  }
-
-  const res = await fetch(path, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-    signal,
-  })
-
-  // A 401 on a normal call means the session expired → clear the token. The auth
-  // shell reacts to that and shows the login screen in place, at the current URL,
-  // so re-logging in returns the user to the same screen. The login endpoint is
-  // excluded: its 401 is "wrong credentials" and must surface to the form.
-  if (res.status === 401 && !path.includes('/auth/login')) {
-    clearToken()
-    throw new ApiError(401, { type: 'unauthorized', title: 'Unauthorized', status: 401 })
-  }
-
-  if (!res.ok) {
-    let problem: ProblemDetails
-    try {
-      problem = (await res.json()) as ProblemDetails
-    } catch {
-      problem = { type: 'unknown', title: 'Unknown error', status: res.status }
+async function unwrap<T>(promise: Promise<T>): Promise<T> {
+  try {
+    return await promise
+  } catch (error) {
+    if (isNene2ClientError(error)) {
+      throw toApiError(error)
     }
-    throw new ApiError(res.status, problem)
+    throw error
   }
-
-  if (res.status === 204) return undefined as T
-
-  return res.json() as Promise<T>
 }
 
 export const api = {
   get<T>(path: string, signal?: AbortSignal): Promise<T> {
-    return request<T>('GET', path, undefined, signal)
+    return unwrap(transport.get<T>(path, signal !== undefined ? { signal } : {}))
   },
   post<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>('POST', path, body)
+    return unwrap(transport.post<T>(path, body))
   },
   put<T>(path: string, body?: unknown): Promise<T> {
-    return request<T>('PUT', path, body)
+    return unwrap(transport.put<T>(path, body))
   },
   delete(path: string): Promise<void> {
-    return request<void>('DELETE', path)
+    return unwrap(transport.delete<void>(path))
+  },
+  /** multipart/form-data upload; `Content-Type` (with boundary) is left to the browser. */
+  upload<T>(path: string, formData: FormData): Promise<T> {
+    return unwrap(transport.upload<T>(path, formData))
+  },
+  /** Authenticated binary download (CSV export). */
+  async getBlob(path: string): Promise<Blob> {
+    const { blob } = await unwrap(transport.getBlob(path))
+    return blob
   },
 }
