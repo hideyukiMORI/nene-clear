@@ -1,2 +1,12 @@
+/*
+ * Cascade layer order (W1 — @layer legacy isolation, 規約 05 §8/§9 · M-2).
+ * `legacy` holds the quarantined hand-written design system (styles/design.css).
+ * It is declared ABOVE Tailwind's `base` (preflight reset) so the legacy design
+ * system keeps winning over the reset — this is what makes the isolation
+ * non-regressing versus the previous unlayered design.css — while sitting BELOW
+ * `components`/`utilities` so future properly-layered CSS can override it.
+ * @layer statements are permitted before @import (CSS Cascade Layers spec).
+ */
+@layer theme, base, legacy, components, utilities;
 @import "tailwindcss";
 @import "./styles/design.css";
