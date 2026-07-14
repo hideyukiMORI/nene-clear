@@ -17,15 +17,16 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      // All network calls must go through the shared API client, which applies
-      // the Authorization + X-Authorization mirror (#265). A raw fetch() drops
+      // All network calls must go through the shared API client (fleet
+      // transport, `@hideyukimori/nene2-client`), which applies the
+      // Authorization + X-Authorization mirror (#265). A raw fetch() drops
       // the mirror and 401s behind the shared-hosting proxy (#312).
       'no-restricted-syntax': [
         'error',
         {
           selector: "CallExpression[callee.name='fetch']",
           message:
-            'Do not call fetch() directly — use `api` or `apiFetch` from src/api/client.ts so the Authorization/X-Authorization mirror is sent (#265, #312).',
+            'Do not call fetch() directly — use `api` from src/api/client.ts so the Authorization/X-Authorization mirror is sent (#265, #312).',
         },
       ],
     },

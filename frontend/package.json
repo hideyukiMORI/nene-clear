@@ -20,6 +20,7 @@
     "check": "npm run type-check && npm run lint && npm run test:run && npm run knip"
   },
   "dependencies": {
+    "@hideyukimori/nene2-client": "^1.1.0",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/noto-sans-jp": "^5.2.9",
     "@tanstack/react-query": "^5.90.11",

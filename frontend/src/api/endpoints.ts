@@ -1,9 +1,7 @@
-import { api, apiFetch } from './client'
+import { api } from './client'
 
 export async function downloadCsv(path: string, filename: string): Promise<void> {
-  const res = await apiFetch(path)
-  if (!res.ok) throw new Error(`Export failed: ${res.status}`)
-  const blob = await res.blob()
+  const blob = await api.getBlob(path)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -70,32 +68,13 @@ export function listBankImportBatches(params: BankImportBatchQuery, signal?: Abo
   return api.get<ListEnvelope<BankImportBatch>>(`${BASE}/bank-import-batches?${q}`, signal)
 }
 
-export async function importBankCsv(bankAccountId: number, file: File) {
+export function importBankCsv(bankAccountId: number, file: File) {
   const form = new FormData()
   form.append('bank_account_id', String(bankAccountId))
   form.append('file', file)
-  const res = await apiFetch(`${BASE}/bank-import-batches`, {
-    method: 'POST',
-    body: form,
-  })
-
-  const data = await res.json().catch(() => null)
-
-  // Multipart upload bypasses the JSON api client, so status handling lives here:
-  // a non-2xx response must surface as an error, not be treated as a successful import.
-  if (!res.ok) {
-    const detail =
-      data && typeof data === 'object' && 'detail' in data
-        ? String((data as { detail?: unknown }).detail ?? '')
-        : ''
-    const title =
-      data && typeof data === 'object' && 'title' in data
-        ? String((data as { title?: unknown }).title ?? '')
-        : `Import failed (${res.status})`
-    throw new Error(detail || title)
-  }
-
-  return data
+  // Non-2xx responses throw ApiError (transport-mapped, see src/api/client.ts);
+  // callers should read the message via describeApiError, not err.message.
+  return api.upload<{ row_count?: number }>(`${BASE}/bank-import-batches`, form)
 }
 
 export function reverseBankImportBatch(batchId: number, reversalReason: string) {
@@ -343,20 +322,12 @@ export function cancelManualReceivable(id: number) {
   return api.post<ManualReceivable>(`${BASE}/manual-receivables/${id}/cancel`)
 }
 
-export async function importManualReceivables(file: File): Promise<ManualReceivableImportResult> {
+export function importManualReceivables(file: File): Promise<ManualReceivableImportResult> {
   const form = new FormData()
   form.append('file', file)
-  const res = await apiFetch(`${BASE}/manual-receivable-imports`, {
-    method: 'POST',
-    body: form,
-  })
-  const data = await res.json().catch(() => null)
-  if (!res.ok) {
-    const detail = data && typeof data === 'object' && 'detail' in data ? String((data as { detail?: unknown }).detail ?? '') : ''
-    const title = data && typeof data === 'object' && 'title' in data ? String((data as { title?: unknown }).title ?? '') : `Import failed (${res.status})`
-    throw new Error(detail || title)
-  }
-  return data as ManualReceivableImportResult
+  // Non-2xx responses throw ApiError (transport-mapped, see src/api/client.ts);
+  // callers should read the message via describeApiError, not err.message.
+  return api.upload<ManualReceivableImportResult>(`${BASE}/manual-receivable-imports`, form)
 }
 
 // --- Upstream invoices ---
