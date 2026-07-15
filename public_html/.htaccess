@@ -3,7 +3,10 @@ RewriteEngine On
 # Some CGI/FastCGI shared hosts have Apache itself drop the Authorization
 # header; re-deliver it as an env var so PHP still sees it. Hosts whose *front
 # proxy* strips the header before Apache (e.g. HETEML) are covered separately
-# by the SPA's X-Authorization mirror + AuthorizationHeaderFallback (#265).
+# by the SPA's X-Authorization mirror + the NENE2 framework's opt-in
+# AuthorizationHeaderFallbackMiddleware (NENE2 #1558 / ADR 0019, enabled via
+# ApplicationFactory's enableAuthorizationHeaderFallback; formerly this repo's
+# own AuthorizationHeaderFallback, #265).
 RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
 # Front controller: real files (SPA assets, install.php) are served directly;
