@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1f53468dcbf44c3207cec19a388bd6df",
+    "content-hash": "ba9f9d5f2bb662418837882999b65806",
     "packages": [
         {
             "name": "cakephp/chronos",
@@ -538,16 +538,16 @@
         },
         {
             "name": "hideyukimori/nene2",
-            "version": "v1.10.0",
+            "version": "v1.11.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/hideyukiMORI/NENE2.git",
-                "reference": "c5c1bb67819145099155bd969f3319294bca49d4"
+                "reference": "3556f357d5a41056d2d2ed2b300f1f2712623a06"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/hideyukiMORI/NENE2/zipball/c5c1bb67819145099155bd969f3319294bca49d4",
-                "reference": "c5c1bb67819145099155bd969f3319294bca49d4",
+                "url": "https://api.github.com/repos/hideyukiMORI/NENE2/zipball/3556f357d5a41056d2d2ed2b300f1f2712623a06",
+                "reference": "3556f357d5a41056d2d2ed2b300f1f2712623a06",
                 "shasum": ""
             },
             "require": {
@@ -585,9 +585,9 @@
             "description": "PHP micro-framework: JSON APIs first, minimal server HTML, easy React/SPA integration, structure friendly to AI tooling.",
             "support": {
                 "issues": "https://github.com/hideyukiMORI/NENE2/issues",
-                "source": "https://github.com/hideyukiMORI/NENE2/tree/v1.10.0"
+                "source": "https://github.com/hideyukiMORI/NENE2/tree/v1.11.0"
             },
-            "time": "2026-07-10T07:35:29+00:00"
+            "time": "2026-07-14T18:51:43+00:00"
         },
         {
             "name": "league/container",

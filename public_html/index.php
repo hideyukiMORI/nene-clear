@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Nene2\Http\ResponseEmitter;
-use NeneClear\Http\AuthorizationHeaderFallback;
 use NeneClear\Http\DemoAnalyticsInjection;
 use NeneClear\Http\JsonRequestBody;
 use NeneClear\Http\RuntimeBootstrap;
@@ -30,10 +29,6 @@ $application = RuntimeBootstrap::application(dirname(__DIR__));
 
 $psr17 = new Psr17Factory();
 $request = (new ServerRequestCreator($psr17, $psr17, $psr17, $psr17))->fromGlobals();
-
-// Shared-hosting front proxies (HETEML) strip the Authorization header; adopt
-// the SPA's X-Authorization mirror when the standard header is absent (#265).
-$request = AuthorizationHeaderFallback::apply($request);
 
 // Fill parsedBody for application/json requests (the SPA's default; #262).
 $request = JsonRequestBody::normalize($request);
