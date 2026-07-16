@@ -88,7 +88,7 @@ Stored and transmitted **exactly** as written (lowercase snake_case).
 | `client_credit.status` | `open`, `voided` |
 | `manual_receivable.status` | `open`, `partially_paid`, `paid`, `cancelled` (ADR 0014; Clear-computed) |
 | Receivable `source` (allocations, dunning, credits, receivable reads) | `invoice_upstream`, `manual` (ADR 0014) |
-| `dunning_notice.status` | `sent`, `failed` |
+| `bank_account.account_type` | `ordinary`, `current` (普通 / 当座) |
 | `user.role` | `superadmin`, `admin`, `member`, `viewer` (ADR 0006) |
 | `user.status` | `active`, `invited` |
 | Capability (enum) | `manage_organizations`, `manage_users`, `manage_clear_settings`, `manage_reconciliation`, `view_reconciliation`, `send_dunning` (ADR 0006) |
