@@ -46,9 +46,14 @@ Do **not** change these back to defaults (8080, 1025, 8025, 3306).
 | Terminology registry (binding) | `docs/explanation/terminology.md` |
 | Operator guide / system overview | `docs/explanation/operator-guide.md` |
 | TODO | `docs/todo/current.md` |
-| Daily work journal | `docs/journal/<session-start-date>.md` |
+| Daily report | `docs/daily/<YYYY-MM-DD>.md` (fleet convention) |
 
-Daily journals live in `docs/journal/`, one file per **session start date**
-(`YYYY-MM-DD.md`); append to the existing file if one already exists for that
-date rather than creating a second. English per ADR 0008 (a Japanese summary may
-follow in the reply, not the file).
+Daily reports follow the **fleet-wide convention**
+(`_work/daily-report-convention.md`, confirmed 2026-07-17): one file per calendar
+day under `docs/daily/`, **Japanese** (technical terms may stay English), no
+frontmatter, `# YYYY-MM-DD` + lead paragraph + `## topic` bullets with PR/Issue
+numbers; measured vs. hearsay numbers must be marked. Same-day extra sessions
+append under `## セッション2`. Index in `docs/daily/README.md`. This supersedes
+the earlier `docs/journal/` + English rule (that was set before the fleet
+convention was ratified). Daily reports are per-repo work; cross-repo/strategy
+notes go to `_work/` per the container CLAUDE.md.
