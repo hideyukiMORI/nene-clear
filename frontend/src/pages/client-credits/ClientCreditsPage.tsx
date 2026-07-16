@@ -7,7 +7,7 @@ import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
-import { yen, formatDate } from '@/utils/format'
+import { yen, formatDate } from '@/shared/lib/format'
 
 function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => void }) {
   const { t } = useTranslation()

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getCurrentUser } from '@/api/endpoints'
-import { fiscalYearStart, todayIso } from '@/utils/fiscal'
+import { fiscalYearStart, todayIso } from '@/shared/lib/fiscal'
 
 /**
  * Resolves the org's current fiscal year as a default date range for list

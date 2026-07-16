@@ -6,7 +6,7 @@ import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, Filte
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useRowCursor } from '@/components/keyboard'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime } from '@/shared/lib/format'
 
 const PAGE = 20
 
