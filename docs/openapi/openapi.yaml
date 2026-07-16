@@ -1311,6 +1311,12 @@ paths:
                 invoice_id:
                   type: integer
                   format: int64
+                stage:
+                  type: string
+                  enum: [initial, reminder, final]
+                  description: >
+                    Dunning escalation stage (terminology registry §stage).
+                    Optional; defaults to `initial` when omitted.
       responses:
         '201':
           description: Notice sent; record created.
@@ -1956,8 +1962,12 @@ components:
       type: string
       enum: [ordinary, current]
     BankAccount:
+      # Read/response model. Every field is emitted unconditionally by
+      # ClearSettingsResponse, so all are required. The write side uses the
+      # separate BankAccountInput schema (the PUT handler defaults missing keys
+      # and assigns bank_account_id server-side).
       type: object
-      required: [bank_account_id, bank_name, account_type, account_number]
+      required: [bank_account_id, bank_name, bank_branch, account_type, account_number, csv_encoding, csv_date_format, csv_date_column, csv_amount_column, csv_counterparty_column, csv_header_rows]
       properties:
         bank_account_id:
           type: integer
@@ -1976,9 +1986,50 @@ components:
         csv_date_format:
           type: string
           example: Y/m/d
+        csv_date_column:
+          type: integer
+          description: Column index holding 取引日 / 入金日.
+        csv_amount_column:
+          type: integer
+          description: Column index holding the deposit (入金) amount.
+        csv_counterparty_column:
+          type: integer
+          description: Column index holding 摘要 / 振込依頼人 → counterparty_text.
+        csv_header_rows:
+          type: integer
+          description: Number of header rows to skip.
+    BankAccountInput:
+      # Write model for UpdateClearSettingsRequest.bank_accounts. Only
+      # account_type is required; UpdateClearSettingsHandler defaults every other
+      # field, and bank_account_id is assigned server-side (not read from the body).
+      type: object
+      required: [account_type]
+      properties:
+        bank_name:
+          type: string
+        bank_branch:
+          type: string
+        account_type:
+          $ref: '#/components/schemas/AccountType'
+        account_number:
+          type: string
+        csv_encoding:
+          type: string
+          example: shift_jis
+        csv_date_format:
+          type: string
+          example: Y/m/d
+        csv_date_column:
+          type: integer
+        csv_amount_column:
+          type: integer
+        csv_counterparty_column:
+          type: integer
+        csv_header_rows:
+          type: integer
     ClearSettings:
       type: object
-      required: [organization_id, upstream_base_url, bank_accounts]
+      required: [organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month, bank_accounts]
       properties:
         organization_id:
           type: integer
@@ -2021,7 +2072,7 @@ components:
         bank_accounts:
           type: array
           items:
-            $ref: '#/components/schemas/BankAccount'
+            $ref: '#/components/schemas/BankAccountInput'
       additionalProperties: false
     UpstreamConnectionTestResponse:
       type: object
@@ -2037,7 +2088,7 @@ components:
       enum: [imported, reversed]
     BankImportBatch:
       type: object
-      required: [bank_import_batch_id, organization_id, bank_account_id, file_hash, source_filename, row_count, status, imported_at]
+      required: [bank_import_batch_id, organization_id, bank_account_id, file_hash, source_filename, row_count, status, imported_at, reversed_at, reversal_reason]
       properties:
         bank_import_batch_id:
           type: integer
@@ -2060,6 +2111,10 @@ components:
         imported_at:
           type: string
           format: date-time
+        reversed_at:
+          type: string
+          format: date-time
+          nullable: true
         reversal_reason:
           type: string
           nullable: true
@@ -2083,7 +2138,7 @@ components:
       enum: [unmatched, partially_matched, matched, voided]
     BankTransaction:
       type: object
-      required: [bank_transaction_id, organization_id, bank_import_batch_id, bank_account_id, value_date, amount_cents, status]
+      required: [bank_transaction_id, organization_id, bank_import_batch_id, bank_account_id, value_date, amount_cents, counterparty_text, status]
       properties:
         bank_transaction_id:
           type: integer
@@ -2128,8 +2183,11 @@ components:
       enum: [issued, partially_paid, paid]
     UpstreamInvoice:
       type: object
-      description: Read-only model owned by NeNe Invoice.
-      required: [invoice_id, invoice_number, total_cents, outstanding_cents, status]
+      description: >
+        Read-only model owned by NeNe Invoice. Only the fields the upstream proxy
+        actually returns are modelled here; issued_at and overdue were removed as
+        the response builder never emits them (#317).
+      required: [invoice_id, invoice_number, client_id, total_cents, outstanding_cents, due_at, status, currency]
       properties:
         invoice_id:
           type: integer
@@ -2139,12 +2197,10 @@ components:
         client_id:
           type: integer
           format: int64
-        issued_at:
-          type: string
-          format: date
         due_at:
           type: string
           format: date
+          nullable: true
         total_cents:
           type: integer
           format: int64
@@ -2153,8 +2209,6 @@ components:
           format: int64
         status:
           $ref: '#/components/schemas/UpstreamInvoiceStatus'
-        overdue:
-          type: boolean
         currency:
           type: string
           enum: [JPY]
@@ -2179,7 +2233,7 @@ components:
       additionalProperties: false
     MatchSuggestion:
       type: object
-      required: [source, amount_cents, score]
+      required: [source, invoice_id, invoice_number, manual_receivable_id, reference_number, amount_cents, outstanding_cents, score, reason]
       properties:
         source:
           type: string
@@ -2256,7 +2310,7 @@ components:
       additionalProperties: false
     ReconciliationAllocation:
       type: object
-      required: [reconciliation_allocation_id, source, amount_cents]
+      required: [reconciliation_allocation_id, source, invoice_id, manual_receivable_id, amount_cents, payment_id, external_reference]
       properties:
         reconciliation_allocation_id:
           type: integer
@@ -2284,6 +2338,7 @@ components:
           description: Upstream payment id (invoice_upstream only); null for manual.
         external_reference:
           type: string
+          nullable: true
           example: clear:recon:777
     ConfirmMatchRequest:
       type: object
@@ -2306,7 +2361,7 @@ components:
       enum: [confirmed, reversed]
     Reconciliation:
       type: object
-      required: [payment_reconciliation_id, organization_id, bank_transaction_id, status, allocations]
+      required: [payment_reconciliation_id, organization_id, bank_transaction_id, status, reason_code, confirmed_by, confirmed_at, reversed_at, reversal_reason, allocations]
       properties:
         payment_reconciliation_id:
           type: integer
@@ -2319,6 +2374,12 @@ components:
           format: int64
         status:
           $ref: '#/components/schemas/ReconciliationStatus'
+        reason_code:
+          type: string
+          nullable: true
+        confirmed_by:
+          type: integer
+          format: int64
         allocations:
           type: array
           items:
@@ -2355,7 +2416,7 @@ components:
       enum: [open, voided]
     ClientCredit:
       type: object
-      required: [client_credit_id, organization_id, client_id, amount_cents, remaining_cents, status]
+      required: [client_credit_id, organization_id, client_id, amount_cents, remaining_cents, status, source_bank_transaction_id, reconciliation_id, created_at]
       properties:
         client_credit_id:
           type: integer
@@ -2366,6 +2427,9 @@ components:
         client_id:
           type: integer
           format: int64
+          # Null for a manual-receivable credit; the payer is held in client_name
+          # (ADR 0014). See #341.
+          nullable: true
         amount_cents:
           type: integer
           format: int64
@@ -2377,6 +2441,12 @@ components:
         source_bank_transaction_id:
           type: integer
           format: int64
+        reconciliation_id:
+          type: integer
+          format: int64
+        created_at:
+          type: string
+          format: date-time
     ClientCreditListResponse:
       type: object
       required: [items, limit, offset, total]
@@ -2397,7 +2467,8 @@ components:
     ManualReceivable:
       type: object
       required: [manual_receivable_id, organization_id, source, reference_number, client_name,
-                 total_cents, outstanding_cents, currency, status, created_at, updated_at]
+                 recipient_email, total_cents, outstanding_cents, currency, issued_at, due_at,
+                 status, created_at, updated_at]
       properties:
         manual_receivable_id:
           type: integer
@@ -2445,6 +2516,7 @@ components:
           type: string
         updated_at:
           type: string
+          nullable: true
     ManualReceivableListResponse:
       type: object
       required: [items, limit, offset, total]
@@ -2482,6 +2554,7 @@ components:
                 type: array
                 items:
                   type: object
+                  required: [field, message]
                   properties:
                     field: { type: string }
                     message: { type: string }
@@ -2543,7 +2616,7 @@ components:
     DunningNotice:
       type: object
       required: [dunning_notice_id, organization_id, invoice_id, invoice_number, client_id,
-                 recipient_email, outstanding_cents, due_at, channel, template_version, sent_by, sent_at]
+                 recipient_email, outstanding_at_send_cents, due_at, channel, template_version, sent_by, sent_at]
       properties:
         dunning_notice_id:
           type: integer
@@ -2568,6 +2641,8 @@ components:
         due_at:
           type: string
           format: date
+          nullable: true
+          description: Null when the invoice had no due date.
         channel:
           type: string
           example: email
@@ -2598,7 +2673,7 @@ components:
 
     AuditEvent:
       type: object
-      required: [audit_event_id, organization_id, action, entity_type, occurred_at, before, after, metadata]
+      required: [audit_event_id, organization_id, action, entity_type, entity_id, actor_id, occurred_at, before, after, metadata]
       properties:
         audit_event_id:
           type: integer
@@ -2620,7 +2695,9 @@ components:
         actor_id:
           type: integer
           format: int64
-          nullable: true
+          description: >
+            Actor user id. The implementation always writes an integer; an
+            unauthenticated event (e.g. failed login) records 0, not null.
         occurred_at:
           type: string
           format: date-time
@@ -2657,7 +2734,7 @@ components:
 
     DunningPause:
       type: object
-      required: [dunning_pause_id, invoice_id, paused_by, paused_at, paused_reason]
+      required: [dunning_pause_id, invoice_id, paused_by, paused_at, paused_reason, unpaused_by, unpaused_at, is_active]
       properties:
         dunning_pause_id:
           type: integer
