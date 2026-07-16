@@ -2416,7 +2416,7 @@ components:
       enum: [open, voided]
     ClientCredit:
       type: object
-      required: [client_credit_id, organization_id, client_id, amount_cents, remaining_cents, status, source_bank_transaction_id, reconciliation_id, created_at]
+      required: [client_credit_id, organization_id, client_id, client_name, source, manual_receivable_id, amount_cents, remaining_cents, status, source_bank_transaction_id, reconciliation_id, created_at]
       properties:
         client_credit_id:
           type: integer
@@ -2430,6 +2430,19 @@ components:
           # Null for a manual-receivable credit; the payer is held in client_name
           # (ADR 0014). See #341.
           nullable: true
+        client_name:
+          type: string
+          nullable: true
+          description: Payer name for a manual-receivable credit; null for an upstream credit (client_id identifies the payer instead). ADR 0014, #341.
+        source:
+          type: string
+          enum: [invoice_upstream, manual]
+          description: Which receivable the overpayment came from (ADR 0014).
+        manual_receivable_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: Set for a manual-source credit; null for upstream.
         amount_cents:
           type: integer
           format: int64

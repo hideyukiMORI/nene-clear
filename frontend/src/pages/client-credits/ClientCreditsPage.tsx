@@ -186,7 +186,7 @@ export default function ClientCreditsPage() {
             {creditsQ.data?.items.map((c, index) => (
               <tr key={c.client_credit_id} data-kbd-row={index} className={[c.status === 'voided' ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                 <td className="muted">{c.client_credit_id}</td>
-                <td className="strong">#{c.client_id}</td>
+                <td className="strong">{c.client_id != null ? `#${c.client_id}` : c.client_name}</td>
                 <td className="num">{yen(c.amount_cents)}</td>
                 <td className="num">{yen(c.remaining_cents)}</td>
                 <td><StatusBadge map={STATUS_MAP} value={c.status} dot /></td>

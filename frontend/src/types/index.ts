@@ -61,7 +61,10 @@ export interface Reconciliation {
 export interface ClientCredit {
   client_credit_id: number
   organization_id: number
-  client_id: number
+  client_id: number | null
+  client_name: string | null
+  source: 'invoice_upstream' | 'manual'
+  manual_receivable_id: number | null
   amount_cents: number
   remaining_cents: number
   status: 'open' | 'voided'
