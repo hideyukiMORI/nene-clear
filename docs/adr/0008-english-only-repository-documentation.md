@@ -25,8 +25,12 @@ All **repository documentation** is **English only**:
 - Everything under `docs/` (explanation, ADR, review, development, integrations)
 - `.cursor/rules/` summaries
 - OpenAPI descriptions and Problem Details metadata (when added)
-- GitHub Issue titles and bodies, PR titles and bodies, and commit message
-  descriptions for this repository
+
+> **Superseded in part by [ADR 0015](0015-language-policy-repository-external-authoring.md):**
+> GitHub Issue titles/bodies, PR titles/bodies, and commit message descriptions
+> were originally required to be English here. ADR 0015 (2026-07-16) permits
+> Japanese for that repository-external coordination text. Everything else in
+> this ADR stands — repository documentation remains English-only.
 
 **Exceptions (not repository docs):**
 
@@ -58,4 +62,4 @@ All **repository documentation** is **English only**:
 - `docs/inheritance-from-nene2.md` — language policy row updated
 - Issue: `#3`
 - Supersedes: informal "Japanese allowed in commits/rules" wording
-- Superseded by: none
+- Superseded by: [ADR 0015](0015-language-policy-repository-external-authoring.md) — in part (Issue/PR/commit language only; the documentation rules stand)

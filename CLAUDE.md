@@ -15,7 +15,7 @@ Strategy: [publication-strategy `docs/products/nene-clear.md`](https://github.co
 - **Terminology registry is binding** — every identifier (Problem Details slug, field name, status value, operationId) MUST be registered in `docs/explanation/terminology.md` **before first use**. Check the registry before introducing any new term. Spelling MUST match exactly — same characters, same case, same separators. No synonyms, no abbreviations, no typos.
 - No direct commits to `main`; Issue required
 - Closing **multiple** issues from one PR: repeat the keyword for each — `Closes #a, Closes #b, Closes #c`. A single `Closes #a, #b, #c` only closes the first; the rest stay open
-- Repository docs: English only (ADR 0008)
+- Repository docs: English only (ADR 0008). **Issues, PRs, and commit messages may be Japanese** (ADR 0015) — the English rule covers `docs/`, READMEs, OpenAPI, and Problem Details, not coordination text.
 
 ## Local development ports
 

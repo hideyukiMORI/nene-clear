@@ -54,7 +54,7 @@ Install NENE2 as a Composer dependency and treat `vendor/hideyukimori/nene2/docs
 | Coding standards | `docs/development/coding-standards.md` — NENE2 baseline + reconciliation/dunning additions |
 | Backend standards | `docs/development/backend-standards.md` — PHP/API strict policy |
 | Monetary values | Integer **cents** in DB and JSON; no floats |
-| Language policy | **English** for all repository docs, Issues, PRs, commits, OpenAPI, API errors (ADR 0008); admin UI **ja + en** only (ADR 0005) |
+| Language policy | **English** for repository docs, OpenAPI, API errors (ADR 0008); **Japanese permitted** for Issues, PRs, commit messages (ADR 0015); admin UI **ja + en** only (ADR 0005) |
 | Review checklists | `docs/review/` — task-specific lists for this product |
 
 ## NeNe Clear–specific (not inherited)
