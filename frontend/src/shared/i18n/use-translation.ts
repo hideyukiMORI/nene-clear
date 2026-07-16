@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { I18nContext, type I18nContextValue } from '@/contexts/I18nContext'
+import { I18nContext, type I18nContextValue } from '@/shared/i18n/i18n-context'
 
 /**
  * Access the active locale, the `t()` translator, and `setLocale`. Must be used

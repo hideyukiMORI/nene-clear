@@ -5,7 +5,7 @@ import {
   translate,
   type Locale,
   type MessageKey,
-} from '@/locales'
+} from '@/shared/i18n/messages'
 
 const STORAGE_KEY = 'locale'
 

@@ -9,7 +9,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from '@/app/App'
 import { ThemeProvider } from '@/contexts/ThemeContext'
-import { I18nProvider } from '@/contexts/I18nContext'
+import { I18nProvider } from '@/shared/i18n/i18n-context'
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root element not found')

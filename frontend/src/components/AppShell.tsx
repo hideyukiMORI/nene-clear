@@ -1,11 +1,11 @@
 import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { clearToken, isAdmin } from '@/api/client'
 import { getCurrentUser } from '@/api/endpoints'
 import { Icon, LogoMark } from '@/components/ui'
 import { KeyboardShortcuts, openShortcutsOverlay } from '@/components/keyboard'
-import type { MessageKey } from '@/locales'
+import type { MessageKey } from '@/shared/i18n/messages'
 
 type NavEntry = { to: string; labelKey: MessageKey; icon: string; end?: boolean; badge?: number; adminOnly?: boolean }
 

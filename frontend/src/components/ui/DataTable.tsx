@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Icon } from './Icon'
-import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
+import { useTranslation } from '@/shared/i18n/use-translation'
+import type { MessageKey } from '@/shared/i18n/messages'
 
 interface DataTableProps {
   children: ReactNode

@@ -7,7 +7,7 @@ import { describeApiError } from '@/api/client'
 import type { ManualReceivable, ManualReceivableImportResult } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/shared/lib/format'
 

@@ -4,7 +4,7 @@ import { listClientCredits, applyClientCredit, downloadCsv, clientCreditsExportP
 import type { ClientCredit } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead, InfoDot, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/shared/lib/format'

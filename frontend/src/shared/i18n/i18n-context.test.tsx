@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { I18nProvider } from './I18nContext'
-import { useTranslation } from '@/hooks/useTranslation'
+import { I18nProvider } from './i18n-context'
+import { useTranslation } from '@/shared/i18n/use-translation'
 
 function Probe() {
   const { t, locale, setLocale } = useTranslation()

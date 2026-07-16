@@ -1,6 +1,6 @@
 import { render, type RenderOptions } from '@testing-library/react'
 import type { ReactElement, ReactNode } from 'react'
-import { I18nProvider } from '@/contexts/I18nContext'
+import { I18nProvider } from '@/shared/i18n/i18n-context'
 
 function Providers({ children }: { children: ReactNode }) {
   return <I18nProvider>{children}</I18nProvider>
