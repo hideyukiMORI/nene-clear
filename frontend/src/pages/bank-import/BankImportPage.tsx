@@ -7,7 +7,7 @@ import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableSt
 import type { StatusMeta, SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useRowCursor } from '@/components/keyboard'
-import { formatDate } from '@/utils/format'
+import { formatDate } from '@/shared/lib/format'
 
 const BATCH_STATUS: Record<BankImportBatch['status'], StatusMeta> = {
   imported: { v: 'ok',   labelKey: 'bankImport.status.imported' },

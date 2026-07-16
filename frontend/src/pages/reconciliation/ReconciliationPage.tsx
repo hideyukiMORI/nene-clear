@@ -14,7 +14,7 @@ import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
-import { yen, formatDate } from '@/utils/format'
+import { yen, formatDate } from '@/shared/lib/format'
 
 const RECON_STATUS: Record<Reconciliation['status'], StatusMeta> = {
   confirmed: { v: 'ok',   labelKey: 'reconciliation.status.confirmed' },

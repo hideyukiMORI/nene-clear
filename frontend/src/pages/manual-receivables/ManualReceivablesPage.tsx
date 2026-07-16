@@ -9,7 +9,7 @@ import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notic
 import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useRowCursor } from '@/components/keyboard'
-import { yen, formatDate } from '@/utils/format'
+import { yen, formatDate } from '@/shared/lib/format'
 
 const STATUS_MAP: Record<ManualReceivable['status'], StatusMeta> = {
   open: { v: 'neut', labelKey: 'manualReceivables.status.open' },

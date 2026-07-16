@@ -10,7 +10,7 @@ import type { SortState } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
-import { yen, formatDateTime, daysOverdue } from '@/utils/format'
+import { yen, formatDateTime, daysOverdue } from '@/shared/lib/format'
 
 // ─── Send confirm modal ───
 function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: () => void }) {

@@ -3,7 +3,7 @@ import { listUnmatchedTransactions, listDunningNotices } from '@/api/endpoints'
 import { Icon, Kpi, KpiGrid, Card, CardHead, DataTable, TableStateRow, Button, PageHead } from '@/components/ui'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from '@/hooks/useTranslation'
-import { yen, formatDate } from '@/utils/format'
+import { yen, formatDate } from '@/shared/lib/format'
 
 export default function DashboardPage() {
   const { t } = useTranslation()

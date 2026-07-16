@@ -8,7 +8,7 @@ import type { StatusMeta } from '@/components/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
-import { yen } from '@/utils/format'
+import { yen } from '@/shared/lib/format'
 
 const PAGE = 20
 
