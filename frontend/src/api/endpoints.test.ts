@@ -11,7 +11,7 @@ import {
   importBankCsv,
   importManualReceivables,
 } from './endpoints'
-import { storeToken } from './client'
+import { storeToken } from '@/shared/api/client'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

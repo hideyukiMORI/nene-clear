@@ -17,7 +17,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "knip": "knip",
-    "codegen": "openapi-typescript ../docs/openapi/openapi.yaml -o src/api/schema.gen.ts",
+    "codegen": "openapi-typescript ../docs/openapi/openapi.yaml -o src/shared/api/schema.gen.ts",
     "codegen:check": "node scripts/check-codegen.mjs",
     "check": "npm run codegen:check && npm run type-check && npm run lint && npm run test:run && npm run knip"
   },

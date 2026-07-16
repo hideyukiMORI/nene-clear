@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/api/endpoints'
-import { describeApiError } from '@/api/client'
+import { describeApiError } from '@/shared/api/client'
 import type { BankImportBatch } from '@/types'
 import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'

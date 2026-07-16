@@ -7,7 +7,7 @@ import {
 } from '@/api/endpoints'
 import type { BankTransaction, Reconciliation } from '@/types'
 import type { AllocationInput, MatchSuggestion } from '@/api/endpoints'
-import { describeApiError } from '@/api/client'
+import { describeApiError } from '@/shared/api/client'
 import { Icon, Badge, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, Tabs, PageHead, InfoDot, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { SortState } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'

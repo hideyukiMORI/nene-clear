@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
-import { isAuthenticated, isAdmin, subscribeAuthChange } from '@/api/client'
+import { isAuthenticated, isAdmin, subscribeAuthChange } from '@/shared/api/client'
 import AppShell from '@/components/AppShell'
 import LoginPage from '@/pages/login/LoginPage'
 import AcceptInvitePage from '@/pages/accept-invite/AcceptInvitePage'
