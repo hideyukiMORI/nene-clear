@@ -1,7 +1,7 @@
 import { NavLink, Link, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from '@/shared/i18n/use-translation'
-import { clearToken, isAdmin } from '@/api/client'
+import { clearToken, isAdmin } from '@/shared/api/client'
 import { getCurrentUser } from '@/api/endpoints'
 import { Icon, LogoMark } from '@/components/ui'
 import { KeyboardShortcuts, openShortcutsOverlay } from '@/components/keyboard'

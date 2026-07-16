@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { login } from '@/api/endpoints'
-import { storeToken } from '@/api/client'
+import { storeToken } from '@/shared/api/client'
 import { Icon, Button, Notice, LogoMark } from '@/components/ui'
 import { useTranslation } from '@/shared/i18n/use-translation'
 

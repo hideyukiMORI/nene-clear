@@ -1,4 +1,4 @@
-import { api } from './client'
+import { api } from '@/shared/api/client'
 
 export async function downloadCsv(path: string, filename: string): Promise<void> {
   const blob = await api.getBlob(path)

@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 const SPEC = path.resolve(dirname, '../../docs/openapi/openapi.yaml')
-const COMMITTED = path.resolve(dirname, '../src/api/schema.gen.ts')
+const COMMITTED = path.resolve(dirname, '../src/shared/api/schema.gen.ts')
 const BIN = path.resolve(dirname, '../node_modules/.bin/openapi-typescript')
 
 const tmp = mkdtempSync(path.join(tmpdir(), 'nene-clear-codegen-'))

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getInvitation, acceptInvitation } from '@/api/endpoints'
-import { ApiError } from '@/api/client'
+import { ApiError } from '@/shared/api/client'
 import { Icon, Button, Notice, LogoMark } from '@/components/ui'
 import { useTranslation } from '@/shared/i18n/use-translation'
 

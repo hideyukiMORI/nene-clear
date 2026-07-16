@@ -9,7 +9,7 @@ vi.mock('@/api/endpoints', () => ({
   login: (email: string, password: string) => loginMock(email, password),
 }))
 
-vi.mock('@/api/client', () => ({
+vi.mock('@/shared/api/client', () => ({
   storeToken: (token: string) => storeTokenMock(token),
 }))
 
