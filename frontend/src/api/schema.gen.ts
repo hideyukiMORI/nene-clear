@@ -1117,6 +1117,18 @@ export interface components {
             organization_id: number;
             /** Format: int64 */
             client_id: number | null;
+            /** @description Payer name for a manual-receivable credit; null for an upstream credit (client_id identifies the payer instead). ADR 0014, */
+            client_name: string | null;
+            /**
+             * @description Which receivable the overpayment came from (ADR 0014).
+             * @enum {string}
+             */
+            source: "invoice_upstream" | "manual";
+            /**
+             * Format: int64
+             * @description Set for a manual-source credit; null for upstream.
+             */
+            manual_receivable_id: number | null;
             /** Format: int64 */
             amount_cents: number;
             /** Format: int64 */
