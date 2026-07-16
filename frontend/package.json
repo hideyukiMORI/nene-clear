@@ -17,7 +17,9 @@
     "test": "vitest",
     "test:run": "vitest run",
     "knip": "knip",
-    "check": "npm run type-check && npm run lint && npm run test:run && npm run knip"
+    "codegen": "openapi-typescript ../docs/openapi/openapi.yaml -o src/api/schema.gen.ts",
+    "codegen:check": "node scripts/check-codegen.mjs",
+    "check": "npm run codegen:check && npm run type-check && npm run lint && npm run test:run && npm run knip"
   },
   "dependencies": {
     "@hideyukimori/nene2-client": "^1.1.0",
@@ -46,9 +48,15 @@
     "knip": "^5.88.1",
     "prettier": "^3.6.2",
     "tailwindcss": "^4.1.17",
+    "openapi-typescript": "7.13.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12",
     "vitest": "^4.0.14"
+  },
+  "overrides": {
+    "openapi-typescript": {
+      "typescript": "$typescript"
+    }
   }
 }

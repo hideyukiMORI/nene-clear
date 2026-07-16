@@ -1,6 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["src/api/schema.gen.ts"],
   "ignoreExportsUsedInFile": true,
   "exclude": ["exports", "types"]
 }

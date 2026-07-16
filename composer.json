@@ -45,6 +45,7 @@
         "release:zip": "bash tools/build-release.sh",
         "openapi": "php tools/validate-openapi.php",
         "mcp": "php vendor/hideyukimori/nene2/tools/validate-mcp-tools.php --root=.",
+        "spec-parity": "php tools/validate-spec-parity.php",
         "conformance": "php vendor/hideyukimori/nene2/tools/conformance.php --root=.",
         "check": [
             "@test",
@@ -52,6 +53,7 @@
             "@cs",
             "@openapi",
             "@mcp",
+            "@spec-parity",
             "@conformance"
         ]
     }
