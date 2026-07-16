@@ -46,3 +46,9 @@ Do **not** change these back to defaults (8080, 1025, 8025, 3306).
 | Terminology registry (binding) | `docs/explanation/terminology.md` |
 | Operator guide / system overview | `docs/explanation/operator-guide.md` |
 | TODO | `docs/todo/current.md` |
+| Daily work journal | `docs/journal/<session-start-date>.md` |
+
+Daily journals live in `docs/journal/`, one file per **session start date**
+(`YYYY-MM-DD.md`); append to the existing file if one already exists for that
+date rather than creating a second. English per ADR 0008 (a Japanese summary may
+follow in the reply, not the file).
