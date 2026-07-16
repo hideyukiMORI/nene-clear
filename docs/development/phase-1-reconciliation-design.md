@@ -160,7 +160,7 @@ Overpayment balance (前受金/預り金 相当) — never discarded (compliance
 | `client_id` | BIGINT | upstream client id |
 | `amount_cents` | BIGINT | original excess |
 | `remaining_cents` | BIGINT | unused balance |
-| `status` | VARCHAR | `open` / `partially_applied` / `applied` |
+| `status` | VARCHAR | `open` / `voided`; application progress lives in `remaining_cents` (#264) |
 | `source_bank_transaction_id` | BIGINT | provenance |
 | `created_by`, `created_at` | | |
 
@@ -294,10 +294,11 @@ optional `reason_code` (fee absorption).
 
 ### 5.5 `applyClientCredit`
 
-- Apply `remaining_cents` (or a portion) of an `open`/`partially_applied` credit
+- Apply `remaining_cents` (or a portion) of an `open` credit
   to a chosen invoice via upstream `createPayment` (idempotent,
-  `external_reference = clear:credit:{id}`); decrement `remaining_cents`; set
-  status; audit. **Explicit operator action only** — never automatic (compliance §2.5).
+  `external_reference = clear:credit:{id}`); decrement `remaining_cents` — the
+  credit stays `open` while a balance remains and flips to `voided` once it
+  reaches 0; audit. **Explicit operator action only** — never automatic (compliance §2.5).
 
 ---
 
