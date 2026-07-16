@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { Icon } from '@/components/ui'
 import { HELP_LABELS, HELP_SECTIONS, type Bi, type HelpBlock } from './help-content'
 

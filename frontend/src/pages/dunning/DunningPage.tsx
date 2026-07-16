@@ -7,7 +7,7 @@ import {
 import type { UpstreamInvoice } from '@/types'
 import { Icon, Badge, Button, Card, CardHead, DataTable, TableStateRow, Modal, Notice, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { SortState } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDateTime, daysOverdue } from '@/shared/lib/format'

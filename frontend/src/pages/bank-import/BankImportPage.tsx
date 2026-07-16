@@ -5,7 +5,7 @@ import { describeApiError } from '@/api/client'
 import type { BankImportBatch } from '@/types'
 import { Icon, StatusBadge, Button, Card, CardHead, CardBody, DataTable, TableStateRow, Notice, Modal, PageHead, FilterBar, FilterField, DatePicker, SortableTh, nextSort, Pager } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { useRowCursor } from '@/components/keyboard'
 import { formatDate } from '@/shared/lib/format'
 

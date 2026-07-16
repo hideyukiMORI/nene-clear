@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Badge } from './Badge'
 import type { BadgeVariant } from './Badge'
-import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
+import { useTranslation } from '@/shared/i18n/use-translation'
+import type { MessageKey } from '@/shared/i18n/messages'
 
 /** A status value's badge tone + localized label key. */
 export interface StatusMeta {

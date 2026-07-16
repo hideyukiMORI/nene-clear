@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listUnmatchedTransactions, listDunningNotices } from '@/api/endpoints'
 import { Icon, Kpi, KpiGrid, Card, CardHead, DataTable, TableStateRow, Button, PageHead } from '@/components/ui'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { yen, formatDate } from '@/shared/lib/format'
 
 export default function DashboardPage() {

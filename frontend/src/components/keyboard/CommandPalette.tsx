@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTranslation } from '@/hooks/useTranslation'
-import type { MessageKey } from '@/locales'
+import { useTranslation } from '@/shared/i18n/use-translation'
+import type { MessageKey } from '@/shared/i18n/messages'
 
 interface Command {
   id: string

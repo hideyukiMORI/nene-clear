@@ -1,5 +1,5 @@
 import { useEffect, useId } from 'react'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { isMacPlatform } from './platform'
 import { MOD, SHORTCUT_GROUPS, type ShortcutCombo, type ShortcutGroup } from './shortcuts-data'
 

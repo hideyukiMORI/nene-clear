@@ -4,7 +4,7 @@ import { listUsers, createUser, deleteUser } from '@/api/endpoints'
 import type { User } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Modal, Notice, PageHead } from '@/components/ui'
 import type { StatusMeta } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { useRowCursor } from '@/components/keyboard'
 
 type Role = 'admin' | 'member' | 'viewer'

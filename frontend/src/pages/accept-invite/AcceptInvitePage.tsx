@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getInvitation, acceptInvitation } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
 import { Icon, Button, Notice, LogoMark } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 
 const MIN_PASSWORD = 8
 

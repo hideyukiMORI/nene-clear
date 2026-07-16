@@ -4,7 +4,7 @@ import { listAuditEvents } from '@/api/endpoints'
 import type { AuditEvent, AuditAction } from '@/types'
 import { Icon, StatusBadge, Button, Card, DataTable, TableStateRow, Pager, FilterBar, FilterField, PageHead, DatePicker, SortableTh, nextSort } from '@/components/ui'
 import type { StatusMeta, SortState } from '@/components/ui'
-import { useTranslation } from '@/hooks/useTranslation'
+import { useTranslation } from '@/shared/i18n/use-translation'
 import { useRowCursor } from '@/components/keyboard'
 import { formatDateTime } from '@/shared/lib/format'
 
