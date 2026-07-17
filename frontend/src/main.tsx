@@ -8,7 +8,7 @@ import './index.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from '@/app/App'
-import { ThemeProvider } from '@/contexts/ThemeContext'
+import { ThemeProvider } from '@/shared/ui/theme/theme-context'
 import { I18nProvider } from '@/shared/i18n/i18n-context'
 
 const root = document.getElementById('root')

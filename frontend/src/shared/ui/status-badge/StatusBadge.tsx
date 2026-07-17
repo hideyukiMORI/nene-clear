@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import { Badge } from './Badge'
-import type { BadgeVariant } from './Badge'
+import { Badge } from '@/shared/ui/badge'
+import type { BadgeVariant } from '@/shared/ui/badge'
 import { useTranslation } from '@/shared/i18n/use-translation'
 import type { MessageKey } from '@/shared/i18n/messages'
 

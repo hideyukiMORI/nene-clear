@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Icon } from './Icon'
+import { Icon } from '@/shared/ui/icon'
 
 /**
  * Type-first date field (YYYY/MM/DD) with a calendar popover — ports the design

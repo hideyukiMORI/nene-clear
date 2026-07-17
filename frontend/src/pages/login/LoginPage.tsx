@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { login } from '@/api/endpoints'
 import { storeToken } from '@/shared/api/client'
-import { Icon, Button, Notice, LogoMark } from '@/components/ui'
+import { Button } from '@/shared/ui/button'
+import { Icon } from '@/shared/ui/icon'
+import { LogoMark } from '@/shared/ui/logo-mark'
+import { Notice } from '@/shared/ui/notice'
 import { useTranslation } from '@/shared/i18n/use-translation'
 
 export default function LoginPage() {

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useEffect, useRef } from 'react'
-import { Icon } from './Icon'
+import { Icon } from '@/shared/ui/icon'
 
 interface ModalProps {
   open: boolean

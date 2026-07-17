@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { useTranslation } from '@/shared/i18n/use-translation'
-import { Icon } from '@/components/ui'
+import { Icon } from '@/shared/ui/icon'
 import { HELP_LABELS, HELP_SECTIONS, type Bi, type HelpBlock } from './help-content'
 
 /**
