@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/api/endpoints'
 import type { BankAccount, ClearSettings } from '@/types'
-import { Icon, Button, Card, CardFoot, Notice, PageHead } from '@/components/ui'
+import { Button } from '@/shared/ui/button'
+import { Card, CardFoot } from '@/shared/ui/card'
+import { Icon } from '@/shared/ui/icon'
+import { Notice } from '@/shared/ui/notice'
+import { PageHead } from '@/shared/ui/page-head'
 import { useTranslation } from '@/shared/i18n/use-translation'
 
 function emptyAccount(): BankAccount {

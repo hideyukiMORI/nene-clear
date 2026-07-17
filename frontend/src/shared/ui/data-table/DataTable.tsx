@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Icon } from './Icon'
+import { Icon } from '@/shared/ui/icon'
 import { useTranslation } from '@/shared/i18n/use-translation'
 import type { MessageKey } from '@/shared/i18n/messages'
 

@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getInvitation, acceptInvitation } from '@/api/endpoints'
 import { ApiError } from '@/shared/api/client'
-import { Icon, Button, Notice, LogoMark } from '@/components/ui'
+import { Button } from '@/shared/ui/button'
+import { Icon } from '@/shared/ui/icon'
+import { LogoMark } from '@/shared/ui/logo-mark'
+import { Notice } from '@/shared/ui/notice'
 import { useTranslation } from '@/shared/i18n/use-translation'
 
 const MIN_PASSWORD = 8

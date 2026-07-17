@@ -1,4 +1,4 @@
-import { Icon } from './Icon'
+import { Icon } from '@/shared/ui/icon'
 
 /** One glossary line: a bookkeeping term and its plain-language definition. */
 export interface GlossaryEntry {

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Icon } from './Icon'
+import { Icon } from '@/shared/ui/icon'
 
 export type NoticeVariant = 'ok' | 'warn' | 'bad' | 'info'
 
