@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { isAuthenticated, isAdmin, subscribeAuthChange } from '@/shared/api/client'
-import AppShell from '@/components/AppShell'
+import AppLayout from '@/app/layout/AppLayout'
 import LoginPage from '@/pages/login/LoginPage'
 import AcceptInvitePage from '@/pages/accept-invite/AcceptInvitePage'
 import DashboardPage from '@/pages/dashboard/DashboardPage'
@@ -44,7 +44,7 @@ export const router = createBrowserRouter([
     path: '/admin',
     element: (
       <RequireAuth>
-        <AppShell />
+        <AppLayout />
       </RequireAuth>
     ),
     children: [

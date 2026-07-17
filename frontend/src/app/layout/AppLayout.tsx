@@ -45,7 +45,7 @@ function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; la
   )
 }
 
-export default function AppShell() {
+export default function AppLayout() {
   const { t, locale, setLocale } = useTranslation()
   const navigate = useNavigate()
   const admin = isAdmin()
