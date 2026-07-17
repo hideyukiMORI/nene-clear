@@ -1,6 +1,23 @@
 # Current Work
 
-Last updated: 2026-07-16
+Last updated: 2026-07-18
+
+> **2026-07-18: A2 (FSD 5-layer rebuild) — shared foundation essentially done.**
+> After Tier1 (`shared/lib` #359 / `shared/i18n` #360 / `shared/api` #362),
+> **Tier2 `shared/ui`** landed (design #369 / impl #370): the 15 `components/ui`
+> components were exploded into `shared/ui/<kebab>/` (aggregate barrel removed,
+> 01:126), `ThemeContext` → `shared/ui/theme`, and the 14 importers + `main.tsx`
+> re-pointed. **AppShell → `app/layout/AppLayout`** (#371). Every step was a
+> behavior-preserving self-merge with a **logic-diff-0 mechanical proof**; CI all
+> green (incl. e2e). 🔴 **`components/keyboard` is frozen**: its placement is
+> undecided by the `01` §4 decision tree (4 of its 10 files are React UI `.tsx`),
+> so per the rule it must not be parked in `shared/lib` — filed as a spec defect,
+> **fleet-tooling#89**. It is the only remaining resident of `src/components/`.
+> **Next = the entities layer** (the main body; absorbs #317 Phase 3 type
+> re-point) from its design gate. Details:
+> [`../daily/2026-07-18.md`](../daily/2026-07-18.md). CI: `main` is locked
+> (enforce_admins); required checks =
+> `[backend-check, frontend-check, postgres-migrate]` (#367).
 
 > **2026-07-11: fleet structural-uniformity audit recorded** — Clear findings,
 > strengths, and tracking issues (#285 JWT stack, #286 NENE2 `@dev` dependency,
