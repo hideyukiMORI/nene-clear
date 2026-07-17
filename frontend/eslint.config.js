@@ -26,14 +26,14 @@ export default tseslint.config(
         {
           selector: "CallExpression[callee.name='fetch']",
           message:
-            'Do not call fetch() directly — use `api` from src/api/client.ts so the Authorization/X-Authorization mirror is sent (#265, #312).',
+            'Do not call fetch() directly — use `api` from src/shared/api/client.ts so the Authorization/X-Authorization mirror is sent (#265, #312).',
         },
       ],
     },
   },
   {
     // The shared API client is the single sanctioned place that calls fetch().
-    files: ['src/api/client.ts'],
+    files: ['src/shared/api/client.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
   eslintConfigPrettier,
