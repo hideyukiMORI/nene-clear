@@ -14,4 +14,5 @@ NeNe Clear リポの**日々の作業記録**。書式・規約はフリート�
 
 ## 索引
 
+- [2026-07-18](2026-07-18.md) — A2 Tier2（shared/ui 移設・集約バレル解体 #370）・AppShell→app/layout（#371）・CI job 名衝突解消と required 締め増し（#367）・keyboard 配置欠陥を起票し凍結（fleet-tooling#89）
 - [2026-07-17](2026-07-17.md) — A2（FSD 5層再建）着手・設計書 hub 承認（#357）・shared foundation Tier1（#359/#360/#362）・main 赤を hotfix #361 で解消
