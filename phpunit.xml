@@ -11,6 +11,14 @@
       <directory>tests</directory>
     </testsuite>
   </testsuites>
+  <php>
+    <!-- NENE2 M-2 (#1600): an unset APP_ENV resolves to "production", where NENE2
+         fail-closes (the dev-secret opt-in is ignored), which reddens backend CI
+         once that NENE2 release resolves. Declare the test environment explicitly
+         (fleet directive; ref suite #404). This is an environment declaration, not
+         a bypass of the production fail-closed path. -->
+    <env name="APP_ENV" value="test"/>
+  </php>
   <source>
     <include>
       <directory>src</directory>
