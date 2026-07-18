@@ -76,16 +76,16 @@ Last updated: 2026-07-18
 > (#261), and JSON POST bodies were never parsed at the entry point, so the
 > SPA's propose/confirm/dunning-send failed against the real backend (#262).
 > The 2026-07-03 screenshot session's `.env` (dead stub on 8390) has been
-> reverted. **The demo is live at `https://clear.ayane.co.jp` (deployed
-> 2026-07-09 evening, owner GO)** — HETEML, MySQL `_nene_clear`, invoice-shaped
-> docroot; the deployment surfaced and fixed two more Tier A bugs (#265
-> Authorization stripped by the front proxy, #268 SPA asset base).
+> reverted. **The public demo is live (deployed 2026-07-09 evening, owner GO)**;
+> the hosting / DB / docroot specifics live in the non-public deploy runbook.
+> The deployment surfaced and fixed two more Tier A bugs (#265 Authorization
+> stripped by the front proxy, #268 SPA asset base).
 > **2026-07-10: the disposable-org demo is live too** (`/demo/standard`,
-> `Nene2\Demo` v1.9.0 consumer, #275; MySQL LIKE-escape fix #277) — hand out
-> `https://clear.ayane.co.jp/demo/standard` and every visitor gets a fresh
-> throttled, TTL-swept org. Remaining owner steps (HETEML panel, cron):
-> nightly fixed-org reset `~/bin/reseed-clear-demo.sh` and hourly demo sweep
-> `~/bin/sweep-clear-demo.sh`. SMTP is unset (dunning channel `log`), and the
+> `Nene2\Demo` v1.9.0 consumer, #275; SQL LIKE-escape fix #277) — hand out the
+> demo URL (kept in the non-public deploy runbook) and every visitor gets a
+> fresh throttled, TTL-swept org. Remaining owner steps (hosting panel + the
+> nightly reset / hourly sweep cron) live in that runbook. SMTP is unset
+> (dunning channel `log`), and the
 > `client_credit.status` registry/enum drift is #264. Details:
 > [`docs/journal/2026-07-09.md`](../journal/2026-07-09.md) and
 > [`docs/journal/2026-07-10.md`](../journal/2026-07-10.md).
