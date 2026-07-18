@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listUsers, createUser, deleteUser } from '@/api/endpoints'
+import { listUsers, createUser, deleteUser } from '@/shared/api/endpoints'
 import type { User } from '@/types'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'

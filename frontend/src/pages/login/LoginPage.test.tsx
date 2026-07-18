@@ -5,7 +5,7 @@ import { renderWithProviders as render } from '@/test/render'
 const loginMock = vi.fn()
 const storeTokenMock = vi.fn()
 
-vi.mock('@/api/endpoints', () => ({
+vi.mock('@/shared/api/endpoints', () => ({
   login: (email: string, password: string) => loginMock(email, password),
 }))
 

@@ -21,7 +21,7 @@ const row: ManualReceivable = {
   updated_at: '2026-04-01 09:00:00',
 }
 
-vi.mock('@/api/endpoints', () => ({
+vi.mock('@/shared/api/endpoints', () => ({
   listManualReceivables: () => Promise.resolve({ items: [row], total: 1, limit: 50, offset: 0 }),
   createManualReceivable: vi.fn(),
   cancelManualReceivable: vi.fn(),

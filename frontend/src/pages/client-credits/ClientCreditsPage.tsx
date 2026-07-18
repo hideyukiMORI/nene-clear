@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listClientCredits, applyClientCredit, downloadCsv, clientCreditsExportPath } from '@/api/endpoints'
+import { listClientCredits, applyClientCredit, clientCreditsExportPath } from '@/shared/api/endpoints'
+import { downloadCsv } from '@/shared/lib/download'
 import type { ClientCredit } from '@/types'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'

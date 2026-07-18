@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listBankTransactions, bankTransactionsExportPath, downloadCsv } from '@/api/endpoints'
+import { listBankTransactions, bankTransactionsExportPath } from '@/shared/api/endpoints'
+import { downloadCsv } from '@/shared/lib/download'
 import type { BankTransaction } from '@/types'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'

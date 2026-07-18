@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listManualReceivables, createManualReceivable, cancelManualReceivable, importManualReceivables,
-} from '@/api/endpoints'
+} from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import type { ManualReceivable, ManualReceivableImportResult } from '@/types'
 import { Button } from '@/shared/ui/button'

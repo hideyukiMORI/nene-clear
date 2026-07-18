@@ -5,7 +5,7 @@ import {
   isValidationProblemDetails,
   type Nene2ClientError,
 } from '@hideyukimori/nene2-client'
-import type { ProblemDetails } from '@/types'
+import type { ProblemDetails } from './http-types'
 
 export class ApiError extends Error {
   constructor(
