@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listAuditEvents } from '@/shared/api/endpoints'
-import type { AuditEvent, AuditAction } from '@/types'
+import type { AuditEvent, AuditAction } from '@/entities/audit-event'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DataTable, TableStateRow, Pager, SortableTh, nextSort } from '@/shared/ui/data-table'

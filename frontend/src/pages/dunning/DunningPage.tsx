@@ -5,7 +5,7 @@ import {
   listDunningPauses, pauseDunningNotice, resumeDunningNotice, dunningNoticesExportPath,
 } from '@/shared/api/endpoints'
 import { downloadCsv } from '@/shared/lib/download'
-import type { UpstreamInvoice } from '@/types'
+import type { UpstreamInvoice } from '@/entities/upstream-invoice'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardHead } from '@/shared/ui/card'
