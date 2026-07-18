@@ -1,8 +1,9 @@
 import { api } from './client'
 import type {
-  User, DunningNotice, ClearSettings, UpstreamInvoice,
-  AuditEvent, ManualReceivable, ManualReceivableImportResult,
+  User, ClearSettings, UpstreamInvoice, AuditEvent,
 } from '@/types'
+import type { ManualReceivable, ManualReceivableImportResult } from '@/entities/manual-receivable'
+import type { DunningNotice } from '@/entities/dunning-notice'
 import type { BankImportBatch } from '@/entities/bank-import-batch'
 import type { BankTransaction } from '@/entities/bank-transaction'
 import type { Reconciliation } from '@/entities/reconciliation'

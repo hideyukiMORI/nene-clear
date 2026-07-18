@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderWithProviders } from '@/test/render'
-import type { ManualReceivable } from '@/types'
+import type { ManualReceivable } from '@/entities/manual-receivable'
 
 const row: ManualReceivable = {
   manual_receivable_id: 1,

@@ -4,7 +4,7 @@ import {
   listManualReceivables, createManualReceivable, cancelManualReceivable, importManualReceivables,
 } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
-import type { ManualReceivable, ManualReceivableImportResult } from '@/types'
+import type { ManualReceivable, ManualReceivableImportResult } from '@/entities/manual-receivable'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
