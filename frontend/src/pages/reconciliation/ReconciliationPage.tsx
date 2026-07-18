@@ -6,7 +6,8 @@ import {
   confirmMatch, reverseReconciliation, proposeMatch, reconciliationsExportPath,
 } from '@/shared/api/endpoints'
 import { downloadCsv } from '@/shared/lib/download'
-import type { BankTransaction, Reconciliation } from '@/types'
+import type { BankTransaction } from '@/entities/bank-transaction'
+import type { Reconciliation } from '@/entities/reconciliation'
 import type { AllocationInput, MatchSuggestion } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import { Badge } from '@/shared/ui/badge'

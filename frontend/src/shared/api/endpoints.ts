@@ -1,9 +1,12 @@
 import { api } from './client'
 import type {
-  User, BankImportBatch, BankTransaction, Reconciliation,
-  ClientCredit, DunningNotice, ClearSettings, UpstreamInvoice,
+  User, DunningNotice, ClearSettings, UpstreamInvoice,
   AuditEvent, ManualReceivable, ManualReceivableImportResult,
 } from '@/types'
+import type { BankImportBatch } from '@/entities/bank-import-batch'
+import type { BankTransaction } from '@/entities/bank-transaction'
+import type { Reconciliation } from '@/entities/reconciliation'
+import type { ClientCredit } from '@/entities/client-credit'
 import type { ListEnvelope } from './http-types'
 
 const BASE = '/admin'
