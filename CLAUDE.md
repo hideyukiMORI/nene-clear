@@ -45,15 +45,20 @@ Do **not** change these back to defaults (8080, 1025, 8025, 3306).
 | Invoice upstream (overview) | `docs/integrations/sibling-products.md` |
 | Terminology registry (binding) | `docs/explanation/terminology.md` |
 | Operator guide / system overview | `docs/explanation/operator-guide.md` |
-| TODO | `docs/todo/current.md` |
-| Daily report | `docs/daily/<YYYY-MM-DD>.md` (fleet convention) |
+| TODO / operational logs | **private** `nene-origin/internal-docs/clear/todo/current.md` (migrated — see note) |
+| Daily report | **private** `nene-origin/internal-docs/clear/daily/<YYYY-MM-DD>.md` (migrated — see note) |
+
+> **Operational logs migrated to private (P3, 2026-07-18).** The operational
+> logs (`docs/todo`, `docs/daily`, field-trials equivalent) now live in the
+> **private** `nene-origin/internal-docs/clear/`. Read the latest work state and
+> handoff there. Public `docs/` keeps only Diátaxis (tutorials / how-to /
+> reference / explanation), ADR, and CHANGELOG.
 
 Daily reports follow the **fleet-wide convention**
-(`_work/daily-report-convention.md`, confirmed 2026-07-17): one file per calendar
-day under `docs/daily/`, **Japanese** (technical terms may stay English), no
-frontmatter, `# YYYY-MM-DD` + lead paragraph + `## topic` bullets with PR/Issue
-numbers; measured vs. hearsay numbers must be marked. Same-day extra sessions
-append under `## セッション2`. Index in `docs/daily/README.md`. This supersedes
-the earlier `docs/journal/` + English rule (that was set before the fleet
-convention was ratified). Daily reports are per-repo work; cross-repo/strategy
-notes go to `_work/` per the container CLAUDE.md.
+(`_work/daily-report-convention.md`, v3): one file per calendar day under
+`internal-docs/clear/daily/` in the private `nene-origin` repo, **Japanese**
+(technical terms may stay English), no frontmatter, `# YYYY-MM-DD` + lead
+paragraph + `## topic` bullets with PR/Issue numbers; measured vs. hearsay
+numbers must be marked. Same-day extra sessions append under `## セッション2`.
+Index in `internal-docs/clear/daily/README.md`. Daily reports are per-repo work;
+cross-repo/strategy notes go to `_work/` per the container CLAUDE.md.
