@@ -2,6 +2,26 @@
 
 Last updated: 2026-07-18
 
+> **2026-07-18 (session 2): A2 — the `entities/` layer is COMPLETE (#376 closed).**
+> Design gate `docs/development/fsd-a2-entities.md` was hub-approved (#377), then
+> executed in five behavior-preserving PRs, each with a logic-diff-0 proof and CI
+> green: **E0** #378 (`endpoints.ts`→`shared/api`, `downloadCsv`→`shared/lib`,
+> `ProblemDetails`/`ListEnvelope`→`shared/api/http-types`; `src/api/` emptied),
+> **E1** #379 (bank-transaction / bank-import-batch / reconciliation / client-credit),
+> **E2** #380 (manual-receivable / dunning-notice), **E3** #381 (user /
+> clear-settings[+BankAccount] / audit-event / upstream-invoice; `@/types` → 0,
+> `src/types/index.ts` deleted), **E4** #383 (`useFiscalYearDefault` →
+> `entities/user/model/`, `src/hooks/` removed). Result: **10 entity slices**,
+> `types/`·`api/`·`hooks/` gone from `src/`; every PR kept **vitest 62** and knip
+> clean. Chosen strategy = **types-only relocation** (snake_case `model.ts`
+> verbatim, no mapper/zod yet): a hub-approved **transitional** state whose exit is
+> the **A1 codemod** (hooks→model), now unblocked. One deviation: `UpstreamClient`
+> (a dead export) is co-located in `entities/upstream-invoice` rather than its own
+> slice — tracked in **#382**. FSD boundary-lint zones remain deferred (a
+> follow-on under the front-test-hardening campaign). `components/keyboard` stays
+> frozen (**fleet-tooling#89**) — the only `src/components/` resident.
+> Details: [`../daily/2026-07-18.md`](../daily/2026-07-18.md) (session 2).
+
 > **2026-07-18: A2 (FSD 5-layer rebuild) — shared foundation essentially done.**
 > After Tier1 (`shared/lib` #359 / `shared/i18n` #360 / `shared/api` #362),
 > **Tier2 `shared/ui`** landed (design #369 / impl #370): the 15 `components/ui`
