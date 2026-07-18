@@ -14,7 +14,7 @@ Write an ADR when a decision affects:
 - release, versioning, or compatibility policy
 - long-term maintenance cost
 
-Do **not** use ADRs for routine task detail — use Issues, PRs, and `docs/todo/current.md`.
+Do **not** use ADRs for routine task detail — use Issues, PRs, and `nene-origin/internal-docs/clear/todo/current.md`.
 
 ## Directory and naming
 

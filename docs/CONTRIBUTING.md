@@ -17,7 +17,7 @@ NeNe Clear is built through small, Issue-driven changes. This document is the sh
 | AI tools | `docs/integrations/ai-tools.md` |
 | Agent entry point | `AGENTS.md` |
 | Roadmap | `docs/roadmap.md` |
-| Current work | `docs/todo/current.md` |
+| Current work | `nene-origin/internal-docs/clear/todo/current.md` |
 
 ## Collaboration Policy
 
@@ -29,7 +29,7 @@ Follow [`docs/workflow.md`](workflow.md) — inherited from [NENE2](https://gith
 4. Push, open PR with `Closes #number`, merge after checks — **do not push directly to `main`**.
 
 - Use one branch and one PR per focused work unit.
-- Keep `docs/milestones/`, `docs/roadmap.md`, and `docs/todo/current.md` updated when direction changes.
+- Keep `docs/milestones/`, `docs/roadmap.md`, and `nene-origin/internal-docs/clear/todo/current.md` updated when direction changes.
 - Explain intent, impact, verification, and remaining risk in PRs.
 - Prefer documentation that helps the next developer or AI agent decide what to do without rereading chat history.
 
