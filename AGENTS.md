@@ -22,7 +22,7 @@ Entry point for AI agents working on **NeNe Clear** (public repo `nene-clear`).
 - **Reconciliation & dunning (binding):** `docs/explanation/payment-reconciliation-dunning-compliance.md`
 - **NENE2 coding conventions (binding):** `docs/development/nene2-compliance.md`
 - **Invoice upstream:** `docs/integrations/sibling-products.md`
-- **Current work:** `docs/todo/current.md`
+- **Current work / operational logs:** **private** `nene-origin/internal-docs/clear/todo/current.md` (migrated 2026-07-18; public `docs/` keeps only Diátaxis + ADR/CHANGELOG)
 - **Roadmap:** `docs/roadmap.md`
 
 ## Operating Rules
