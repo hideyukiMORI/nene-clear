@@ -18,7 +18,7 @@ import { Modal } from '@/shared/ui/modal'
 import { Notice } from '@/shared/ui/notice'
 import { PageHead } from '@/shared/ui/page-head'
 import { useTranslation } from '@/shared/i18n/use-translation'
-import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
+import { useFiscalYearDefault } from '@/entities/user'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDateTime, daysOverdue } from '@/shared/lib/format'
 

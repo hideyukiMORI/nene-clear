@@ -119,8 +119,16 @@ Entity nouns are **singular kebab-case** (§3 l.263). For A2 each slice holds
 | `entities/dunning-notice` | `DunningNotice` | `DunningPause`/`DunningPreview`/`DunningStage` currently live in endpoints.ts (§6) |
 | `entities/clear-settings` | `ClearSettings`, **`BankAccount`** | BankAccount co-located here on purpose — see §6 sibling-import |
 | `entities/audit-event` | `AuditEvent`, `AuditAction` | `AuditAction` = frontend display union (§5, #317-C) |
-| `entities/upstream-invoice` | `UpstreamInvoice` | read-only upstream read model |
-| `entities/upstream-client` | `UpstreamClient` | read-only upstream read model |
+| `entities/upstream-invoice` | `UpstreamInvoice`, **`UpstreamClient`** | read-only upstream read models |
+
+> **Executed deviation (E3, hub-approved option A, 2026-07-18):** `UpstreamClient`
+> was to be its own `entities/upstream-client` slice, but it has **no importer
+> anywhere** (a dead export, pre-A2 too). A standalone slice would be a
+> knip-flagged dead *file*, and deleting it would break the logic-diff-0
+> pure-relocation contract. So both upstream read models are **co-located in
+> `entities/upstream-invoice`** (the grouping the pre-A2 comment already used).
+> Its future — delete vs. replace via #317/A1 — is tracked in a follow-up issue.
+> Net entity slices: **10**, not 11.
 
 **Stays in `shared/` (not entities):**
 
