@@ -17,7 +17,7 @@ import { PageHead } from '@/shared/ui/page-head'
 import { StatusBadge } from '@/shared/ui/status-badge'
 import type { StatusMeta } from '@/shared/ui/status-badge'
 import { useTranslation } from '@/shared/i18n/use-translation'
-import { useFiscalYearDefault } from '@/hooks/useFiscalYearDefault'
+import { useFiscalYearDefault } from '@/entities/user'
 import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/shared/lib/format'
 
