@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { login } from '@/api/endpoints'
+import { login } from '@/shared/api/endpoints'
 import { storeToken } from '@/shared/api/client'
 import { Button } from '@/shared/ui/button'
 import { Icon } from '@/shared/ui/icon'

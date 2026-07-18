@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { getInvitation, acceptInvitation } from '@/api/endpoints'
+import { getInvitation, acceptInvitation } from '@/shared/api/endpoints'
 import { ApiError } from '@/shared/api/client'
 import { Button } from '@/shared/ui/button'
 import { Icon } from '@/shared/ui/icon'

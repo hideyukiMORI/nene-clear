@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { listAuditEvents } from '@/api/endpoints'
+import { listAuditEvents } from '@/shared/api/endpoints'
 import type { AuditEvent, AuditAction } from '@/types'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'

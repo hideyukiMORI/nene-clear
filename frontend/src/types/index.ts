@@ -140,21 +140,6 @@ export interface BankAccount {
   csv_header_rows?: number
 }
 
-export interface ProblemDetails {
-  type: string
-  title: string
-  status: number
-  detail?: string
-  errors?: Array<{ field: string; code: string; message: string }>
-}
-
-export interface ListEnvelope<T> {
-  items: T[]
-  limit: number
-  offset: number
-  total: number
-}
-
 // Append-only audit trail (terminology §2). `before` / `after` are the
 // sanitized snapshots; `metadata` carries extra context keys (e.g. the
 // targeted `invoice_id`) — each null when the event recorded none.

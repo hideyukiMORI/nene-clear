@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { getCurrentUser } from '@/api/endpoints'
+import { getCurrentUser } from '@/shared/api/endpoints'
 import { fiscalYearStart, todayIso } from '@/shared/lib/fiscal'
 
 /**

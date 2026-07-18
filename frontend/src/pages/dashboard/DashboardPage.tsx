@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { listUnmatchedTransactions, listDunningNotices } from '@/api/endpoints'
+import { listUnmatchedTransactions, listDunningNotices } from '@/shared/api/endpoints'
 import { Button } from '@/shared/ui/button'
 import { Card, CardHead } from '@/shared/ui/card'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'

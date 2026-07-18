@@ -1,19 +1,10 @@
-import { api } from '@/shared/api/client'
-
-export async function downloadCsv(path: string, filename: string): Promise<void> {
-  const blob = await api.getBlob(path)
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
+import { api } from './client'
 import type {
   User, BankImportBatch, BankTransaction, Reconciliation,
   ClientCredit, DunningNotice, ClearSettings, UpstreamInvoice,
-  AuditEvent, ListEnvelope, ManualReceivable, ManualReceivableImportResult,
+  AuditEvent, ManualReceivable, ManualReceivableImportResult,
 } from '@/types'
+import type { ListEnvelope } from './http-types'
 
 const BASE = '/admin'
 

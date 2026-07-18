@@ -7,11 +7,11 @@ import {
   confirmMatch,
   reverseReconciliation,
   sendDunningNotice,
-  downloadCsv,
   importBankCsv,
   importManualReceivables,
 } from './endpoints'
-import { storeToken } from '@/shared/api/client'
+import { downloadCsv } from '@/shared/lib/download'
+import { storeToken } from './client'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {

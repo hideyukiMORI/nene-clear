@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/api/endpoints'
+import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/shared/api/endpoints'
 import type { BankAccount, ClearSettings } from '@/types'
 import { Button } from '@/shared/ui/button'
 import { Card, CardFoot } from '@/shared/ui/card'

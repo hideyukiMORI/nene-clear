@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/api/endpoints'
+import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import type { BankImportBatch } from '@/types'
 import { Button } from '@/shared/ui/button'

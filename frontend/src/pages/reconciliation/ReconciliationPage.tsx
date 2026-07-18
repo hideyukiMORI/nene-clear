@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   listUnmatchedTransactions, listReconciliations,
-  confirmMatch, reverseReconciliation, proposeMatch, downloadCsv, reconciliationsExportPath,
-} from '@/api/endpoints'
+  confirmMatch, reverseReconciliation, proposeMatch, reconciliationsExportPath,
+} from '@/shared/api/endpoints'
+import { downloadCsv } from '@/shared/lib/download'
 import type { BankTransaction, Reconciliation } from '@/types'
-import type { AllocationInput, MatchSuggestion } from '@/api/endpoints'
+import type { AllocationInput, MatchSuggestion } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
