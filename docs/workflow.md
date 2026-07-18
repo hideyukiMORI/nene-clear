@@ -7,7 +7,7 @@ See also: `docs/inheritance-from-nene2.md`.
 ## Standard Flow
 
 1. Create or reuse a focused GitHub Issue.
-2. Confirm context in `docs/roadmap.md`, `docs/milestones/`, and `docs/todo/current.md`.
+2. Confirm context in `docs/roadmap.md`, `docs/milestones/`, and `nene-origin/internal-docs/clear/todo/current.md`.
 3. Create a branch from `main` named like `type/issue-number-summary`.
 4. Implement the smallest useful change.
 5. Update docs, roadmap, milestone, or TODO files when the decision or state changes.
@@ -63,7 +63,7 @@ To prevent it:
 
 - `docs/roadmap.md`: long-lived direction and phases
 - `docs/milestones/`: medium-sized goals and acceptance criteria
-- `docs/todo/current.md`: current task board and handoff notes
+- `nene-origin/internal-docs/clear/todo/current.md`: current task board and handoff notes
 - `docs/adr/`: major architecture decisions
 - `docs/inheritance-from-nene2.md`: NENE2 governance inheritance map
 
@@ -90,4 +90,4 @@ If a user explicitly says investigation only, no commit, no PR, or another narro
 
 ## Initial Issues Backlog
 
-Phase 0 bootstrap Issues are tracked in `docs/todo/current.md`. After governance lands, use GitHub Issues for all work — no direct `main` commits.
+Phase 0 bootstrap Issues are tracked in `nene-origin/internal-docs/clear/todo/current.md`. After governance lands, use GitHub Issues for all work — no direct `main` commits.
