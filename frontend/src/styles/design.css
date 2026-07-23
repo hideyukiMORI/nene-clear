@@ -959,4 +959,87 @@ tr.is-cursor, .is-cursor { background: var(--navy-100); box-shadow: inset 3px 0 
   .terms, .opt3, .kgrid, .deflist .row{ grid-template-columns:1fr; }
   .deflist .row{ gap:4px; }
 }
+
+/* ===== モバイルレスポンシブ (追加レイヤ / 既存テーマは据え置き) ==================
+   ClaudeDesign 指示書 2026-07-24 / fleet の invoice・deal「1カラム＋ボトムタブ＋
+   メニュー畳み」を踏襲。タブ/シートは Clear の濃紺(--side-bg)・朱バッジ(--bad)を
+   保持しブランドの見え方は変えない。ブレークポイント <=820px。
+   NOTE: 指示書 §3 の recon master-detail (.recon-split) は実 UI(タブ＋DataTable＋
+   マッチ Modal)に無いため未移植。DataTable は .tbl-wrap{overflow-x:auto}、Modal は
+   max-height:86vh でモバイル可 — シェル 1カラム化だけで「右端切断」は解消する。
+   ======================================================================= */
+.mnav, .mbrand{ display:none; }
+.side{ width:208px; }
+
+@media (max-width:820px){
+  .app{ flex-direction:column; height:100dvh; }
+  .side{ display:none; }
+  .main{ width:100%; min-width:0; }
+  .topbar{ padding:0 12px; gap:8px; }
+  .mbrand{ display:flex; align-items:center; gap:9px; flex:none; text-decoration:none; color:var(--ink); }
+  .mbrand .logo-mark{ width:24px; height:24px; }
+  .mbrand b{ font-size:14px; font-weight:700; letter-spacing:.01em; }
+  /* The desktop breadcrumb is a static "NeNe Clear › メニュー" placeholder (unlike
+     the design mock, whose JS rewrote it per view). On mobile the .mbrand + the
+     page H1 + the active bottom tab already say where you are, so hide it rather
+     than surface a misleading fixed label. */
+  .crumb{ display:none; }
+  .topbar .lang, .topbar .sep{ display:none; }
+  .topbar-r{ gap:4px; }
+  .page{ padding:16px 14px 92px; }
+  .page-head{ margin:-16px -14px 18px; padding:16px 14px 14px; }
+  .kpi-grid{ grid-template-columns:1fr !important; gap:12px; }
+  .kpi{ padding:16px 18px; }
+  .dash-cards{ grid-template-columns:1fr !important; gap:14px; }
+  .mnav{ display:flex; }
+}
+
+/* ボトムタブ (濃紺・primary 4 + メニュー) */
+.mnav{ position:fixed; left:0; right:0; bottom:0; z-index:60;
+  height:calc(58px + env(safe-area-inset-bottom)); padding-bottom:env(safe-area-inset-bottom);
+  background:var(--side-bg); border-top:1px solid var(--side-line); align-items:stretch; }
+.mtab{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:4px; color:var(--side-fg); background:none; border:0; cursor:pointer; font-size:10px;
+  font-weight:600; position:relative; padding:7px 2px 0; font-family:inherit; text-decoration:none;
+  white-space:nowrap; letter-spacing:-.02em; }
+.mtab .ic{ width:22px; height:22px; }
+.mtab > span{ max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+.mtab.active{ color:var(--side-fg-strong); }
+.mtab.active:before{ content:""; position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:28px; height:3px; background:var(--side-active-bar); border-radius:0 0 2px 2px; }
+.mtab-badge{ position:absolute; top:3px; left:calc(50% + 6px); background:var(--bad); color:#fff;
+  border-radius:999px; min-width:17px; height:17px; padding:0 4px; font-size:10px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; line-height:1; border:1.5px solid var(--side-bg); }
+.mdots{ display:flex; gap:3px; }
+.mdots i{ width:4px; height:4px; border-radius:999px; background:currentColor; }
+
+/* メニューシート (全ナビ畳み込み・濃紺ボトムシート) */
+.msheet{ position:fixed; inset:0; z-index:70; }
+.msheet[hidden]{ display:none; }
+.msheet-scrim{ position:absolute; inset:0; background:#0a1c3070; opacity:0; transition:opacity .2s; }
+.msheet.open .msheet-scrim{ opacity:1; }
+.msheet-panel{ position:absolute; left:0; right:0; bottom:0; max-height:88dvh; overflow-y:auto;
+  background:var(--side-bg); color:var(--side-fg); border-radius:16px 16px 0 0;
+  padding:10px 12px calc(20px + env(safe-area-inset-bottom)); transform:translateY(102%);
+  transition:transform .24s cubic-bezier(.2,.7,.3,1); box-shadow:0 -8px 32px #0006; }
+.msheet.open .msheet-panel{ transform:translateY(0); }
+.msheet-grab{ width:38px; height:4px; border-radius:999px; background:#ffffff30; margin:2px auto 12px; }
+.msheet .side-sect{ color:var(--side-fg); opacity:.7; font-size:11px; letter-spacing:.06em;
+  text-transform:uppercase; padding:10px 11px 6px; font-weight:600; }
+.msheet .nav-item{ display:flex; align-items:center; gap:12px; color:var(--side-fg);
+  text-decoration:none; padding:11px; border-radius:var(--radius-sm); font-size:14px; font-weight:500; }
+.msheet .nav-item .ic{ width:20px; height:20px; flex:none; }
+.msheet .nav-item.active{ background:var(--side-active-bg); color:var(--side-fg-strong); font-weight:700; }
+.msheet .nav-badge{ background:var(--bad); color:#fff; border-radius:999px; margin-left:auto;
+  padding:3px 7px; font-size:11px; font-weight:700; }
+.msheet-foot{ border-top:1px solid var(--side-line); margin-top:10px; padding:14px 11px 4px;
+  display:flex; align-items:center; gap:11px; }
+.msheet-foot .avatar{ width:34px; height:34px; border-radius:var(--radius-sm); background:var(--navy-500);
+  color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none; }
+.msheet-foot .who b{ display:block; color:var(--side-fg-strong); font-size:13px; }
+.msheet-foot .who span{ font-size:11.5px; color:var(--side-fg); }
+.msheet-foot .logout{ margin-left:auto; background:#ffffff12; border:1px solid var(--side-line);
+  color:var(--side-fg-strong); border-radius:var(--radius-sm); width:38px; height:38px;
+  display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.msheet-foot .logout .ic{ width:18px; height:18px; }
 }

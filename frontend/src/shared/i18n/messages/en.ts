@@ -15,6 +15,7 @@ export const en: Record<MessageKey, string> = {
   'nav.dashboard': 'Dashboard',
   'nav.bankImport': 'Bank CSV Import',
   'nav.bankTransactions': 'Bank Transactions',
+  'nav.tab.bankTransactions': 'Transactions',
   'nav.reconciliation': 'Reconciliation',
   'nav.clientCredits': 'Client Credits',
   'nav.manualReceivables': 'Manual Receivables',
