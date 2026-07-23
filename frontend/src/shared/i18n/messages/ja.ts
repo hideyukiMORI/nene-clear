@@ -11,6 +11,7 @@ export const ja = {
   'nav.dashboard': 'ダッシュボード',
   'nav.bankImport': '銀行CSV取込',
   'nav.bankTransactions': '銀行取引一覧',
+  'nav.tab.bankTransactions': '取引',
   'nav.reconciliation': '消込',
   'nav.clientCredits': '前受金',
   'nav.manualReceivables': '手入力売掛',
