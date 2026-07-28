@@ -251,6 +251,25 @@ the feature existed, and must not be read as "scheduled". The unattended actor v
 **not** new — a scheduled send records `actor_id = 0`, the existing "no human actor" value
 (§3, and the `AuditEvent.actor_id` contract in `openapi.yaml`).
 
+### Scheduler locks (#400)
+
+Mutual exclusion for unattended runs, held in the database so that two overlapping cron
+ticks cannot do the same work twice. Deliberately **generic**: the table is not
+dunning-specific, because the next scheduled job would otherwise be forced to reuse a lock
+named after dunning. Scope is expressed in the key, not the table name.
+
+| Term | Canonical | Never |
+| --- | --- | --- |
+| Lock table | `scheduler_locks` | `dunning_scheduler_locks`, `locks`, `job_locks`, `cron_locks` |
+| Lock name (scoped, e.g. `dunning:42`) | `lock_key` | `name`, `key`, `lock_name` |
+| Who holds it (one run's random token) | `holder_token` | `owner`, `holder`, `pid`, `run_id` (that is `dunning_run_id`, a different thing) |
+| Taken / expiry timestamps | `acquired_at`, `expires_at` | `locked_at`, `created_at`, `ttl`, `valid_until` |
+
+The lock is taken by an **atomic** insert against the primary key — never by reading first
+and then inserting, which reopens the check-then-act window the lock exists to close.
+`expires_at` exists so a run killed mid-flight (no chance to release) cannot block the job
+forever; reclaiming an expired lock is the same atomic statement.
+
 ---
 
 ## 4. Problem Details type slugs (kebab-case)
