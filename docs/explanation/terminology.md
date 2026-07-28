@@ -223,6 +223,34 @@ the standard Google Analytics spelling (external contract; do not rename).
 | Demo-entry log message | `Demo entry recorded.` | `demo_entry`, `demo hit` |
 | Entry log context keys | `template`, `referer`, `utm_source`, `utm_medium`, `utm_campaign` | `referrer`, `utm_src`, `campaign`, `source` |
 
+### Scheduled dunning (#400)
+
+Sending dunning notices unattended on a schedule. Not a new domain entity — the notice
+records, the guards and the `dunning_sent` audit action are the existing ones
+([`dunning-scheduler-design.md`](../development/dunning-scheduler-design.md)). What is new is
+a set of `clear_settings` columns, two audit `metadata` keys, and the CLI entry point.
+
+Settings columns follow the existing `dunning_min_interval_days` shape: `dunning_` prefix,
+unit suffix, booleans `is_`-prefixed. The window is evaluated in the application timezone.
+
+| Term | Canonical | Never |
+| --- | --- | --- |
+| Scheduled dunning on/off (per org, default off) | `is_dunning_schedule_enabled` | `dunning_auto_send`, `auto_dunning`, `dunning_cron_enabled`, `scheduled` |
+| Days past due before `initial` | `dunning_initial_after_days` | `initial_days`, `dunning_stage1_days` |
+| Days past due before `reminder` | `dunning_reminder_after_days` | `reminder_days`, `dunning_stage2_days` |
+| Days past due before `final` | `dunning_final_after_days` | `final_days`, `dunning_stage3_days` |
+| Send-window start / end (hour of day, 0–23) | `dunning_window_start_hour`, `dunning_window_end_hour` | `window_start`, `send_from`, `dunning_window_start_at` (it is not a timestamp) |
+| Restrict sending to weekdays | `is_dunning_weekdays_only` | `dunning_business_days`, `skip_weekends` |
+| Per-run send cap | `dunning_max_per_run` | `dunning_batch_size`, `max_sends`, `limit` |
+| What initiated a dunning send (audit `metadata`) | `trigger`, values `manual` / `scheduled` | `source` (that is the receivable discriminator — §3), `origin`, `initiated_by`, `auto` |
+| Scheduler run identifier (audit `metadata`, log) | `dunning_run_id` | `run_id`, `batch_id`, `job_id` |
+| CLI entry point | `tools/send-scheduled-dunning.php` | `dunning-cron.php`, `auto-dunning.php`, `send-dunning.php` |
+
+`trigger` is written on **both** paths from #400 onward; its absence marks a row written before
+the feature existed, and must not be read as "scheduled". The unattended actor value itself is
+**not** new — a scheduled send records `actor_id = 0`, the existing "no human actor" value
+(§3, and the `AuditEvent.actor_id` contract in `openapi.yaml`).
+
 ---
 
 ## 4. Problem Details type slugs (kebab-case)

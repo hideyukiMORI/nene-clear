@@ -113,6 +113,7 @@ Public OpenAPI summaries, descriptions, and examples: **English only**.
 | Booleans | `is_` / `has_` prefix | `is_deleted`, `has_remainder` |
 | Timestamps | `_at` suffix, ISO 8601 string | `imported_at`, `confirmed_at`, `sent_at` |
 | Calendar dates | `_date` suffix (documented exception: `value_date`) | `value_date` |
+| Hour of day (a setting, not an instant) | `_hour` suffix, integer 0–23 | `dunning_window_start_hour`, `dunning_window_end_hour` |
 | Foreign keys | `{entity}_id` | `bank_transaction_id`, `invoice_id` (upstream) |
 | List envelope | `items`, `limit`, `offset` | Same as NENE2 list pattern |
 
