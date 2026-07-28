@@ -18,7 +18,9 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
     public function findByOrganization(int $organizationId): ?ClearSettings
     {
         $row = $this->query->fetchOne(
-            'SELECT organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month '
+            'SELECT organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month, '
+            . 'is_dunning_schedule_enabled, dunning_initial_after_days, dunning_reminder_after_days, dunning_final_after_days, '
+            . 'dunning_window_start_hour, dunning_window_end_hour, is_dunning_weekdays_only, dunning_max_per_run '
             . 'FROM clear_settings WHERE organization_id = ?',
             [$organizationId],
         );
@@ -34,6 +36,16 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
             dunningMinIntervalDays: (int) $row['dunning_min_interval_days'],
             fiscalYearEndMonth: isset($row['fiscal_year_end_month']) ? (int) $row['fiscal_year_end_month'] : null,
             bankAccounts: $this->bankAccounts->findByOrganization($organizationId),
+            dunningSchedule: new DunningSchedule(
+                isEnabled: (bool) $row['is_dunning_schedule_enabled'],
+                initialAfterDays: (int) $row['dunning_initial_after_days'],
+                reminderAfterDays: (int) $row['dunning_reminder_after_days'],
+                finalAfterDays: (int) $row['dunning_final_after_days'],
+                windowStartHour: (int) $row['dunning_window_start_hour'],
+                windowEndHour: (int) $row['dunning_window_end_hour'],
+                isWeekdaysOnly: (bool) $row['is_dunning_weekdays_only'],
+                maxPerRun: (int) $row['dunning_max_per_run'],
+            ),
         );
     }
 
@@ -47,6 +59,15 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
         return $row !== null && isset($row['fiscal_year_end_month']) ? (int) $row['fiscal_year_end_month'] : null;
     }
 
+    /**
+     * Deliberately does NOT persist {@see ClearSettings::$dunningSchedule} (#400).
+     * `PUT /admin/clear-settings` is a full replace (#284) and its request body
+     * cannot carry the schedule columns yet, so writing them here would let a
+     * save of *unrelated* settings reset an enabled schedule back to the column
+     * defaults — silently, because the operator only edited a bank account. The
+     * columns keep their stored values until the settings API and UI learn about
+     * them (design §11 step 4), which is also when this method starts writing them.
+     */
     public function save(ClearSettings $settings): void
     {
         // Upsert without a destructive DELETE. Decide insert-vs-update by an
