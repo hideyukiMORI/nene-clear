@@ -192,6 +192,11 @@ second.
 ## 11. Implementation order
 
 1. Terminology registry entries (binding — before any code).
-3. Migration (settings columns) — mysql / pgsql / sqlite.
-4. Console command + selection service + lock, behind the default-off switch.
-5. Tests (§10), then the settings UI.
+2. Migration (settings columns) — mysql / pgsql / sqlite.
+3. Console command + selection service + lock, behind the default-off switch.
+4. Tests (§10), then the settings UI (including its i18n keys).
+5. **Ops runbook** — the one page the owner reads. Installing the cron entry in the hosting
+   control panel, running `--dry-run` once as the first acceptance step before anything is
+   enabled, how to tell a run happened (the `var/` log), and **how to stop it** (turn the
+   organization switch off; removing the cron line is the blunt fallback). §3 already says the
+   crontab is the owner's seam — this is the page that seam points at.
