@@ -224,6 +224,14 @@ final class SchemaFixture
                 upstream_token_ref TEXT NOT NULL DEFAULT \'\',
                 dunning_min_interval_days INTEGER NOT NULL DEFAULT 7,
                 fiscal_year_end_month INTEGER,
+                is_dunning_schedule_enabled INTEGER NOT NULL DEFAULT 0,
+                dunning_initial_after_days INTEGER NOT NULL DEFAULT 3,
+                dunning_reminder_after_days INTEGER NOT NULL DEFAULT 14,
+                dunning_final_after_days INTEGER NOT NULL DEFAULT 30,
+                dunning_window_start_hour INTEGER NOT NULL DEFAULT 9,
+                dunning_window_end_hour INTEGER NOT NULL DEFAULT 18,
+                is_dunning_weekdays_only INTEGER NOT NULL DEFAULT 1,
+                dunning_max_per_run INTEGER NOT NULL DEFAULT 50,
                 created_at TEXT,
                 updated_at TEXT
             )'
