@@ -30,23 +30,43 @@ blind the gate to *everything*, not just the advisory in question.
 4. **Prefer the fix.** If a patched version exists in a range we can take, take it. An
    exception is only for "no fix exists that we can adopt".
 
-Rule 4 is why this repo went from 8 advisories to 1 before writing any allowlist entry
-(measured 2026-07-29): `react-router-dom` 7.16.0 → 7.18.1 and `vite` 8.0.14 → 8.1.5 (which
-carries `postcss` 8.5.15 → 8.5.24), plus two `overrides` for transitive packages that have no
-direct dependency line here — `js-yaml` `^4.3.0` and `brace-expansion` `^5.0.8`, both reached
-through `openapi-typescript` → `@redocly/openapi-core` and through `eslint`. `npm run check`
-exercises those overrides for real, because `codegen:check` runs `openapi-typescript`.
+Rule 4 is why the bumps came first (measured 2026-07-29): `react-router-dom` 7.16.0 → 7.18.1
+and `vite` 8.0.14 → 8.1.5 (which carries `postcss` 8.5.15 → 8.5.24), plus `overrides` for
+transitive packages that have no direct dependency line here — `js-yaml` `^4.3.0` and
+`brace-expansion@5` `^5.0.8`, reached through `openapi-typescript` → `@redocly/openapi-core`
+and through `eslint`.
+
+**An override can break its consumer without failing any check.** A *flat*
+`"brace-expansion": "^5.0.8"` was tried first here and silently broke
+`@redocly/openapi-core`'s `minimatch@5.1.9`: brace-expansion 5 exports a named `expand`, while
+minimatch 5 calls the module itself, so every brace pattern threw `TypeError: expand is not a
+function`. `npm run check` stayed green — nothing in the suite walks that path. The override is
+therefore **version-scoped** (`brace-expansion@5`), which patches the `minimatch@10` chain
+under eslint while leaving the 2.x copy that minimatch 5 needs. When you add an override,
+exercise the consumer directly rather than trusting a green suite:
+
+```sh
+# eslint chain (minimatch@10, named export)
+node -e "const {minimatch}=require('minimatch'); console.log(minimatch('abd','a{b,c}d'))"
+# codegen chain (minimatch@5, callable module export)
+node -e "const m=require('./node_modules/@redocly/openapi-core/node_modules/minimatch'); console.log(m('abd','a{b,c}d'))"
+```
+
+Both must print `true`.
 
 ## Current exceptions
 
 | Advisory | Package | Why it does not apply here | Expires |
 | --- | --- | --- | --- |
 | [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2) | `react-router` (7.12.0–8.2.0) | The admin console is a **static SPA built by Vite**, served as files from `public_html/assets/`; the PHP front controller never renders a React route. Routing is `createBrowserRouter` with element-only routes — **no RSC mode, no server components, no server-side route `action`/`loader`, no `@react-router/dev` runtime**. The advisory's attack path (a server executing a route action before returning 400) has no counterpart in a client-only bundle. Measured 2026-07-29 in this tree: `grep -cE '\b(action\|loader):' frontend/src/app/router.tsx` = **0**, and `grep -rniE '@react-router/(dev\|node\|serve)\|react-router/server\|createStaticHandler\|rsc' frontend/src` returns **no match**. | **2026-08-31** |
+| [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) | `brace-expansion` 2.1.3 (≤5.0.7) | The fix (5.0.8) is taken where adoptable — `brace-expansion@5` is overridden, covering the `minimatch@10` chain under eslint 10. There is no patched 2.x release, and forcing 5.0.8 into it breaks `minimatch@5` (see above). The one vulnerable copy left is **dev-only**: `npm ls brace-expansion --omit=dev --all` is empty, and it is reached only by `openapi-typescript` → `@redocly/openapi-core` → `minimatch@5.1.9` — codegen running over our own committed `docs/openapi/openapi.yaml`. The advisory needs an attacker-supplied brace pattern; ours are literals in committed files. | **2026-08-31** |
 
-There is **no fix available in the 7.x line**: `react-router-dom` ends at 7.18.1 (the version
-this repo is on), and the fix lands in `react-router` v8 (≥ 8.2.1) — a different package and a
-breaking upgrade. The exception is removed by the **react-router v8 migration wave** (bundled
-with the NENE2 RR8 re-evaluation).
+For `react-router` there is **no fix available in the 7.x line**: `react-router-dom` ends at
+7.18.1 (the version this repo is on), and the fix lands in `react-router` v8 (≥ 8.2.1) — a
+different package and a breaking upgrade. That exception is removed by the **react-router v8
+migration wave** (bundled with the NENE2 RR8 re-evaluation). The `brace-expansion` exception is
+removed when `openapi-typescript` / `@redocly/openapi-core` move off `minimatch@5`; note this
+repo is already on eslint 10, so — unlike nene-invoice — no eslint-major wave is involved.
 
 ## Fleet note
 
