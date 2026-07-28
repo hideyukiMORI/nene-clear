@@ -238,6 +238,18 @@ final class SchemaFixture
         );
     }
 
+    public static function createSchedulerLocks(DatabaseQueryExecutorInterface $query): void
+    {
+        $query->execute(
+            'CREATE TABLE scheduler_locks (
+                lock_key TEXT PRIMARY KEY NOT NULL,
+                holder_token TEXT NOT NULL,
+                acquired_at TEXT NOT NULL,
+                expires_at TEXT NOT NULL
+            )'
+        );
+    }
+
     public static function createDunningNotices(DatabaseQueryExecutorInterface $query): void
     {
         $query->execute(
