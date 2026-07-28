@@ -1,0 +1,66 @@
+{
+  // Dependency-vulnerability gate for CI (replaces a bare `npm audit --audit-level=high`,
+  // which has no way to record a reasoned exception).
+  //
+  // The gate stays sharp: anything high/critical that is NOT listed below fails the build.
+  // `allowlist` is per-advisory (GHSA id), never per-severity — we do not lower the level.
+  //
+  // Adding an entry requires, in this file: (1) the advisory id, (2) why it does not apply to
+  // THIS codebase, measured — not assumed, (3) an expiry date, (4) what removes the need for it.
+  // An expired entry is a task, not a renewal: re-check it, do not extend it by reflex.
+  //
+  // Policy: docs/development/dependency-audit.md
+  "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
+  "moderate": false,
+  "high": true,
+  "critical": true,
+  "allowlist": [
+    // GHSA-qwww-vcr4-c8h2 — react-router "RSC Mode CSRF Bypass Allows Action Execution Before
+    // 400 Response" (high). Vulnerable range 7.12.0–8.2.0; there is NO fix in the 7.x line
+    // (react-router-dom stops at 7.18.1, which we are on; the fix is react-router v8 >= 8.2.1,
+    // a different package and a breaking upgrade).
+    //
+    // Why it does not apply here (measured 2026-07-29 in THIS tree, not copied from a sibling):
+    // the Clear admin console is a **static SPA built by Vite** and served as files from
+    // `public_html/assets/` — the PHP front controller never renders a React route. Routing is
+    // `createBrowserRouter` with element-only routes: `grep -cE '\b(action|loader):'
+    // src/app/router.tsx` = **0**, and `grep -rniE '@react-router/(dev|node|serve)|
+    // react-router/server|createStaticHandler|rsc' src` = **no match**. The advisory's attack
+    // path (a server executing a route action before returning 400) has no counterpart in a
+    // client-only bundle.
+    //
+    // Expiry: 2026-08-31. Removed by the react-router v8 migration wave (bundled with the
+    // NENE2 RR8 re-evaluation). If that wave slips past the expiry, the entry must be
+    // re-argued in a PR — not silently extended.
+    "GHSA-qwww-vcr4-c8h2",
+
+    // GHSA-mh99-v99m-4gvg — brace-expansion "DoS via unbounded expansion length" (high).
+    // Vulnerable range <=5.0.7; the fix is 5.0.8. We TAKE that fix where it is adoptable —
+    // `"brace-expansion@5": "^5.0.8"` in overrides, which covers the `minimatch@10` chain
+    // under eslint 10 / @typescript-eslint. It is NOT adoptable on the 2.x branch: there is
+    // no patched 2.x release, and forcing 5.0.8 into it breaks the consumer.
+    //
+    // Measured here 2026-07-29 (this repo, not inherited): a *flat* `"brace-expansion":
+    // "^5.0.8"` override was tried first and silently broke `@redocly/openapi-core`'s
+    // `minimatch@5.1.9` — brace-expansion 5 exports a named `expand`, while minimatch 5 does
+    // `require('brace-expansion')` and calls the module itself, so any brace pattern died
+    // with `TypeError: expand is not a function` (minimatch.js:119). Nothing in `npm run
+    // check` exercises that path, so the suite stayed green: a false green. Scoping the
+    // override to `brace-expansion@5` restores it — `minimatch@5.1.9` + `brace-expansion@2.1.3`
+    // now evaluates `a{b,c}d` correctly (true for `abd`, false for `axd`), and the eslint
+    // chain still gets the patched 5.0.8.
+    //
+    // Why the residual risk is acceptable here (measured 2026-07-29): brace-expansion is
+    // **dev-only** in this tree — `npm ls brace-expansion --omit=dev --all` is empty, so it is
+    // in no shipped bundle and on no request path. The one vulnerable copy left is 2.1.3,
+    // reached only through `openapi-typescript` → `@redocly/openapi-core` → `minimatch@5.1.9`,
+    // i.e. the codegen tool running over our own committed `docs/openapi/openapi.yaml`. The
+    // advisory needs an attacker-supplied brace pattern; ours are literals in committed files.
+    //
+    // Expiry: 2026-08-31. Removed when `openapi-typescript` / `@redocly/openapi-core` move off
+    // `minimatch@5` (or by an upstream 2.x backport, if one appears). Note this repo is
+    // already on eslint 10, so — unlike nene-invoice — no eslint-major wave is involved.
+    // Re-check at expiry; do not extend by reflex.
+    "GHSA-mh99-v99m-4gvg",
+  ],
+}
