@@ -121,6 +121,19 @@ PUT  /admin/clear-settings          # send it back with is_dunning_schedule_enab
 Sending only `{"is_dunning_schedule_enabled": true}` will reset every other setting to
 its default. This is the single most likely mistake on this page.
 
+> **On this host, send the token twice.** HETEML-class shared hosting strips the
+> standard `Authorization` header before it reaches PHP, so a `curl` that sets only
+> `Authorization: Bearer <token>` gets a 401 that looks like a bad token. Send the
+> mirror as well and both environments work:
+>
+> ```
+> -H "Authorization: Bearer $TOKEN" -H "X-Authorization: Bearer $TOKEN"
+> ```
+>
+> The mirror is used **only** when `Authorization` did not survive the hop, so
+> sending both is always safe. The admin SPA does the same on every request. Details
+> in the `bearerAuth` description in [`docs/openapi/openapi.yaml`](../openapi/openapi.yaml).
+
 ### The settings
 
 | Setting | Default | What it does |
@@ -219,6 +232,7 @@ unrelated to the schedule: pause it, and every path — scheduled or manual — 
 | `org N: skipped (failed: … unreachable)` | The Invoice API is down or the URL is wrong. Other organizations still ran |
 | Invoices stuck at `awaiting_approval` | Working as designed. `final` needs a person |
 | Scheduled dunning turned itself off | Almost certainly a partial `PUT` — see [full replace](clear-settings-full-replace.md). The audit log will show the `clear_settings_updated` event that did it |
+| `401` from `curl` with a token you know is good | This host strips `Authorization`. Send `X-Authorization` as well — see §3 |
 
 ---
 

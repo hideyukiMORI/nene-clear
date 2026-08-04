@@ -38,6 +38,11 @@ Sending only the field you are editing will reset every field you omitted.
 }
 ```
 
+> **Calling this from shared hosting?** Send the token in `X-Authorization` as well as
+> `Authorization` — HETEML-class hosts strip the standard header, and the resulting
+> `401` looks like a bad token rather than a lost one. See the `bearerAuth` description
+> in [`../openapi/openapi.yaml`](../openapi/openapi.yaml).
+
 The bank accounts behave the same way and always have: the stored set is replaced
 by the array you send, so an omitted `bank_accounts` empties it.
 

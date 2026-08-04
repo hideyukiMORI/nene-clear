@@ -1637,7 +1637,38 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: HS256 JWT for operator/service authentication (BearerTokenMiddleware).
+      description: >
+        HS256 JWT for operator/service authentication (BearerTokenMiddleware).
+        Send it as `Authorization: Bearer <token>`.
+
+
+        **On shared hosting, send `X-Authorization: Bearer <token>` as well.** Some
+        hosts (HETEML-class Tier A) have a front proxy that strips the standard
+        `Authorization` header before it reaches PHP — custom headers pass through,
+        `Authorization` does not, and no `.htaccess` `E=HTTP_AUTHORIZATION` or
+        `CGIPassAuth` trick recovers it. Clear therefore accepts a mirror of the same
+        value in `X-Authorization`, and adopts it **only when `Authorization` is
+        absent or empty**. Where the standard header arrives, the mirror is ignored
+        and behaviour is byte-for-byte identical, so it is safe to send both always.
+        The admin SPA does exactly that.
+
+
+        The header name is fixed — it is a wiring contract with
+        `@hideyukimori/nene2-client` (NENE2 ADR 0019), not a per-deployment setting.
+        The receiving side is opt-in per deployment
+        (`enableAuthorizationHeaderFallback`, on for this app): adopting a
+        client-controlled header as `Authorization` changes the trust boundary, so a
+        deployment whose gateway strips `Authorization` deliberately must not gain a
+        bypass surface by accident.
+    bearerAuthMirror:
+      type: apiKey
+      in: header
+      name: X-Authorization
+      description: >
+        Mirror of the `Authorization` header, for hosts that strip the standard one
+        (see `bearerAuth`). Same `Bearer <token>` value. Never the *only* credential
+        a client sends — send both; this one is used only if `Authorization` did not
+        survive the hop.
 
   parameters:
     IdPath:
