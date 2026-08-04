@@ -115,10 +115,18 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
                         'channel' => $this->mailer->channel(),
                         'template_version' => DunningMessageRenderer::TEMPLATE_VERSION,
                     ],
-                    metadata: [
+                    // `trigger` is written on both paths from #400 onward, so an
+                    // unattended send is tellable from an operator's. It cannot be
+                    // inferred from `actor_id`: a scheduled send records 0, and so
+                    // does a failed login. `dunning_run_id` is omitted entirely on
+                    // the manual path rather than written as null — there is no run,
+                    // and a null would read as "a run that lost its id".
+                    metadata: array_filter([
                         'dunning_notice_id' => $noticeId,
                         'invoice_id' => $input->invoiceId,
-                    ],
+                        'trigger' => $input->trigger->value,
+                        'dunning_run_id' => $input->dunningRunId,
+                    ], static fn (mixed $value): bool => $value !== null),
                 ));
 
                 return $noticeId;
