@@ -8,6 +8,7 @@ use NeneClear\ClearSettings\ClearSettings;
 use NeneClear\Dunning\DunningMessageRenderer;
 use NeneClear\Dunning\DunningStage;
 use NeneClear\Dunning\DunningTooFrequentException;
+use NeneClear\Dunning\DunningTrigger;
 use NeneClear\Dunning\InvoiceAlreadyPaidException;
 use NeneClear\Dunning\SendDunningInput;
 use NeneClear\Dunning\SendDunningUseCase;
@@ -114,6 +115,46 @@ final class SendDunningUseCaseTest extends TestCase
 
         self::assertCount(1, $this->audit->events);
         self::assertSame('dunning_sent', $this->audit->events[0]->action);
+    }
+
+    public function test_manual_send_is_marked_manual_and_carries_no_run_id(): void
+    {
+        $this->addInvoice(1);
+        $this->addClient();
+
+        $this->useCase->execute($this->input());
+
+        $metadata = $this->audit->events[0]->metadata;
+        self::assertIsArray($metadata);
+        self::assertSame('manual', $metadata['trigger']);
+
+        // Omitted, not null: there is no run, and a null would read as "a run that
+        // lost its id".
+        self::assertArrayNotHasKey('dunning_run_id', $metadata);
+    }
+
+    public function test_scheduled_send_is_marked_scheduled_and_carries_its_run_id(): void
+    {
+        $this->addInvoice(1);
+        $this->addClient();
+
+        $this->useCase->execute(new SendDunningInput(
+            organizationId: 7,
+            invoiceId: 1,
+            actorUserId: 0,
+            trigger: DunningTrigger::Scheduled,
+            dunningRunId: 'run-abc123',
+        ));
+
+        $metadata = $this->audit->events[0]->metadata;
+        self::assertIsArray($metadata);
+        self::assertSame('scheduled', $metadata['trigger']);
+        self::assertSame('run-abc123', $metadata['dunning_run_id']);
+
+        // `actor_id = 0` is the existing "no human actor" value and is NOT what
+        // makes a send identifiable as scheduled — a failed login records 0 too.
+        // `trigger` is what separates them inside that shared value.
+        self::assertSame(0, $this->audit->events[0]->actorId);
     }
 
     public function test_paid_invoice_throws(): void
