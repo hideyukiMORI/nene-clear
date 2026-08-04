@@ -5,11 +5,11 @@
   // `main.tsx` is the only file allowed to import it. Without this, knip loses
   // the `@import "tailwindcss"` inside it and reports tailwindcss as an unused
   // devDependency. This points the detector at the file that moved — it does not
-  // silence a finding (contrast the schema.gen.ts entry below, which does, and is
-  // scheduled for removal).
+  // silence a finding. (There used to be an `ignore` for schema.gen.ts here: that
+  // one *was* silencing — 2,900 generated lines with no consumer. A2 F2 connected
+  // it through the entities' api-types.ts, so the exemption is gone.)
   "entry": ["src/shared/ui/theme/index.css"],
   "project": ["src/**/*.{ts,tsx}", "src/shared/ui/theme/*.css"],
-  "ignore": ["src/shared/api/schema.gen.ts"],
   "ignoreExportsUsedInFile": true,
   "exclude": ["exports", "types"]
 }

@@ -1,12 +1,22 @@
-// Domain model for the append-only audit trail. Mirrors the API JSON exactly
-// (snake_case; no renaming) — see docs/development/fsd-a2-entities.md §4.1
-// (transitional: the A1 codemod later introduces the camelCase model + mapper).
-// `AuditAction` stays a frontend-only display union (design §5, #317-C); whether
-// it becomes a registered spec enum is a #317 decision.
+// Domain model for the append-only audit trail.
+//
+// A2 F2: the shape is the OpenAPI contract type (`api-types.ts`), not a
+// hand-written mirror. Still snake_case; the camelCase model + mapper are a
+// later step (fsd-a2-entities.md §4.1). What changes is *where the truth lives*:
+// a spec change now breaks the build instead of silently disagreeing with the
+// server.
+//
+// One deliberate narrowing: the spec types `action` as a plain string, while the
+// UI switches on it to pick a label. `AuditAction` stays a frontend-only display
+// union (#317-C); whether it becomes a registered spec enum is a #317 decision.
+// Narrowing here — rather than re-declaring the whole record — keeps every other
+// field tied to the contract.
 
-// Append-only audit trail (terminology §2). `before` / `after` are the
-// sanitized snapshots; `metadata` carries extra context keys (e.g. the
-// targeted `invoice_id`) — each null when the event recorded none.
+import type { AuditEventDto } from './api-types'
+
+// Append-only audit trail (terminology §2). `before` / `after` are the sanitized
+// snapshots; `metadata` carries extra context keys (e.g. the targeted
+// `invoice_id`) — each null when the event recorded none.
 export type AuditAction =
   | 'bank_import'
   | 'bank_import_batch_reversed'
@@ -31,16 +41,4 @@ export type AuditAction =
   | 'mfa_enabled'
   | 'mfa_disabled'
 
-export interface AuditEvent {
-  audit_event_id: number
-  organization_id: number
-  action: AuditAction
-  // Subject record the event changed (terminology §audit entity types).
-  entity_type: string
-  entity_id: number | null
-  actor_id: number
-  occurred_at: string
-  before: Record<string, unknown> | null
-  after: Record<string, unknown> | null
-  metadata: Record<string, unknown> | null
-}
+export type AuditEvent = Omit<AuditEventDto, 'action'> & { action: AuditAction }
