@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
-import { renderWithProviders } from '@/test/render'
+import { renderWithProviders } from '@tests/render'
 import { nextSort, Pager, TableStateRow, SortableTh, type SortState } from './DataTable'
 
 describe('nextSort', () => {

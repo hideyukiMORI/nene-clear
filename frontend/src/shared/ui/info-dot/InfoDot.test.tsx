@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { screen } from '@testing-library/react'
-import { renderWithProviders } from '@/test/render'
+import { renderWithProviders } from '@tests/render'
 import { InfoDot } from './InfoDot'
 
 describe('InfoDot (glossary tooltip)', () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderWithProviders } from '@/test/render'
+import { renderWithProviders } from '@tests/render'
 import type { ClearSettings } from '@/entities/clear-settings'
 
 const settings: ClearSettings = {

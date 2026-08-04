@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, waitFor, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderWithProviders } from '@/test/render'
+import { renderWithProviders } from '@tests/render'
 import type { BankTransaction } from '@/entities/bank-transaction'
 
 // One unmatched transaction of ¥2,500 (amounts are integer cents, yen × 100).

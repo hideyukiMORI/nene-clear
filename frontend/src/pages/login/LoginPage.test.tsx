@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
-import { renderWithProviders as render } from '@/test/render'
+import { renderWithProviders as render } from '@tests/render'
 
 const loginMock = vi.fn()
 const storeTokenMock = vi.fn()
