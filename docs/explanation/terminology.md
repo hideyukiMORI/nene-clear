@@ -187,7 +187,7 @@ login). New events MUST map to one of these registered `entity_type` values:
 | Outstanding at send (dunning) | `outstanding_at_send_cents` | `outstanding_cents`, `balance_cents` |
 | Dunning recipient | `recipient_email` | `email`, `to` |
 | Dunning template version | `template_version` | `template`, `version` |
-| Dunning escalation stage (send request; values `initial` / `reminder` / `final`) | `stage` | `level`, `step`, `tier` |
+| Dunning escalation stage (send request, `dunning_notices` column, and `dunning_sent` audit `after`; values `initial` / `reminder` / `final`) | `stage` | `level`, `step`, `tier` |
 | Credit remaining balance | `remaining_cents` | `balance_cents`, `left_cents` |
 | Manual receivable document number | `reference_number` | `invoice_number` (it is **not** an invoice — X1), `ref_no`, `doc_no` |
 | Manual receivable payer name | `client_name` | `payer`, `customer_name`, `client` |

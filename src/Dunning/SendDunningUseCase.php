@@ -81,6 +81,7 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
             dueAt: $invoice->dueAt,
             channel: $this->mailer->channel(),
             templateVersion: DunningMessageRenderer::TEMPLATE_VERSION,
+            stage: $input->stage,
             sentBy: $input->actorUserId,
             sentAt: $nowStr,
         );
@@ -114,6 +115,9 @@ final readonly class SendDunningUseCase implements SendDunningUseCaseInterface
                         'outstanding_at_send_cents' => $invoice->outstandingCents,
                         'channel' => $this->mailer->channel(),
                         'template_version' => DunningMessageRenderer::TEMPLATE_VERSION,
+                        // Recorded from #414 onward. Its absence marks a send that
+                        // predates the column — not `initial`.
+                        'stage' => $input->stage->value,
                     ],
                     // `trigger` is written on both paths from #400 onward, so an
                     // unattended send is tellable from an operator's. It cannot be

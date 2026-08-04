@@ -8,6 +8,7 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
 use NeneClear\Dunning\DunningNotice;
 use NeneClear\Dunning\DunningNoticeFilter;
+use NeneClear\Dunning\DunningStage;
 use NeneClear\Dunning\PdoDunningNoticeRepository;
 use NeneClear\Tests\Support\SchemaFixture;
 use PHPUnit\Framework\TestCase;
@@ -38,9 +39,9 @@ final class PdoDunningNoticeRepositoryTest extends TestCase
         }
     }
 
-    private function seed(string $invoiceNumber, string $email, int $outstanding, string $sentAt, int $sentBy, int $orgId = 7): void
+    private function seed(string $invoiceNumber, string $email, int $outstanding, string $sentAt, int $sentBy, int $orgId = 7, DunningStage $stage = DunningStage::Initial): int
     {
-        $this->repo->save(new DunningNotice(
+        return $this->repo->save(new DunningNotice(
             organizationId: $orgId,
             invoiceId: 1,
             invoiceNumber: $invoiceNumber,
@@ -50,9 +51,23 @@ final class PdoDunningNoticeRepositoryTest extends TestCase
             dueAt: '2026-04-30',
             channel: 'log',
             templateVersion: '1.0',
+            stage: $stage,
             sentBy: $sentBy,
             sentAt: $sentAt,
         ));
+    }
+
+    public function test_stage_round_trips_through_the_database(): void
+    {
+        // The point of #414: which stage went out must survive the write. Before
+        // this column the stage only picked a template and was then discarded, so
+        // nothing could tell whether a customer had already had a `final` demand.
+        $id = $this->seed('INV-500', 'z@acme.example', 70000, '2026-05-10 09:00:00', sentBy: 1, stage: DunningStage::Final);
+
+        $stored = $this->repo->findById(7, $id);
+
+        self::assertNotNull($stored);
+        self::assertSame(DunningStage::Final, $stored->stage);
     }
 
     public function test_text_amount_and_actor_filters(): void
