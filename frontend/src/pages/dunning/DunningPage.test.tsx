@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderWithProviders } from '@/test/render'
+import { renderWithProviders } from '@tests/render'
 import type { UpstreamInvoice } from '@/entities/upstream-invoice'
 
 // One eligible (partially paid, past due) invoice with ¥2,500 outstanding.

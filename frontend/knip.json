@@ -1,6 +1,14 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "project": ["src/**/*.{ts,tsx}"],
+  // The CSS entry is listed explicitly because it no longer sits at knip's
+  // assumed `src/index.css`: 規約 01 §2 puts it in `shared/ui/theme/`, and
+  // `main.tsx` is the only file allowed to import it. Without this, knip loses
+  // the `@import "tailwindcss"` inside it and reports tailwindcss as an unused
+  // devDependency. This points the detector at the file that moved — it does not
+  // silence a finding (contrast the schema.gen.ts entry below, which does, and is
+  // scheduled for removal).
+  "entry": ["src/shared/ui/theme/index.css"],
+  "project": ["src/**/*.{ts,tsx}", "src/shared/ui/theme/*.css"],
   "ignore": ["src/shared/api/schema.gen.ts"],
   "ignoreExportsUsedInFile": true,
   "exclude": ["exports", "types"]

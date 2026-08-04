@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { renderWithProviders as render } from '@/test/render'
+import { renderWithProviders as render } from '@tests/render'
 import { KeyboardShortcuts } from './KeyboardShortcuts'
 
 function LocationProbe() {

@@ -28,7 +28,10 @@ export default defineConfig(({ mode, command }) => {
     base: command === 'build' ? '/assets/' : '/',
     plugins: [react(), tailwindcss()],
     resolve: {
-      alias: { '@': resolve(__dirname, 'src') },
+      alias: {
+        '@': resolve(__dirname, 'src'),
+        '@tests': resolve(__dirname, 'tests'),
+      },
     },
     server: {
       port: frontendPort,
