@@ -10,6 +10,14 @@ const settings: ClearSettings = {
   upstream_token_ref: 'tok-ref',
   dunning_min_interval_days: 3,
   fiscal_year_end_month: 3,
+  is_dunning_schedule_enabled: true,
+  dunning_initial_after_days: 3,
+  dunning_reminder_after_days: 14,
+  dunning_final_after_days: 30,
+  dunning_window_start_hour: 9,
+  dunning_window_end_hour: 18,
+  is_dunning_weekdays_only: true,
+  dunning_max_per_run: 50,
   bank_accounts: [
     {
       bank_account_id: 1,
@@ -70,6 +78,18 @@ describe('SettingsPage', () => {
       dunning_min_interval_days: 3,
       fiscal_year_end_month: 3,
       bank_accounts: settings.bank_accounts,
+      // This screen has no controls for the schedule yet, so it must echo back what
+      // it loaded. Dropping these would reset scheduled dunning to off on every
+      // unrelated save — silently, because the API would be doing exactly what a
+      // full replace is supposed to do (#284). Editing controls arrive with A2 F4.
+      is_dunning_schedule_enabled: true,
+      dunning_initial_after_days: 3,
+      dunning_reminder_after_days: 14,
+      dunning_final_after_days: 30,
+      dunning_window_start_hour: 9,
+      dunning_window_end_hour: 18,
+      is_dunning_weekdays_only: true,
+      dunning_max_per_run: 50,
     })
   })
 

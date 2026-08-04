@@ -198,7 +198,7 @@ export interface paths {
         get: operations["getClearSettings"];
         /**
          * Update clear settings
-         * @description Update upstream config and the registered bank accounts (with CSV profiles).
+         * @description Update upstream config, the scheduled-dunning settings and the registered bank accounts (with CSV profiles). ⚠️ This is a FULL REPLACE: any field omitted from the body is reset to its default rather than preserved. Read the current settings with GET, change what you need, and send the whole object back.
          */
         put: operations["updateClearSettings"];
         post?: never;
@@ -898,14 +898,95 @@ export interface components {
             dunning_min_interval_days: number;
             /** @description Fiscal year-end month (決算月). Null when unset. */
             fiscal_year_end_month: number | null;
+            /**
+             * @description Whether Clear sends this organization's dunning notices unattended on a schedule. Off until explicitly enabled; enabling is recorded in the audit log as `clear_settings_updated`.
+             * @default false
+             */
+            is_dunning_schedule_enabled: boolean;
+            /**
+             * @description Days past due before the `initial` stage is reached.
+             * @default 3
+             */
+            dunning_initial_after_days: number;
+            /**
+             * @description Days past due before the `reminder` stage is reached.
+             * @default 14
+             */
+            dunning_reminder_after_days: number;
+            /**
+             * @description Days past due before the `final` stage is reached. A `final` notice is never sent unattended — it is surfaced for an operator to send by hand.
+             * @default 30
+             */
+            dunning_final_after_days: number;
+            /**
+             * @description First hour of the send window, inclusive. Must be before the end hour.
+             * @default 9
+             */
+            dunning_window_start_hour: number;
+            /**
+             * @description End of the send window, exclusive. Must be after the start hour.
+             * @default 18
+             */
+            dunning_window_end_hour: number;
+            /**
+             * @description Restrict unattended sending to Monday–Friday.
+             * @default true
+             */
+            is_dunning_weekdays_only: boolean;
+            /**
+             * @description Most notices one scheduled run may send. Candidates beyond the cap are picked up by the next run.
+             * @default 50
+             */
+            dunning_max_per_run: number;
             bank_accounts: components["schemas"]["BankAccount"][];
         };
+        /** @description ⚠️ FULL REPLACE. Every field is optional in the schema, but a field that is omitted is reset to its default — it is NOT left at its stored value. To change one setting, send the complete object (read it with GET first, edit the field, send it all back). Sending only the field you mean to change will silently reset the others. */
         UpdateClearSettingsRequest: {
             /** Format: uri */
             upstream_base_url?: string;
             upstream_token_ref?: string;
             dunning_min_interval_days?: number;
             fiscal_year_end_month?: number | null;
+            /**
+             * @description Whether Clear sends this organization's dunning notices unattended on a schedule. Off until explicitly enabled; enabling is recorded in the audit log as `clear_settings_updated`.
+             * @default false
+             */
+            is_dunning_schedule_enabled: boolean;
+            /**
+             * @description Days past due before the `initial` stage is reached.
+             * @default 3
+             */
+            dunning_initial_after_days: number;
+            /**
+             * @description Days past due before the `reminder` stage is reached.
+             * @default 14
+             */
+            dunning_reminder_after_days: number;
+            /**
+             * @description Days past due before the `final` stage is reached. A `final` notice is never sent unattended — it is surfaced for an operator to send by hand.
+             * @default 30
+             */
+            dunning_final_after_days: number;
+            /**
+             * @description First hour of the send window, inclusive. Must be before the end hour.
+             * @default 9
+             */
+            dunning_window_start_hour: number;
+            /**
+             * @description End of the send window, exclusive. Must be after the start hour.
+             * @default 18
+             */
+            dunning_window_end_hour: number;
+            /**
+             * @description Restrict unattended sending to Monday–Friday.
+             * @default true
+             */
+            is_dunning_weekdays_only: boolean;
+            /**
+             * @description Most notices one scheduled run may send. Candidates beyond the cap are picked up by the next run.
+             * @default 50
+             */
+            dunning_max_per_run: number;
             bank_accounts?: components["schemas"]["BankAccountInput"][];
         };
         UpstreamConnectionTestResponse: {

@@ -23,6 +23,22 @@ a date. For the design decisions behind that history, read
 
 ## [Unreleased]
 
+### Added
+
+- **Scheduled dunning** (#400) — an organization can opt in to having Clear send its
+  overdue dunning notices unattended, with the same guards, records and audit trail as
+  a manual send. Off for every organization until explicitly enabled. The escalation
+  ladder never skips a step, and a `final` demand is never sent unattended: it is held
+  for an operator. Driven by `tools/send-scheduled-dunning.php` from cron; `--dry-run`
+  prints what would be sent without sending it.
+- **The escalation stage a notice was sent at is now recorded** (#414) on the notice row
+  and in the `dunning_sent` audit event. Rows written before this carry no recorded
+  stage; the column default is not evidence of what was sent.
+- **`GET`/`PUT /admin/clear-settings` carry the scheduled-dunning settings** — enable/
+  disable, the three stage thresholds, the send window, weekday-only, and the per-run
+  cap. ⚠️ That endpoint is a **full replace**: see
+  [`docs/development/clear-settings-full-replace.md`](docs/development/clear-settings-full-replace.md).
+
 ### Changed
 
 - **Dependency-vulnerability gate: `brace-expansion` patched instead of

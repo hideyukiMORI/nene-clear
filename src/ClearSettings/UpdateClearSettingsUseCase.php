@@ -61,6 +61,7 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
                     upstreamTokenRef: $input->upstreamTokenRef,
                     dunningMinIntervalDays: $input->dunningMinIntervalDays,
                     fiscalYearEndMonth: $input->fiscalYearEndMonth,
+                    dunningSchedule: $input->dunningSchedule,
                 ));
 
                 $updated = $settingsRepo->findByOrganization($input->organizationId)
@@ -70,6 +71,7 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
                         upstreamTokenRef: $input->upstreamTokenRef,
                         dunningMinIntervalDays: $input->dunningMinIntervalDays,
                         fiscalYearEndMonth: $input->fiscalYearEndMonth,
+                        dunningSchedule: $input->dunningSchedule,
                     );
 
                 $auditRecorder->record(new AuditEvent(
@@ -101,6 +103,16 @@ final readonly class UpdateClearSettingsUseCase implements UpdateClearSettingsUs
             'upstream_token_ref' => $settings->upstreamTokenRef,
             'dunning_min_interval_days' => $settings->dunningMinIntervalDays,
             'fiscal_year_end_month' => $settings->fiscalYearEndMonth,
+            // Turning unattended dunning on or off is exactly the kind of change an
+            // audit trail exists for, so the whole schedule goes into the snapshot.
+            'is_dunning_schedule_enabled' => $settings->dunningSchedule->isEnabled,
+            'dunning_initial_after_days' => $settings->dunningSchedule->initialAfterDays,
+            'dunning_reminder_after_days' => $settings->dunningSchedule->reminderAfterDays,
+            'dunning_final_after_days' => $settings->dunningSchedule->finalAfterDays,
+            'dunning_window_start_hour' => $settings->dunningSchedule->windowStartHour,
+            'dunning_window_end_hour' => $settings->dunningSchedule->windowEndHour,
+            'is_dunning_weekdays_only' => $settings->dunningSchedule->isWeekdaysOnly,
+            'dunning_max_per_run' => $settings->dunningSchedule->maxPerRun,
             'bank_account_numbers' => array_map(
                 static fn ($account): string => self::maskAccountNumber($account->accountNumber),
                 $settings->bankAccounts,
