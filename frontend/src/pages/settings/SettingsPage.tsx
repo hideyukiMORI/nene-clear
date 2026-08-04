@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/shared/api/endpoints'
-import type { BankAccount, ClearSettings } from '@/entities/clear-settings'
+import type { BankAccountDraft, ClearSettings } from '@/entities/clear-settings'
 import { Button } from '@/shared/ui/button'
 import { Card, CardFoot } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
@@ -9,7 +9,7 @@ import { Notice } from '@/shared/ui/notice'
 import { PageHead } from '@/shared/ui/page-head'
 import { useTranslation } from '@/shared/i18n/use-translation'
 
-function emptyAccount(): BankAccount {
+function emptyAccount(): BankAccountDraft {
   return { bank_name: '', bank_branch: '', account_type: 'ordinary', account_number: '', csv_encoding: 'utf8', csv_date_format: 'Y/m/d', csv_date_column: 0, csv_amount_column: 1, csv_counterparty_column: 3, csv_header_rows: 1 }
 }
 
@@ -20,7 +20,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   const [upstreamToken, setUpstreamToken] = useState(settings.upstream_token_ref)
   const [dunningInterval, setDunningInterval] = useState(settings.dunning_min_interval_days)
   const [fiscalMonth, setFiscalMonth] = useState<number | null>(settings.fiscal_year_end_month ?? null)
-  const [accounts, setAccounts] = useState<BankAccount[]>(settings.bank_accounts)
+  const [accounts, setAccounts] = useState<BankAccountDraft[]>(settings.bank_accounts)
   // Account numbers are masked by default; revealing one is an explicit per-row
   // action so the number isn't shown in plaintext on screen-share / over a
   // shoulder (#192). True server-side withholding is tracked separately.
@@ -81,7 +81,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
     finally { setTesting(false) }
   }
 
-  function updateAccount(i: number, field: keyof BankAccount, v: string | number) {
+  function updateAccount(i: number, field: keyof BankAccountDraft, v: string | number) {
     setAccounts(p => p.map((a, idx) => idx === i ? { ...a, [field]: v } : a))
   }
 

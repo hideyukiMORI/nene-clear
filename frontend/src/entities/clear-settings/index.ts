@@ -1,1 +1,1 @@
-export type { ClearSettings, BankAccount } from './model'
+export type { ClearSettings, BankAccount, BankAccountDraft, AccountType } from './model'

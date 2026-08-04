@@ -1,14 +1,15 @@
-// Domain model for a bank transaction. Mirrors the API JSON exactly
-// (snake_case; no renaming) — see docs/development/fsd-a2-entities.md §4.1
-// (transitional: the A1 codemod later introduces the camelCase model + mapper).
+// Domain model for a bank transaction.
+//
+// A2 F2: the shape is no longer hand-written — it is the OpenAPI contract type
+// (`api-types.ts`). Still snake_case; the camelCase model + mapper are a later
+// step (fsd-a2-entities.md §4.1). What changes is *where the truth lives*: a
+// spec change now breaks the build instead of silently disagreeing with the
+// server. This slice's hand-written mirror happened to match — which is exactly
+// why removing it matters, because a mirror that matches today cannot tell you
+// when it stops. See #424 for a slice where it had stopped, unnoticed.
 
-export interface BankTransaction {
-  bank_transaction_id: number
-  organization_id: number
-  bank_import_batch_id: number
-  bank_account_id: number
-  value_date: string
-  amount_cents: number
-  counterparty_text: string
-  status: 'unmatched' | 'partially_matched' | 'matched' | 'voided'
-}
+import type { BankTransactionDto, BankTransactionStatusDto } from './api-types'
+
+export type BankTransactionStatus = BankTransactionStatusDto
+
+export type BankTransaction = BankTransactionDto
