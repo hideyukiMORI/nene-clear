@@ -30,7 +30,9 @@ a date. For the design decisions behind that history, read
   a manual send. Off for every organization until explicitly enabled. The escalation
   ladder never skips a step, and a `final` demand is never sent unattended: it is held
   for an operator. Driven by `tools/send-scheduled-dunning.php` from cron; `--dry-run`
-  prints what would be sent without sending it.
+  prints what would be sent without sending it. Operations are documented in
+  [`docs/development/scheduled-dunning-runbook.md`](docs/development/scheduled-dunning-runbook.md)
+  — how to install the cron entry, how to check a run happened, and how to stop it.
 - **The escalation stage a notice was sent at is now recorded** (#414) on the notice row
   and in the `dunning_sent` audit event. Rows written before this carry no recorded
   stage; the column default is not evidence of what was sent.
