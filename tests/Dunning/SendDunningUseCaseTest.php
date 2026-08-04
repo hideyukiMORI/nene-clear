@@ -117,6 +117,31 @@ final class SendDunningUseCaseTest extends TestCase
         self::assertSame('dunning_sent', $this->audit->events[0]->action);
     }
 
+    public function test_the_stage_that_was_sent_is_recorded_on_the_notice_and_in_the_audit(): void
+    {
+        $this->addInvoice(1);
+        $this->addClient();
+
+        $output = $this->useCase->execute(new SendDunningInput(
+            organizationId: 7,
+            invoiceId: 1,
+            actorUserId: 42,
+            stage: DunningStage::Reminder,
+        ));
+
+        // #414: before this, the stage picked a template and was then discarded,
+        // so nothing in the record said which escalation step a customer had
+        // received. Scheduled dunning (#400 §5) cannot decide "the next stage"
+        // without it, and guessing is not acceptable for a final demand.
+        $notice = $this->notices->findById(7, $output->dunningNoticeId);
+        self::assertNotNull($notice);
+        self::assertSame(DunningStage::Reminder, $notice->stage);
+
+        $after = $this->audit->events[0]->after;
+        self::assertIsArray($after);
+        self::assertSame('reminder', $after['stage']);
+    }
+
     public function test_manual_send_is_marked_manual_and_carries_no_run_id(): void
     {
         $this->addInvoice(1);

@@ -28,6 +28,7 @@ final class InMemoryDunningNoticeRepository implements DunningNoticeRepositoryIn
             dueAt: $notice->dueAt,
             channel: $notice->channel,
             templateVersion: $notice->templateVersion,
+            stage: $notice->stage,
             sentBy: $notice->sentBy,
             sentAt: $notice->sentAt,
             id: $id,
