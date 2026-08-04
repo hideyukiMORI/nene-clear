@@ -62,11 +62,20 @@ jobs:
   #   - mysql-migrate  → mysql 8.4  (the docker-compose default; Tier A default)
   #   - postgres-migrate → postgres 17 (the optional DB_ADAPTER=pgsql path)
   #
-  # NOT verified here, and deliberately out of scope for this job: rollback
+  # Also verified, after the migrations apply: a **representative sample** of the
+  # SQL shapes that differ between adapters — boolean predicates and binds,
+  # LIMIT/OFFSET, date comparison, COUNT, insert-id retrieval, and the scheduler's
+  # atomic lock — run through the real repository classes
+  # (`tools/check-adapter-queries.php`, #417). The unit suite runs on SQLite only,
+  # so without this step an adapter-specific *query* error ships green: two such
+  # bugs were found by hand on 2026-08-04 with a fully green SQLite suite.
+  #
+  # NOT verified here, and deliberately out of scope for these jobs: rollback
   # (`migrations:rollback`), migrating over a database that already holds
-  # production data, and any data-migration semantics beyond DDL applying. If
-  # you add a migration that rewrites existing rows, those paths still need a
-  # human check — a green pipeline here does not cover them.
+  # production data, any data-migration semantics beyond DDL applying, and every
+  # query the smoke does not touch — it is a sample, not coverage. If you add a
+  # migration that rewrites existing rows, or a query in a shape not listed above,
+  # those still need a human check. A green pipeline here does not cover them.
   #
   # The MySQL image is pinned to the same version as docker-compose.yml
   # (mysql:8.4). If one moves, move the other, or the job stops standing in for
@@ -114,6 +123,18 @@ jobs:
           DB_PASSWORD: nene_clear
         run: composer migrations:migrate
 
+      # #417: catch SQL that only works on one adapter. Runs against the schema the
+      # step above just built, so it exercises the real DDL rather than a fixture.
+      - name: Query smoke on MySQL
+        env:
+          DB_ADAPTER: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: nene_clear
+          DB_USER: nene_clear
+          DB_PASSWORD: nene_clear
+        run: php tools/check-adapter-queries.php
+
   postgres-migrate:
     runs-on: ubuntu-latest
 
@@ -153,3 +174,14 @@ jobs:
           DB_USER: nene_clear
           DB_PASSWORD: nene_clear
         run: composer migrations:migrate
+
+      # #417 — see the block above the mysql job for what this does and does not cover.
+      - name: Query smoke on PostgreSQL
+        env:
+          DB_ADAPTER: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_NAME: nene_clear
+          DB_USER: nene_clear
+          DB_PASSWORD: nene_clear
+        run: php tools/check-adapter-queries.php
