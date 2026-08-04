@@ -102,13 +102,16 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
 
         if ($exists) {
             $this->query->execute(
-                'UPDATE clear_settings SET upstream_base_url = ?, upstream_token_ref = ?, dunning_min_interval_days = ?, fiscal_year_end_month = ? '
+                'UPDATE clear_settings SET upstream_base_url = ?, upstream_token_ref = ?, dunning_min_interval_days = ?, fiscal_year_end_month = ?, '
+                . 'is_dunning_schedule_enabled = ?, dunning_initial_after_days = ?, dunning_reminder_after_days = ?, dunning_final_after_days = ?, '
+                . 'dunning_window_start_hour = ?, dunning_window_end_hour = ?, is_dunning_weekdays_only = ?, dunning_max_per_run = ? '
                 . 'WHERE organization_id = ?',
                 [
                     $settings->upstreamBaseUrl,
                     $settings->upstreamTokenRef,
                     $settings->dunningMinIntervalDays,
                     $settings->fiscalYearEndMonth,
+                    ...self::scheduleParams($settings->dunningSchedule),
                     $settings->organizationId,
                 ],
             );
@@ -117,15 +120,50 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
         }
 
         $this->query->execute(
-            'INSERT INTO clear_settings (organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month) '
-            . 'VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO clear_settings (organization_id, upstream_base_url, upstream_token_ref, dunning_min_interval_days, fiscal_year_end_month, '
+            . 'is_dunning_schedule_enabled, dunning_initial_after_days, dunning_reminder_after_days, dunning_final_after_days, '
+            . 'dunning_window_start_hour, dunning_window_end_hour, is_dunning_weekdays_only, dunning_max_per_run) '
+            . 'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 $settings->organizationId,
                 $settings->upstreamBaseUrl,
                 $settings->upstreamTokenRef,
                 $settings->dunningMinIntervalDays,
                 $settings->fiscalYearEndMonth,
+                ...self::scheduleParams($settings->dunningSchedule),
             ],
         );
+    }
+
+    /**
+     * Schedule columns in the order both statements above bind them.
+     *
+     * 🔴 Booleans are bound as **0/1 integers, never as PHP bools**. PDO renders a
+     * bound `false` as an empty string, which SQLite happily stores while both
+     * other adapters reject it outright:
+     *
+     *   mysql  — Incorrect integer value: '' for column 'is_dunning_weekdays_only'
+     *   pgsql  — invalid input syntax for type boolean: ""
+     *
+     * Measured 2026-08-04 against sqlite / mysql 8.4 / postgres 17. This is exactly
+     * the hole #417 describes: the unit suite runs on SQLite and the migration jobs
+     * only apply DDL, so the bool-bound version passed all 13 settings tests here
+     * and would still have 500'd on every non-SQLite deployment. Re-verify by hand
+     * when touching these binds, until #417 lands a query-level CI job.
+     *
+     * @return list<int|null>
+     */
+    private static function scheduleParams(DunningSchedule $schedule): array
+    {
+        return [
+            (int) $schedule->isEnabled,
+            $schedule->initialAfterDays,
+            $schedule->reminderAfterDays,
+            $schedule->finalAfterDays,
+            $schedule->windowStartHour,
+            $schedule->windowEndHour,
+            (int) $schedule->isWeekdaysOnly,
+            $schedule->maxPerRun,
+        ];
     }
 }

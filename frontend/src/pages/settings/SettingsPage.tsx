@@ -36,7 +36,24 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   const [intervalError, setIntervalError] = useState('')
 
   const saveMut = useMutation({
-    mutationFn: () => updateClearSettings({ upstream_base_url: upstreamUrl, upstream_token_ref: upstreamToken, dunning_min_interval_days: dunningInterval, fiscal_year_end_month: fiscalMonth, bank_accounts: accounts } as Partial<ClearSettings>),
+    // The schedule fields are echoed back exactly as loaded. This screen does not
+    // edit them yet, but PUT is a FULL REPLACE (#284) — omitting them would reset
+    // scheduled dunning to off on every unrelated save, with no error and no clue.
+    mutationFn: () => updateClearSettings({
+      upstream_base_url: upstreamUrl,
+      upstream_token_ref: upstreamToken,
+      dunning_min_interval_days: dunningInterval,
+      fiscal_year_end_month: fiscalMonth,
+      bank_accounts: accounts,
+      is_dunning_schedule_enabled: settings.is_dunning_schedule_enabled,
+      dunning_initial_after_days: settings.dunning_initial_after_days,
+      dunning_reminder_after_days: settings.dunning_reminder_after_days,
+      dunning_final_after_days: settings.dunning_final_after_days,
+      dunning_window_start_hour: settings.dunning_window_start_hour,
+      dunning_window_end_hour: settings.dunning_window_end_hour,
+      is_dunning_weekdays_only: settings.is_dunning_weekdays_only,
+      dunning_max_per_run: settings.dunning_max_per_run,
+    } as Partial<ClearSettings>),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['clear-settings'] })
       // The org's fiscal year-end month is held in the /me cache (it drives the

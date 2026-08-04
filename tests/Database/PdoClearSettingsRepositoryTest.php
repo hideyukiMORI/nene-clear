@@ -8,6 +8,7 @@ use Nene2\Database\DatabaseQueryExecutorInterface;
 use Nene2\Testing\DatabaseTestKit;
 use NeneClear\BankImport\PdoBankAccountRepository;
 use NeneClear\ClearSettings\ClearSettings;
+use NeneClear\ClearSettings\DunningSchedule;
 use NeneClear\ClearSettings\PdoClearSettingsRepository;
 use NeneClear\Tests\Support\SchemaFixture;
 use PHPUnit\Framework\TestCase;
@@ -63,17 +64,27 @@ final class PdoClearSettingsRepositoryTest extends TestCase
     }
 
     /**
-     * Saving unrelated settings must not disturb the dunning schedule (#400).
+     * `save()` writes the whole row, dunning schedule included (#400).
      *
-     * `PUT /admin/clear-settings` is a full replace (#284) and its request body
-     * cannot carry the schedule columns yet, so the repository deliberately
-     * leaves them out of the UPDATE/INSERT. Without that, an operator who
-     * enables scheduled dunning and later edits a bank account would silently
-     * turn it back off — with no error and no audit trace of the change. This
-     * test is the guard: adding the columns to the write path must fail here
-     * until the settings API and UI can carry them.
+     * ⚠️ This **reverses** the guard #403 put here. That guard existed for one
+     * stated reason: the settings API could not yet carry the schedule columns, so
+     * a save built from a request body would have wiped whatever an operator had
+     * set by hand. Its docblock said so explicitly — "adding the columns to the
+     * write path must fail here **until the settings API and UI can carry them**".
+     *
+     * The API now carries them, so the condition is met and the guard is retired:
+     * the repository persists exactly the entity it is handed, which is what makes
+     * `PUT /admin/clear-settings` behave as the full replace it is documented to be
+     * (#284). Leaving the columns out of the write path would instead mean the
+     * endpoint could never turn scheduled dunning on at all.
+     *
+     * The corresponding risk moved rather than vanished — a caller that builds a
+     * `ClearSettings` without the schedule now resets it. That is pinned from the
+     * outside by
+     * `ClearSettingsHttpTest::test_put_is_full_replace_so_an_omitted_field_is_reset_not_preserved`,
+     * and the one screen that saves settings echoes the loaded values back.
      */
-    public function testSavingUnrelatedSettingsLeavesTheDunningScheduleIntact(): void
+    public function testSaveWritesTheDunningScheduleItIsGiven(): void
     {
         $repo = new PdoClearSettingsRepository($this->real, new PdoBankAccountRepository($this->real));
 
@@ -82,31 +93,32 @@ final class PdoClearSettingsRepositoryTest extends TestCase
             upstreamBaseUrl: 'https://invoice.example',
             upstreamTokenRef: 'NENE_INVOICE_BEARER_TOKEN',
             dunningMinIntervalDays: 7,
+            dunningSchedule: new DunningSchedule(isEnabled: true, windowStartHour: 10, maxPerRun: 25),
         ));
 
-        // The operator turns the schedule on (today: by hand; later: via the settings UI).
-        $this->real->execute(
-            'UPDATE clear_settings SET is_dunning_schedule_enabled = 1, dunning_max_per_run = 25, '
-            . 'dunning_window_start_hour = 10 WHERE organization_id = ?',
-            [42],
-        );
+        $inserted = $repo->findByOrganization(42);
+        self::assertNotNull($inserted);
+        self::assertTrue($inserted->dunningSchedule->isEnabled, 'INSERT must persist the schedule');
+        self::assertSame(25, $inserted->dunningSchedule->maxPerRun);
+        self::assertSame(10, $inserted->dunningSchedule->windowStartHour);
 
-        // …then saves an unrelated change. The entity carries default schedule values.
+        // Same again on the UPDATE branch (the row now exists), and with the flag
+        // going the other way — `false` is the value PDO renders as an empty string
+        // if it is bound as a bool, which SQLite tolerates and MySQL/PostgreSQL do not.
         $repo->save(new ClearSettings(
             organizationId: 42,
             upstreamBaseUrl: 'https://invoice.example/v2',
             upstreamTokenRef: 'NENE_INVOICE_BEARER_TOKEN',
             dunningMinIntervalDays: 10,
+            dunningSchedule: new DunningSchedule(isEnabled: false, maxPerRun: 3),
         ));
 
-        $reloaded = $repo->findByOrganization(42);
-
-        self::assertNotNull($reloaded);
-        self::assertSame('https://invoice.example/v2', $reloaded->upstreamBaseUrl, 'the intended change must land');
-        self::assertSame(10, $reloaded->dunningMinIntervalDays);
-        self::assertTrue($reloaded->dunningSchedule->isEnabled, 'the schedule must survive an unrelated save');
-        self::assertSame(25, $reloaded->dunningSchedule->maxPerRun);
-        self::assertSame(10, $reloaded->dunningSchedule->windowStartHour);
+        $updated = $repo->findByOrganization(42);
+        self::assertNotNull($updated);
+        self::assertSame('https://invoice.example/v2', $updated->upstreamBaseUrl, 'the intended change must land');
+        self::assertSame(10, $updated->dunningMinIntervalDays);
+        self::assertFalse($updated->dunningSchedule->isEnabled, 'UPDATE must persist the schedule too');
+        self::assertSame(3, $updated->dunningSchedule->maxPerRun);
     }
 
     public function testScheduleDefaultsAreReadBackForAnUntouchedOrganization(): void

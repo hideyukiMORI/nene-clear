@@ -50,9 +50,71 @@ final readonly class UpdateClearSettingsHandler
             }
         }
 
+        // Scheduled dunning (#400 §6). Every key is optional and falls back to the
+        // DunningSchedule default — but this endpoint is **full-replace** (#284):
+        // omitting a key resets it to that default, it does not preserve whatever
+        // is stored. A client that wants to change one field must send them all.
+        $defaults = new DunningSchedule();
+
+        $intSetting = static function (string $key, int $default, int $min, int $max) use ($body, &$errors): int {
+            $raw = $body[$key] ?? $default;
+
+            if (!is_numeric($raw)) {
+                $errors[] = new ValidationError($key, $key . ' must be a number.', 'invalid');
+
+                return $default;
+            }
+
+            $value = (int) $raw;
+
+            if ($value < $min || $value > $max) {
+                $errors[] = new ValidationError($key, sprintf('%s must be between %d and %d.', $key, $min, $max), 'invalid');
+
+                return $default;
+            }
+
+            return $value;
+        };
+
+        $boolSetting = static fn (string $key, bool $default): bool => isset($body[$key])
+            ? filter_var($body[$key], FILTER_VALIDATE_BOOL)
+            : $default;
+
+        $initialAfterDays = $intSetting('dunning_initial_after_days', $defaults->initialAfterDays, 0, 3650);
+        $reminderAfterDays = $intSetting('dunning_reminder_after_days', $defaults->reminderAfterDays, 0, 3650);
+        $finalAfterDays = $intSetting('dunning_final_after_days', $defaults->finalAfterDays, 0, 3650);
+        $windowStartHour = $intSetting('dunning_window_start_hour', $defaults->windowStartHour, 0, 23);
+        $windowEndHour = $intSetting('dunning_window_end_hour', $defaults->windowEndHour, 0, 23);
+        $maxPerRun = $intSetting('dunning_max_per_run', $defaults->maxPerRun, 1, 1000);
+
+        // Rejected rather than quietly reordered. A window whose start is not before
+        // its end never opens (DunningSchedulePolicy treats it as closed), so an
+        // operator who saved one would see dunning silently stop with no error to
+        // explain it — the failure mode this whole feature is most likely to hit.
+        if ($windowStartHour >= $windowEndHour) {
+            $errors[] = new ValidationError('dunning_window_start_hour', 'dunning_window_start_hour must be before dunning_window_end_hour.', 'invalid');
+        }
+
+        // Likewise: non-ascending thresholds would let `stageFor()` pick a harsher
+        // stage than the invoice's age has earned.
+        if (!($initialAfterDays <= $reminderAfterDays && $reminderAfterDays <= $finalAfterDays)) {
+            $errors[] = new ValidationError('dunning_reminder_after_days', 'Dunning stage thresholds must ascend: initial <= reminder <= final.', 'invalid');
+        }
+
         if ($errors !== []) {
             throw new ValidationException($errors);
         }
+
+        $dunningSchedule = new DunningSchedule(
+            isEnabled: $boolSetting('is_dunning_schedule_enabled', $defaults->isEnabled),
+            initialAfterDays: $initialAfterDays,
+            reminderAfterDays: $reminderAfterDays,
+            finalAfterDays: $finalAfterDays,
+            windowStartHour: $windowStartHour,
+            windowEndHour: $windowEndHour,
+            isWeekdaysOnly: $boolSetting('is_dunning_weekdays_only', $defaults->isWeekdaysOnly),
+            maxPerRun: $maxPerRun,
+        );
 
         $rawAccounts = is_array($body['bank_accounts'] ?? null) ? $body['bank_accounts'] : [];
         $newAccounts = [];
@@ -87,6 +149,7 @@ final readonly class UpdateClearSettingsHandler
             fiscalYearEndMonth: $fiscalYearEndMonth,
             bankAccounts: $newAccounts,
             actorUserId: AuthContext::userId($request),
+            dunningSchedule: $dunningSchedule,
         ));
 
         return $this->response->create(ClearSettingsResponse::toArray($updated));

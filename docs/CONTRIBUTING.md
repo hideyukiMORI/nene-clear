@@ -18,6 +18,7 @@ NeNe Clear is built through small, Issue-driven changes. This document is the sh
 | Agent entry point | `AGENTS.md` |
 | Roadmap | `docs/roadmap.md` |
 | Release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
+| Settings API semantics | [`docs/development/clear-settings-full-replace.md`](development/clear-settings-full-replace.md) |
 | Current work | `nene-origin/internal-docs/clear/todo/current.md` |
 
 ## Collaboration Policy

@@ -23,6 +23,13 @@ final readonly class UpdateClearSettingsInput
         public ?int $fiscalYearEndMonth,
         public array $bankAccounts,
         public int $actorUserId,
+        /**
+         * Scheduled-dunning settings (#400 §6). Defaulted so the field can be
+         * added without touching every construction site — but note the endpoint
+         * itself is full-replace (#284): a PUT that omits these keys resets them
+         * to the defaults below, it does not leave the stored values alone.
+         */
+        public DunningSchedule $dunningSchedule = new DunningSchedule(),
     ) {
     }
 }

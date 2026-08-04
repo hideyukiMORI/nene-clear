@@ -11,6 +11,18 @@ export interface ClearSettings {
   upstream_base_url: string
   upstream_token_ref: string
   dunning_min_interval_days: number
+  // Scheduled dunning (#400 §6). No UI edits these yet — the settings screen
+  // echoes them back untouched on save, because PUT /admin/clear-settings is a
+  // FULL REPLACE (#284): a field left out of the body is reset to its default,
+  // not preserved. Editing controls arrive with the A2 F4 settings rework.
+  is_dunning_schedule_enabled: boolean
+  dunning_initial_after_days: number
+  dunning_reminder_after_days: number
+  dunning_final_after_days: number
+  dunning_window_start_hour: number
+  dunning_window_end_hour: number
+  is_dunning_weekdays_only: boolean
+  dunning_max_per_run: number
   fiscal_year_end_month: number | null
   bank_accounts: BankAccount[]
 }
