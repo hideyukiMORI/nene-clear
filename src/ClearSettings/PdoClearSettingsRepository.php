@@ -49,6 +49,24 @@ final readonly class PdoClearSettingsRepository implements ClearSettingsReposito
         );
     }
 
+    public function findOrganizationIdsWithScheduledDunning(): array
+    {
+        // The column is used as a bare predicate rather than compared to a literal.
+        // Phinx creates it as a real `boolean` on PostgreSQL, where
+        // `... = 1` raises "operator does not exist: boolean = integer", while
+        // SQLite stores it as an integer and MySQL as a tinyint. The bare form is
+        // the one predicate all three read the same way.
+        //
+        // Worth knowing: the unit suite runs on SQLite and the migration jobs only
+        // apply DDL, so a pgsql-only *query* error like that would not be caught by
+        // CI today — this comment is the guard until it is.
+        $rows = $this->query->fetchAll(
+            'SELECT organization_id FROM clear_settings WHERE is_dunning_schedule_enabled ORDER BY organization_id',
+        );
+
+        return array_map(static fn (array $row): int => (int) $row['organization_id'], $rows);
+    }
+
     public function fiscalYearEndMonth(int $organizationId): ?int
     {
         $row = $this->query->fetchOne(
