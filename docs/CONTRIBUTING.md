@@ -17,6 +17,7 @@ NeNe Clear is built through small, Issue-driven changes. This document is the sh
 | AI tools | `docs/integrations/ai-tools.md` |
 | Agent entry point | `AGENTS.md` |
 | Roadmap | `docs/roadmap.md` |
+| Release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
 | Current work | `nene-origin/internal-docs/clear/todo/current.md` |
 
 ## Collaboration Policy
@@ -30,6 +31,9 @@ Follow [`docs/workflow.md`](workflow.md) — inherited from [NENE2](https://gith
 
 - Use one branch and one PR per focused work unit.
 - Keep `docs/milestones/`, `docs/roadmap.md`, and `nene-origin/internal-docs/clear/todo/current.md` updated when direction changes.
+- Add a [`CHANGELOG.md`](../CHANGELOG.md) entry under `[Unreleased]` for anything an
+  operator or integrator would notice — behaviour, API surface, configuration,
+  security posture. Internal refactors that change nothing observable do not need one.
 - Explain intent, impact, verification, and remaining risk in PRs.
 - Prefer documentation that helps the next developer or AI agent decide what to do without rereading chat history.
 
