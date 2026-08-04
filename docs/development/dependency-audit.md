@@ -58,15 +58,33 @@ Both must print `true`.
 
 | Advisory | Package | Why it does not apply here | Expires |
 | --- | --- | --- | --- |
-| [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2) | `react-router` (7.12.0–8.2.0) | The admin console is a **static SPA built by Vite**, served as files from `public_html/assets/`; the PHP front controller never renders a React route. Routing is `createBrowserRouter` with element-only routes — **no RSC mode, no server components, no server-side route `action`/`loader`, no `@react-router/dev` runtime**. The advisory's attack path (a server executing a route action before returning 400) has no counterpart in a client-only bundle. Measured 2026-07-29 in this tree: `grep -cE '\b(action\|loader):' frontend/src/app/router.tsx` = **0**, and `grep -rniE '@react-router/(dev\|node\|serve)\|react-router/server\|createStaticHandler\|rsc' frontend/src` returns **no match**. | **2026-08-31** |
-| [GHSA-mh99-v99m-4gvg](https://github.com/advisories/GHSA-mh99-v99m-4gvg) | `brace-expansion` 2.1.3 (≤5.0.7) | The fix (5.0.8) is taken where adoptable — `brace-expansion@5` is overridden, covering the `minimatch@10` chain under eslint 10. There is no patched 2.x release, and forcing 5.0.8 into it breaks `minimatch@5` (see above). The one vulnerable copy left is **dev-only**: `npm ls brace-expansion --omit=dev --all` is empty, and it is reached only by `openapi-typescript` → `@redocly/openapi-core` → `minimatch@5.1.9` — codegen running over our own committed `docs/openapi/openapi.yaml`. The advisory needs an attacker-supplied brace pattern; ours are literals in committed files. | **2026-08-31** |
+| [GHSA-qwww-vcr4-c8h2](https://github.com/advisories/GHSA-qwww-vcr4-c8h2) | `react-router` (≥ 7.12.0, < 8.3.0) | The admin console is a **static SPA built by Vite**, served as files from `public_html/assets/`; the PHP front controller never renders a React route. Routing is `createBrowserRouter` with element-only routes — **no RSC mode, no server components, no server-side route `action`/`loader`, no `@react-router/dev` runtime**. The advisory's attack path (a server executing a route action before returning 400) has no counterpart in a client-only bundle. Re-measured 2026-08-04 in this tree: `grep -cE '\b(action\|loader):' frontend/src/app/router.tsx` = **0**, and `grep -rniE '@react-router/(dev\|node\|serve)\|react-router/server\|createStaticHandler\|rsc' frontend/src` returns **no match**. | **2026-08-31** |
 
-For `react-router` there is **no fix available in the 7.x line**: `react-router-dom` ends at
-7.18.1 (the version this repo is on), and the fix lands in `react-router` v8 (≥ 8.2.1) — a
-different package and a breaking upgrade. That exception is removed by the **react-router v8
-migration wave** (bundled with the NENE2 RR8 re-evaluation). The `brace-expansion` exception is
-removed when `openapi-typescript` / `@redocly/openapi-core` move off `minimatch@5`; note this
-repo is already on eslint 10, so — unlike nene-invoice — no eslint-major wave is involved.
+This is the only exception. For `react-router` there is **no fix available in the 7.x line**:
+the newest 7.x is `react-router-dom` 7.18.2 and it is still inside the vulnerable range (this
+repo is on 7.18.1), while the fix lands in `react-router` v8 — a different package and a
+breaking upgrade. Read from the GitHub Advisory API on 2026-08-04, the first patched version is
+**8.3.0**; it was 8.2.1 when this entry was first written, which is why the range is restated
+here rather than carried forward. That exception is removed by the **react-router v8 migration
+wave** (bundled with the NENE2 RR8 re-evaluation).
+
+### Removed exceptions
+
+- **GHSA-mh99-v99m-4gvg** (`brace-expansion`) — removed 2026-08-04 (#407). The entry argued
+  that the 2.x branch had no patched release, so `minimatch@5.1.9`'s `brace-expansion@2.1.3`
+  had to be tolerated. Re-read from the GitHub Advisory API: mh99's 2.x fix is **2.1.3** — the
+  version this tree was already on — so the entry had stopped matching anything and was
+  silently dead. Its successor **GHSA-rgw5-rvv9-x895** widened the range (< 1.1.18 / < 2.1.4 /
+  < 5.0.9) and *is* fully fixable here, so it was taken as a patch rather than allowlisted:
+  a lockfile-only bump to `brace-expansion` **2.1.4 + 5.0.9**, with no `package.json` change
+  (the `"brace-expansion@5": "^5.0.8"` caret already covered 5.0.9) and **no new allowlist
+  entry**. `fast-uri` — the other advisory in the fleet wave (GHSA-7p8r-x3mc-p8w7) — is not a
+  dependency of this tree (`npm ls fast-uri --all` is empty), so no action was needed for it.
+  The two-chain check above was re-run after the bump and both still print `true`.
+
+A dead exception is worse than a loud one: it reads as a live risk that somebody decided to
+accept. When an advisory stops firing, delete the entry and say why here — do not leave it
+parked "just in case".
 
 ## Fleet note
 
