@@ -48,9 +48,72 @@ jobs:
       - name: Run checks
         run: composer check
 
-  # Validates that every Phinx migration applies cleanly on PostgreSQL. The unit
-  # suite builds its own SQLite schema, so this is the regression guard for the
-  # pgsql adapter (DB_ADAPTER=pgsql) and the RETURNING id / boolean SQL paths.
+  # ---------------------------------------------------------------------------
+  # What the migration jobs below verify — and what they do not
+  #
+  # Clear supports three Phinx adapters (phinx.php): sqlite, mysql, pgsql. DDL
+  # behaviour differs between them (defaults on TEXT columns, change_column type
+  # conversions, how booleans are stored, index-name length limits), so a
+  # migration can be green on one adapter and fail on another.
+  #
+  # Verified here: every migration applies **forward**, in order, on an **empty**
+  # database, for each adapter that a deployment can actually use.
+  #   - backend-check  → sqlite (the unit suite builds its own schema)
+  #   - mysql-migrate  → mysql 8.4  (the docker-compose default; Tier A default)
+  #   - postgres-migrate → postgres 17 (the optional DB_ADAPTER=pgsql path)
+  #
+  # NOT verified here, and deliberately out of scope for this job: rollback
+  # (`migrations:rollback`), migrating over a database that already holds
+  # production data, and any data-migration semantics beyond DDL applying. If
+  # you add a migration that rewrites existing rows, those paths still need a
+  # human check — a green pipeline here does not cover them.
+  #
+  # The MySQL image is pinned to the same version as docker-compose.yml
+  # (mysql:8.4). If one moves, move the other, or the job stops standing in for
+  # the environment it is meant to protect.
+  # ---------------------------------------------------------------------------
+
+  mysql-migrate:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: nene_clear
+          MYSQL_USER: nene_clear
+          MYSQL_PASSWORD: nene_clear
+          MYSQL_ROOT_PASSWORD: root_secret
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -proot_secret"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_mysql, mbstring
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Migrate on MySQL
+        env:
+          DB_ADAPTER: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: nene_clear
+          DB_USER: nene_clear
+          DB_PASSWORD: nene_clear
+        run: composer migrations:migrate
+
   postgres-migrate:
     runs-on: ubuntu-latest
 
