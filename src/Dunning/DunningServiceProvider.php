@@ -18,6 +18,7 @@ use NeneClear\Http\ServiceResolver;
 use NeneClear\I18n\LocalizedProblemDetailsFactory;
 use NeneClear\I18n\MessageCatalog;
 use NeneClear\InvoiceUpstream\InvoiceUpstreamClientInterface;
+use NeneClear\Scheduler\PdoSchedulerLock;
 use NeneClear\Security\Encryptor;
 use NeneClear\Tenancy\CurrentOrganization;
 use Psr\Container\ContainerInterface;
@@ -57,6 +58,21 @@ final readonly class DunningServiceProvider implements ServiceProviderInterface
                     ServiceResolver::get($c, ClockInterface::class),
                     new DunningMessageRenderer(ServiceResolver::get($c, MessageCatalog::class)),
                     static fn (DatabaseQueryExecutorInterface $tx): DunningPauseRepositoryInterface => new PdoDunningPauseRepository($tx),
+                ),
+            )
+            ->set(
+                SendScheduledDunningUseCase::class,
+                static fn (ContainerInterface $c): SendScheduledDunningUseCase => new SendScheduledDunningUseCase(
+                    ServiceResolver::get($c, DatabaseQueryExecutorInterface::class),
+                    static fn (DatabaseQueryExecutorInterface $tx): ClearSettingsRepositoryInterface => new PdoClearSettingsRepository($tx, new PdoBankAccountRepository($tx, ServiceResolver::get($c, Encryptor::class))),
+                    static fn (DatabaseQueryExecutorInterface $tx): DunningNoticeRepositoryInterface => new PdoDunningNoticeRepository($tx),
+                    ServiceResolver::get($c, InvoiceUpstreamClientInterface::class),
+                    // Resolved, not constructed: the scheduler must go through the
+                    // very same use case (and therefore the very same guards) the
+                    // operator's button does.
+                    ServiceResolver::get($c, SendDunningUseCaseInterface::class),
+                    new PdoSchedulerLock(ServiceResolver::get($c, DatabaseQueryExecutorInterface::class)),
+                    ServiceResolver::get($c, ClockInterface::class),
                 ),
             )
             ->set(

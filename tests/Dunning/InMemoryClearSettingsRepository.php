@@ -22,6 +22,21 @@ final class InMemoryClearSettingsRepository implements ClearSettingsRepositoryIn
         return ($this->byOrg[$organizationId] ?? null)?->fiscalYearEndMonth;
     }
 
+    public function findOrganizationIdsWithScheduledDunning(): array
+    {
+        $ids = [];
+
+        foreach ($this->byOrg as $organizationId => $settings) {
+            if ($settings->dunningSchedule->isEnabled) {
+                $ids[] = $organizationId;
+            }
+        }
+
+        sort($ids);
+
+        return $ids;
+    }
+
     public function save(ClearSettings $settings): void
     {
         $this->byOrg[$settings->organizationId] = $settings;

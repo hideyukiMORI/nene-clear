@@ -21,4 +21,35 @@ enum DunningStage: string
     {
         return self::tryFrom((string) $value) ?? self::Initial;
     }
+
+    /**
+     * Position in the escalation ladder, lowest first.
+     */
+    public function rank(): int
+    {
+        return match ($this) {
+            self::Initial => 0,
+            self::Reminder => 1,
+            self::Final => 2,
+        };
+    }
+
+    /**
+     * The highest stage reachable when `$lastSent` was the last stage actually
+     * sent for an invoice — one step up, and `initial` when nothing has been sent
+     * (#400 §5, "escalation never skips a stage").
+     *
+     * The ladder is walked one rung at a time on purpose: an invoice that sat
+     * unattended past the `final` threshold must still receive `initial` and then
+     * `reminder` before anything harsher, rather than opening with the last
+     * message before the relationship changes.
+     */
+    public static function highestReachableAfter(?self $lastSent): self
+    {
+        return match ($lastSent) {
+            null => self::Initial,
+            self::Initial => self::Reminder,
+            self::Reminder, self::Final => self::Final,
+        };
+    }
 }
