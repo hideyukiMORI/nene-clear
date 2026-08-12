@@ -8,6 +8,37 @@ on:
     branches:
       - main
 
+  # Weekly schedule: re-runs this same CI (incl. the dependency audit below)
+  # on a cadence so a newly published advisory against an already-merged
+  # lockfile gets caught even without a new PR. Cron minute is staggered
+  # across the fleet to avoid a simultaneous-firing herd; do not change
+  # without checking the other repos' cron minutes.
+  #
+  # KNOWN LIMITATION: GitHub disables scheduled workflows automatically
+  # after 60 days with no repository activity. A dormant repo (the ones
+  # that most need this check) can have its schedule silently stopped.
+  # There is no in-repo fix; catching this requires an external poller.
+  schedule:
+    - cron: '5 0 * * 1' # Monday 00:05 UTC = 09:05 JST
+
+  # Manual trigger, with an opt-in switch to validate the failure-notification
+  # path (see the "Simulate failure" step and the notify-failure job) without
+  # waiting for a real failure or the next scheduled run.
+  workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: 'Intentionally fail frontend-check to validate the failure-notification path'
+        type: boolean
+        default: false
+
+concurrency:
+  # github.event_name is part of the group so that a scheduled or manually
+  # dispatched run is not cancelled by a concurrent push run (observed
+  # failure mode when event_name was omitted: the non-push run gets
+  # silently cancelled and looks like it never ran).
+  group: ci-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   frontend-check:
     runs-on: ubuntu-latest
@@ -18,6 +49,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Simulate failure (validation only)
+        if: inputs.simulate_failure
+        run: exit 1
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -42,3 +77,28 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  notify-failure:
+    name: Open an issue when the scheduled run fails
+    if: failure() && (github.event_name == 'schedule' || inputs.simulate_failure)
+    needs: [frontend-check]
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    env:
+      ISSUE_TITLE: '🔴 nene-clear: 週次 CI（schedule）が失敗しています'
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Create or update the failure issue
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --state open --limit 100 --json number,title \
+            | jq -r --arg t "$ISSUE_TITLE" 'map(select(.title == $t)) | .[0].number // empty')"
+          body="週次の schedule 実行が失敗しました。 実行: ${RUN_URL}"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body "$body"
+          fi
