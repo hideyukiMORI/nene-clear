@@ -15,6 +15,31 @@
   "high": true,
   "critical": true,
   "allowlist": [
+    // Removed 2026-08-15 (#431): GHSA-qwww-vcr4-c8h2 (react-router, high) is REMOVED, not
+    // renewed — and not for the reason this entry anticipated. Its stated removal condition was
+    // the react-router v8 migration; what actually removed it was a change on the advisory's
+    // side. On **2026-08-07T18:16:54Z the advisory itself was updated**: the single
+    // 7.x-through-8.x range was split in two and a 7.x fix appeared. Re-read from the primary
+    // source on 2026-08-15:
+    //   gh api /advisories/GHSA-qwww-vcr4-c8h2
+    //     { react-router, ">= 7.12.0, < 7.18.2", first_patched 7.18.2 }
+    //     { react-router, ">= 8.0.0,  < 8.3.0",  first_patched 8.3.0  }
+    // This PR moves this tree to react-router 7.18.2, lockfile-only — no `package.json` change,
+    // the existing caret already covered it. Measured in THIS tree, before and after:
+    // `npm audit` high 2 -> 0; lockfile `packages` 403 -> 403 (unchanged);
+    // 2 entries moved, all upgrades, no downgrades.
+    //
+    // The lesson, kept because the next entry inherits it: this exception was written *well* —
+    // the advisory was re-read at authoring time and the "does not apply here" argument was
+    // measured against this codebase. It was still invalidated days later by a change on the
+    // advisory's side, and nothing in this file would have said so. **An expiry date catches an
+    // entry that runs out; it does not catch an entry that stops being true.** While an id sits
+    // in this list the audit gate is silent about it, so "CI is green" and "we are not exposed"
+    // are not the same statement. Re-read the advisory when you touch this file, not at expiry.
+    //
+    // Kept below, verbatim: the measurement this entry carried. It applies again when this tree
+    // moves to react-router v8 — the v8 range (>= 8.0.0, < 8.3.0) is still open. What follows
+    // was true when it was written; the "no fix in the 7.x line" part is what 08-07 changed.
     // GHSA-qwww-vcr4-c8h2 — react-router "RSC Mode CSRF Bypass Allows Action Execution Before
     // 400 Response" (high). Vulnerable range >= 7.12.0, < 8.3.0; there is NO fix in the 7.x line
     // (the newest 7.x is react-router-dom 7.18.2 and it is still inside the range; the fix is
@@ -34,7 +59,6 @@
     // Expiry: 2026-08-31. Removed by the react-router v8 migration wave (bundled with the
     // NENE2 RR8 re-evaluation). If that wave slips past the expiry, the entry must be
     // re-argued in a PR — not silently extended.
-    "GHSA-qwww-vcr4-c8h2",
 
     // Removed 2026-08-04 (#407): GHSA-mh99-v99m-4gvg (brace-expansion) — the entry argued that
     // the 2.x branch had no patched release, so `minimatch@5.1.9`'s `brace-expansion@2.1.3` had
