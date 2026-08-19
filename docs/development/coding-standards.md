@@ -26,6 +26,10 @@ NeNe Clear coding standards split by surface. **Full policies live in the dedica
 - **OpenAPI** is the public API contract; MCP maps to the same HTTP operations
 - Application Problem Details `type`: `https://nene-clear.dev/problems/{problem-name}`
 - **Monetary values:** integer cents everywhere — no floats in DB or JSON
+
+> `cents` = the currency's **minor unit**, not 1/100 of the display amount.
+> **JPY has zero decimal places (ISO 4217), so `*_cents` stores whole yen — never multiply by 100.**
+> Example: ¥1,500 is stored as `1500`. A value like `116480` means ¥116,480, not ¥1,164.80.
 - **Placement violations block merge** — see backend standards
 - Public docs, OpenAPI text, and API error metadata: **English**
 - Issues, PRs, commits, `.cursor/rules/`: **English only** (ADR 0008)

@@ -119,6 +119,10 @@ Public OpenAPI summaries, descriptions, and examples: **English only**.
 
 Do not mix camelCase in public JSON. Do not use floats for money.
 
+> `cents` = the currency's **minor unit**, not 1/100 of the display amount.
+> **JPY has zero decimal places (ISO 4217), so `*_cents` stores whole yen — never multiply by 100.**
+> Example: ¥1,500 is stored as `1500`. A value like `116480` means ¥116,480, not ¥1,164.80.
+
 ---
 
 ## 4. Problem Details and validation errors
@@ -145,6 +149,10 @@ Problem Details `title` and `detail`: English.
 | Foreign key column | `{singular_entity}_id` | `bank_import_batch_id`, `invoice_id` (upstream) |
 | Index names | `idx_{table}_{columns}` | `idx_bank_transactions_status` |
 | Unique constraints | `uniq_{table}_{columns}` | `uniq_bank_import_batches_file_hash` |
+
+> `cents` = the currency's **minor unit**, not 1/100 of the display amount.
+> **JPY has zero decimal places (ISO 4217), so `*_cents` stores whole yen — never multiply by 100.**
+> Example: ¥1,500 is stored as `1500`. A value like `116480` means ¥116,480, not ¥1,164.80.
 
 SQL lives only in `Pdo*Repository` classes.
 
