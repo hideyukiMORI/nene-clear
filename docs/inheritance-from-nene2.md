@@ -57,6 +57,10 @@ Install NENE2 as a Composer dependency and treat `vendor/hideyukimori/nene2/docs
 | Language policy | **English** for repository docs, OpenAPI, API errors (ADR 0008); **Japanese permitted** for Issues, PRs, commit messages (ADR 0015); admin UI **ja + en** only (ADR 0005) |
 | Review checklists | `docs/review/` — task-specific lists for this product |
 
+> `cents` = the currency's **minor unit**, not 1/100 of the display amount.
+> **JPY has zero decimal places (ISO 4217), so `*_cents` stores whole yen — never multiply by 100.**
+> Example: ¥1,500 is stored as `1500`. A value like `116480` means ¥116,480, not ¥1,164.80.
+
 ## NeNe Clear–specific (not inherited)
 
 Record these in ADRs or product docs when they stabilize:

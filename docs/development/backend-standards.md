@@ -95,6 +95,10 @@ Use `final readonly` classes and `declare(strict_types=1);` in every PHP file.
 > [`../review/compliance.md`](../review/compliance.md) for any change in this area.
 
 - Store all amounts as **integer cents** (`amount_cents`, `remaining_cents`, `outstanding_at_send_cents`). Float / DECIMAL for money is prohibited.
+
+> `cents` = the currency's **minor unit**, not 1/100 of the display amount.
+> **JPY has zero decimal places (ISO 4217), so `*_cents` stores whole yen — never multiply by 100.**
+> Example: ¥1,500 is stored as `1500`. A value like `116480` means ¥116,480, not ¥1,164.80.
 - **No quote/invoice/tax/PDF logic** (ADR 0009). Invoice totals and tax are read from the Invoice upstream; Clear allocates known bank amounts and never recomputes them.
 - Allocation math is computed once in the UseCase; API responses and stored rows render the same values.
 - Imported bank lines are immutable; corrections via reversal import batch, not in-place edit. No hard delete of bank/match/dunning history.

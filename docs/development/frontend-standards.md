@@ -63,6 +63,10 @@ Rules (MUST):
 - Money is integer cents end-to-end; format for display only at the view edge,
   never mutate the cents value.
 
+> `cents` = the currency's **minor unit**, not 1/100 of the display amount.
+> **JPY has zero decimal places (ISO 4217), so `*_cents` stores whole yen — never multiply by 100.**
+> Example: ¥1,500 is stored as `1500`. A value like `116480` means ¥116,480, not ¥1,164.80.
+
 ## 4. Connection & API base
 
 - Dev: Vite **proxies `/api/*`** to the Docker backend.
