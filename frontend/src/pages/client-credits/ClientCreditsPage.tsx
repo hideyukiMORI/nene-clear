@@ -62,8 +62,8 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
 }
 
 const STATUS_MAP: Record<ClientCredit['status'], StatusMeta> = {
-  open:   { v: 'ok',   labelKey: 'clientCredit.status.open' },
-  voided: { v: 'neut', labelKey: 'clientCredit.status.voided' },
+  open:   { v: 'success',   labelKey: 'clientCredit.status.open' },
+  voided: { v: 'neutral', labelKey: 'clientCredit.status.voided' },
 }
 
 const PAGE = 50

@@ -19,10 +19,10 @@ import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/shared/lib/format'
 
 const STATUS_MAP: Record<ManualReceivable['status'], StatusMeta> = {
-  open: { v: 'neut', labelKey: 'manualReceivables.status.open' },
+  open: { v: 'neutral', labelKey: 'manualReceivables.status.open' },
   partially_paid: { v: 'warn', labelKey: 'manualReceivables.status.partiallyPaid' },
-  paid: { v: 'ok', labelKey: 'manualReceivables.status.paid' },
-  cancelled: { v: 'neut', labelKey: 'manualReceivables.status.cancelled' },
+  paid: { v: 'success', labelKey: 'manualReceivables.status.paid' },
+  cancelled: { v: 'neutral', labelKey: 'manualReceivables.status.cancelled' },
 }
 
 /** The "this is a reference, not a tax original" framing required by ADR 0014 (X1). */

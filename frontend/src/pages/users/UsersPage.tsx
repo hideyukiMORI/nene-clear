@@ -19,12 +19,12 @@ type Role = 'admin' | 'member' | 'viewer'
 const ROLE_MAP: Record<User['role'], StatusMeta> = {
   superadmin: { v: 'info', labelKey: 'users.role.superadmin' },
   admin:  { v: 'info', labelKey: 'users.role.admin' },
-  member: { v: 'neut', labelKey: 'users.role.member' },
-  viewer: { v: 'neut', labelKey: 'users.role.viewer' },
+  member: { v: 'neutral', labelKey: 'users.role.member' },
+  viewer: { v: 'neutral', labelKey: 'users.role.viewer' },
 }
 
 const STATUS_MAP: Record<User['status'], StatusMeta> = {
-  active:  { v: 'ok',   labelKey: 'users.status.active' },
+  active:  { v: 'success',   labelKey: 'users.status.active' },
   invited: { v: 'warn', labelKey: 'users.status.invited' },
 }
 

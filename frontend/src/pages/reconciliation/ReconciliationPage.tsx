@@ -10,7 +10,7 @@ import type { BankTransaction } from '@/entities/bank-transaction'
 import type { Reconciliation } from '@/entities/reconciliation'
 import type { AllocationInput, MatchSuggestion } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
-import { Badge } from '@/shared/ui/badge'
+import { Badge } from '@hideyukimori/nene2-ui'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
@@ -31,8 +31,8 @@ import { useRowCursor } from '@/components/keyboard'
 import { yen, formatDate } from '@/shared/lib/format'
 
 const RECON_STATUS: Record<Reconciliation['status'], StatusMeta> = {
-  confirmed: { v: 'ok',   labelKey: 'reconciliation.status.confirmed' },
-  reversed:  { v: 'neut', labelKey: 'reconciliation.status.reversed' },
+  confirmed: { v: 'success',   labelKey: 'reconciliation.status.confirmed' },
+  reversed:  { v: 'neutral', labelKey: 'reconciliation.status.reversed' },
 }
 
 // ─── Confirm match modal ───
@@ -120,7 +120,7 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
         )}
         {suggestQ.data?.suggestions.map((s, i) => (
           <div key={`${s.source}-${s.invoice_id ?? s.manual_receivable_id}-${i}`} className="sugg-row">
-            <Badge variant={s.source === 'manual' ? 'neut' : 'info'}>{t(s.source === 'manual' ? 'reconciliation.source.manual' : 'reconciliation.source.invoice')}</Badge>
+            <Badge tone={s.source === 'manual' ? 'neutral' : 'info'}>{t(s.source === 'manual' ? 'reconciliation.source.manual' : 'reconciliation.source.invoice')}</Badge>
             <span className="iv mono">{s.invoice_number ?? s.reference_number}</span>
             <span className="amt">{yen(s.outstanding_cents)}</span>
             <Button variant="primary" size="sm" onClick={() => applySuggestion(s)}>{t('reconciliation.useSuggestion')}</Button>
@@ -343,7 +343,7 @@ export default function ReconciliationPage() {
                   <td className="muted">{tx.value_date}</td>
                   <td className="num">{yen(tx.amount_cents)}</td>
                   <td className="strong">{tx.counterparty_text}</td>
-                  <td><Badge variant="info">{t('reconciliation.hasCandidates')}</Badge></td>
+                  <td><Badge tone="info">{t('reconciliation.hasCandidates')}</Badge></td>
                   <td className="row-act">
                     <Button variant="primary" size="sm" onClick={() => setMatchTarget(tx)}>
                       <Icon decorative name="check" size="sm" />{t('reconciliation.confirm')}
