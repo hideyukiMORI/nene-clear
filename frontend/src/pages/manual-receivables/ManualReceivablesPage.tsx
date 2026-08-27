@@ -58,7 +58,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal open onClose={onClose} title={t('manualReceivables.create')} sub={t('manualReceivables.createSub')}
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!valid || mut.isPending} onClick={() => mut.mutate()}><Icon name="plus" />{mut.isPending ? t('common.saving') : t('manualReceivables.create')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!valid || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="plus" />{mut.isPending ? t('common.saving') : t('manualReceivables.create')}</Button></>}
     >
       <NotOriginalNotice />
       <div className="field">
@@ -81,7 +81,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
       </div>
       <div className="field">
         <label>{t('manualReceivables.recipientEmail')}</label>
-        <div className="inp-icon"><Icon name="mail" /><input className="inp" type="email" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} placeholder={t('manualReceivables.emailPlaceholder')} /></div>
+        <div className="inp-icon"><Icon decorative name="mail" /><input className="inp" type="email" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} placeholder={t('manualReceivables.emailPlaceholder')} /></div>
         <span className="hint">{t('manualReceivables.emailHint')}</span>
       </div>
       {error && <Notice variant="bad">{error}</Notice>}
@@ -104,7 +104,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal open onClose={onClose} title={t('manualReceivables.import')} sub={t('manualReceivables.importSub')}
-      footer={<><Button variant="ghost" onClick={onClose}>{result ? t('common.close') : t('common.cancel')}</Button>{!result && <Button variant="primary" disabled={!file || mut.isPending} onClick={() => mut.mutate()}><Icon name="import" />{mut.isPending ? t('common.processing') : t('manualReceivables.import')}</Button>}</>}
+      footer={<><Button variant="ghost" onClick={onClose}>{result ? t('common.close') : t('common.cancel')}</Button>{!result && <Button variant="primary" disabled={!file || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="import" />{mut.isPending ? t('common.processing') : t('manualReceivables.import')}</Button>}</>}
     >
       <NotOriginalNotice />
       <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.8 }}>{t('manualReceivables.importColumns')}</p>
@@ -165,8 +165,8 @@ export default function ManualReceivablesPage() {
         title={t('manualReceivables.title')}
         sub={t('manualReceivables.subtitle')}
         actions={<>
-          <Button variant="ghost" onClick={() => setShowImport(true)}><Icon name="import" />{t('manualReceivables.import')}</Button>
-          <Button variant="primary" onClick={() => setShowCreate(true)}><Icon name="plus" />{t('manualReceivables.create')}</Button>
+          <Button variant="ghost" onClick={() => setShowImport(true)}><Icon decorative name="import" />{t('manualReceivables.import')}</Button>
+          <Button variant="primary" onClick={() => setShowCreate(true)}><Icon decorative name="plus" />{t('manualReceivables.create')}</Button>
         </>}
       />
 

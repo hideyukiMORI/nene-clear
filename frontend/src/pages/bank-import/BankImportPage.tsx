@@ -45,7 +45,7 @@ function ReverseModal({ batch, onClose }: ReverseModalProps) {
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}>
-            <Icon name="trash" size="sm" />{mut.isPending ? t('common.processing') : t('bankImport.reverse')}
+            <Icon decorative name="trash" size="sm" />{mut.isPending ? t('common.processing') : t('bankImport.reverse')}
           </Button>
         </>
       }
@@ -130,7 +130,7 @@ export default function BankImportPage() {
       <PageHead title={t('bankImport.title')} sub={t('bankImport.subtitle')} />
 
       <Card pad="none" className="min-w-0" style={{ maxWidth: 760 }}>
-        <CardHead><h2><Icon name="cloud-up" />{t('bankImport.upload')}</h2></CardHead>
+        <CardHead><h2><Icon decorative name="cloud-up" />{t('bankImport.upload')}</h2></CardHead>
         <CardBody className="stack">
           <form onSubmit={handleUpload} className="stack">
             <div className="field" style={{ maxWidth: 380 }}>
@@ -147,7 +147,7 @@ export default function BankImportPage() {
             <div className="field">
               <label>{t('bankImport.file')}</label>
               <div className="dropzone">
-                <span className="dz-ic"><Icon name="file" /></span>
+                <span className="dz-ic"><Icon decorative name="file" /></span>
                 <div style={{ flex: 1 }}>
                   <input ref={fileRef} type="file" accept=".csv" style={{ fontSize: 13 }} />
                   <small style={{ display: 'block', marginTop: 4 }}>{t('bankImport.dropHint')}</small>
@@ -157,7 +157,7 @@ export default function BankImportPage() {
             {uploadMsg && <Notice variant={uploadMsg.ok ? 'ok' : 'bad'}>{uploadMsg.text}</Notice>}
             <div className="row">
               <Button variant="primary" type="submit" disabled={uploadMut.isPending}>
-                <Icon name="import" />{uploadMut.isPending ? t('common.importing') : t('bankImport.submit')}
+                <Icon decorative name="import" />{uploadMut.isPending ? t('common.importing') : t('bankImport.submit')}
               </Button>
               <span className="faint" style={{ fontSize: 12 }}>{t('bankImport.dedupeHint')}</span>
             </div>
@@ -168,7 +168,7 @@ export default function BankImportPage() {
       <FilterBar className="mt-x-md">
         <FilterField label={t('table.fileName')}>
           <div className="inp-icon">
-            <Icon name="search" />
+            <Icon decorative name="search" />
             <input className="inp" data-kbd="search" style={{ paddingLeft: 32, width: 160 }} placeholder={t('common.search')} value={fileName} onChange={e => setFileName(e.target.value)} />
           </div>
         </FilterField>
@@ -195,13 +195,13 @@ export default function BankImportPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: batchTotal })}</span>
-          <Button variant="ghost" size="sm" onClick={clearBatches}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={searchBatches}><Icon name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="ghost" size="sm" onClick={clearBatches}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={searchBatches}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 
       <Card pad="none" className="min-w-0">
-        <CardHead><h2><Icon name="clock" />{t('bankImport.batches')}</h2></CardHead>
+        <CardHead><h2><Icon decorative name="clock" />{t('bankImport.batches')}</h2></CardHead>
         <DataTable>
           <thead>
             <tr>
@@ -225,7 +225,7 @@ export default function BankImportPage() {
                 <td className="row-act">
                   {b.status === 'imported' && (
                     <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(b)}>
-                      <Icon name="trash" size="sm" />{t('bankImport.reverse')}
+                      <Icon decorative name="trash" size="sm" />{t('bankImport.reverse')}
                     </Button>
                   )}
                 </td>

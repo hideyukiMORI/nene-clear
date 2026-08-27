@@ -44,7 +44,7 @@ function SendModal({ invoice, onClose }: { invoice: UpstreamInvoice; onClose: ()
   })
   return (
     <Modal open onClose={onClose} title={t('dunning.confirmSend')} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? t('common.sending') : t('dunning.send')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="send" />{mut.isPending ? t('common.sending') : t('dunning.send')}</Button></>}
     >
       <div className="kv">
         <div className="kv-row"><span className="k">{t('table.invoice')}</span><span className="v mono">{invoice.invoice_number}</span></div>
@@ -97,7 +97,7 @@ function PauseModal({ invoiceId, onClose }: { invoiceId: number; onClose: () => 
   })
   return (
     <Modal open onClose={onClose} title={t('dunning.confirmPause')} sub={t('dunning.pauseTarget', { id: invoiceId })} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="warn" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="pause" />{mut.isPending ? t('common.processing') : t('dunning.pauseAction')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="warn" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="pause" />{mut.isPending ? t('common.processing') : t('dunning.pauseAction')}</Button></>}
     >
       <div className="field"><label>{t('dunning.pauseReason')}</label><input className="inp" placeholder={t('dunning.pauseReasonPlaceholder')} value={reason} onChange={e => setReason(e.target.value)} /></div>
       <Notice variant="warn">{t('dunning.pauseWarn')}</Notice>
@@ -169,7 +169,7 @@ export default function DunningPage() {
         sub={t('dunning.subtitle')}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv(dunningNoticesExportPath(noticesFilter), 'dunning-notices.csv')}>
-            <Icon name="export" />{t('export.csv')}
+            <Icon decorative name="export" />{t('export.csv')}
           </Button>
         }
       />
@@ -179,7 +179,7 @@ export default function DunningPage() {
         <Card pad="none" className="min-w-0" style={{ borderColor: 'var(--warn-line)', background: 'var(--warn-bg)', marginBottom: 20 }}>
           <div style={{ padding: '14px 18px' }}>
             <div className="row" style={{ color: 'var(--warn)', fontWeight: 700, fontSize: 13, marginBottom: 10 }}>
-              <Icon name="pause" /> {t('dunning.pausedBanner', { count: activePauses.size })}
+              <Icon decorative name="pause" /> {t('dunning.pausedBanner', { count: activePauses.size })}
             </div>
             <div className="wrapw">
               {(pausesQ.data?.items ?? []).map(p => (
@@ -187,7 +187,7 @@ export default function DunningPage() {
                   <b className="mono">{t('table.invoice')} #{p.invoice_id}</b>
                   <span className="faint">{p.paused_reason}</span>
                   <Button variant="link" onClick={() => resumeMut.mutate(p.invoice_id)}>
-                    <Icon name="refresh" size="sm" />{t('dunning.resume')}
+                    <Icon decorative name="refresh" size="sm" />{t('dunning.resume')}
                   </Button>
                 </span>
               ))}
@@ -199,7 +199,7 @@ export default function DunningPage() {
       {/* Eligible invoices */}
       <Card pad="none" className="min-w-0">
         <CardHead>
-          <h2><Icon name="alert" />{t('dunning.eligibleInvoices')}</h2>
+          <h2><Icon decorative name="alert" />{t('dunning.eligibleInvoices')}</h2>
           <p>{t('dunning.eligibleSubtitle')}</p>
         </CardHead>
         <DataTable>
@@ -223,12 +223,12 @@ export default function DunningPage() {
                   <td style={{ color: daysNum > 0 ? (daysNum > 14 ? 'var(--bad)' : 'var(--warn)') : 'var(--muted)', fontWeight: 600 }}>{elap}</td>
                   <td className="row-act">
                     {paused
-                      ? <Badge variant="warn"><Icon name="pause" size="sm" />{t('dunning.paused')}</Badge>
-                      : <Button variant="primary" size="sm" onClick={() => setSendTarget(inv)}><Icon name="send" size="sm" />{t('dunning.send')}</Button>
+                      ? <Badge variant="warn"><Icon decorative name="pause" size="sm" />{t('dunning.paused')}</Badge>
+                      : <Button variant="primary" size="sm" onClick={() => setSendTarget(inv)}><Icon decorative name="send" size="sm" />{t('dunning.send')}</Button>
                     }
                     {!paused && (
                       <Button variant="ghost-warn" size="sm" onClick={() => setPauseTarget(inv.invoice_id)}>
-                        <Icon name="pause" size="sm" />{t('dunning.pause')}
+                        <Icon decorative name="pause" size="sm" />{t('dunning.pause')}
                       </Button>
                     )}
                   </td>
@@ -243,13 +243,13 @@ export default function DunningPage() {
       <FilterBar className="mt-x-md">
         <FilterField label={t('table.invoiceNumber')}>
           <div className="inp-icon">
-            <Icon name="search" />
+            <Icon decorative name="search" />
             <input className="inp" data-kbd="search" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={hInvoice} onChange={e => setHInvoice(e.target.value)} />
           </div>
         </FilterField>
         <FilterField label={t('table.recipient')}>
           <div className="inp-icon">
-            <Icon name="search" />
+            <Icon decorative name="search" />
             <input className="inp" style={{ paddingLeft: 32, width: 170 }} placeholder={t('common.search')} value={hEmail} onChange={e => setHEmail(e.target.value)} />
           </div>
         </FilterField>
@@ -262,13 +262,13 @@ export default function DunningPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: hTotal })}</span>
-          <Button variant="ghost" size="sm" onClick={hClear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={hSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="ghost" size="sm" onClick={hClear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={hSearch}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 
       <Card pad="none" className="min-w-0">
-        <CardHead><h2><Icon name="clock" />{t('dunning.history')}</h2></CardHead>
+        <CardHead><h2><Icon decorative name="clock" />{t('dunning.history')}</h2></CardHead>
         <DataTable>
           <thead>
             <tr>

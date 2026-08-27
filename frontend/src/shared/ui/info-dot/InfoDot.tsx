@@ -23,7 +23,7 @@ export function InfoDot({ label, entries }: InfoDotProps) {
   return (
     <span className="infodot">
       <button type="button" className="infodot-btn" aria-label={label}>
-        <Icon name="info" size="sm" />
+        <Icon decorative name="info" size="sm" />
       </button>
       <span className="infodot-pop" role="tooltip">
         <dl className="glossary">

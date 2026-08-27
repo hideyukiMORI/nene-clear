@@ -45,15 +45,15 @@ export default function LoginPage() {
         </div>
         <div className="feats">
           <div className="feat">
-            <span className="fi"><Icon name="reconcile" size="sm" /></span>
+            <span className="fi"><Icon decorative name="reconcile" size="sm" /></span>
             {t('login.feature.reconcile')}
           </div>
           <div className="feat">
-            <span className="fi"><Icon name="bell" size="sm" /></span>
+            <span className="fi"><Icon decorative name="bell" size="sm" /></span>
             {t('login.feature.dunning')}
           </div>
           <div className="feat">
-            <span className="fi"><Icon name="shield" size="sm" /></span>
+            <span className="fi"><Icon decorative name="shield" size="sm" /></span>
             {t('login.feature.control')}
           </div>
         </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
             <div className="field">
               <label>{t('login.email')}</label>
               <div className="inp-icon">
-                <Icon name="mail" />
+                <Icon decorative name="mail" />
                 <input
                   className="inp"
                   type="email" name="email"
@@ -85,7 +85,7 @@ export default function LoginPage() {
             <div className="field">
               <label>{t('login.password')}</label>
               <div className="inp-icon">
-                <Icon name="lock" />
+                <Icon decorative name="lock" />
                 <input
                   className="inp"
                   type="password" name="password"
@@ -97,7 +97,7 @@ export default function LoginPage() {
               </div>
             </div>
             <Button variant="primary" type="submit" disabled={loading} style={{ justifyContent: 'center', padding: '11px' }}>
-              <Icon name="login" />
+              <Icon decorative name="login" />
               {loading ? t('common.checking') : t('login.submit')}
             </Button>
             {error && <Notice variant="bad">{error}</Notice>}

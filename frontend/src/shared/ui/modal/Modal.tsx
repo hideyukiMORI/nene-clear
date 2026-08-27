@@ -88,7 +88,7 @@ export function Modal({ open, onClose, title, sub, children, footer, size = 'def
           <h3>{title}</h3>
           {sub && <p>{sub}</p>}
         </div>
-        <button type="button" className="x" onClick={onClose}><Icon name="x" /></button>
+        <button type="button" className="x" onClick={onClose}><Icon decorative name="x" /></button>
       </div>
       <div className="modal-body">{children}</div>
       <div className="modal-foot">{footer}</div>

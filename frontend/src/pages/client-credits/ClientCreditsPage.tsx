@@ -41,7 +41,7 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!invoiceId || mut.isPending} onClick={() => mut.mutate()}>
-            <Icon name="link" />{mut.isPending ? t('common.processing') : t('clientCredit.apply')}
+            <Icon decorative name="link" />{mut.isPending ? t('common.processing') : t('clientCredit.apply')}
           </Button>
         </>
       }
@@ -132,7 +132,7 @@ export default function ClientCreditsPage() {
         ]} />}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv(clientCreditsExportPath(creditFilter), 'client-credits.csv')}>
-            <Icon name="export" />{t('export.csv')}
+            <Icon decorative name="export" />{t('export.csv')}
           </Button>
         }
       />
@@ -140,7 +140,7 @@ export default function ClientCreditsPage() {
       <FilterBar>
         <FilterField label={t('table.client')}>
           <div className="inp-icon">
-            <Icon name="search" />
+            <Icon decorative name="search" />
             <input className="inp" data-kbd="search" style={{ paddingLeft: 32, width: 150 }} placeholder={t('common.search')} value={f.clientId} onChange={e => set('clientId')(e.target.value)} />
           </div>
         </FilterField>
@@ -174,8 +174,8 @@ export default function ClientCreditsPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: total })}</span>
-          <Button variant="ghost" size="sm" onClick={clear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={search}><Icon name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="ghost" size="sm" onClick={clear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={search}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 
@@ -207,7 +207,7 @@ export default function ClientCreditsPage() {
                 <td className="row-act">
                   {c.status === 'open' && (
                     <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
-                      <Icon name="link" size="sm" />{t('clientCredit.apply')}
+                      <Icon decorative name="link" size="sm" />{t('clientCredit.apply')}
                     </Button>
                   )}
                 </td>

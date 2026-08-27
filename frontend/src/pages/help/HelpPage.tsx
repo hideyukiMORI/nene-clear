@@ -35,18 +35,18 @@ export default function HelpPage() {
         <div className="hero-grid" />
         <div className="hero-inner">
           <div className="eyebrow">
-            <Icon name="help" />
+            <Icon decorative name="help" />
             {pick(HELP_LABELS.eyebrow)}
           </div>
           <h1>{pick(HELP_LABELS.heroTitle)}</h1>
           <p>{pick(HELP_LABELS.heroLede)}</p>
           <div className="hero-meta">
             <span className="hero-chip">
-              <Icon name="reconcile" />
+              <Icon decorative name="reconcile" />
               {pick(HELP_LABELS.chipReconcile)}
             </span>
             <span className="hero-chip">
-              <Icon name="shield" />
+              <Icon decorative name="shield" />
               {pick(HELP_LABELS.chipSelfhost)}
             </span>
             <span className="hero-chip">
@@ -79,7 +79,7 @@ export default function HelpPage() {
                 <span className="hsec-no">{String(i + 1).padStart(2, '0')}</span>
                 <h2>
                   {s.icon !== undefined && (
-                    <span className="hsec-ic"><Icon name={s.icon} /></span>
+                    <span className="hsec-ic"><Icon decorative name={s.icon} /></span>
                   )}
                   {pick(s.title)}
                   {s.admin === true && <span className="tag-admin">{pick(HELP_LABELS.adminBadge)}</span>}
@@ -89,14 +89,14 @@ export default function HelpPage() {
                 <Block key={bi} block={block} pick={pick} />
               ))}
               <a className="backtop" href="#help-top" onClick={onBackToTop}>
-                <Icon name="arrow-up" />
+                <Icon decorative name="arrow-up" />
                 {pick(HELP_LABELS.backToToc)}
               </a>
             </section>
           ))}
 
           <div className="help-foot">
-            <div className="hf-ic"><Icon name="mail" /></div>
+            <div className="hf-ic"><Icon decorative name="mail" /></div>
             <div>
               <div className="hf-t">{pick(HELP_LABELS.footTitle)}</div>
               <div className="hf-d"><Rich text={pick(HELP_LABELS.footDesc)} /></div>
@@ -252,7 +252,7 @@ function Block({ block, pick }: { block: HelpBlock; pick: (b: Bi) => string }): 
     case 'note':
       return (
         <div className={block.tone === 'warn' ? 'note warn' : 'note'}>
-          <span className="note-ic"><Icon name={block.tone === 'warn' ? 'alert' : 'info'} /></span>
+          <span className="note-ic"><Icon decorative name={block.tone === 'warn' ? 'alert' : 'info'} /></span>
           <span>
             {block.title !== undefined && <span className="nt">{pick(block.title)}</span>}
             <Rich text={pick(block.text)} />
@@ -301,7 +301,7 @@ function Block({ block, pick }: { block: HelpBlock; pick: (b: Bi) => string }): 
               <summary>
                 <span className="q">Q</span>
                 <span className="qt">{pick(it.q)}</span>
-                <span className="chev" aria-hidden="true"><Icon name="chev-d" /></span>
+                <span className="chev" aria-hidden="true"><Icon decorative name="chev-d" /></span>
               </summary>
               <div className="fa-body"><Rich text={pick(it.a)} /></div>
             </details>

@@ -76,7 +76,7 @@ export default function BankTransactionsPage() {
         sub={t('bankTransaction.subtitle')}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv(bankTransactionsExportPath(txFilter), 'bank-transactions.csv')}>
-            <Icon name="export" />{t('export.csv')}
+            <Icon decorative name="export" />{t('export.csv')}
           </Button>
         }
       />
@@ -105,11 +105,11 @@ export default function BankTransactionsPage() {
         </FilterField>
         <FilterField label={t('table.counterparty')}>
           <div className="inp-icon">
-            <Icon name="search" />
+            <Icon decorative name="search" />
             <input className="inp" data-kbd="search" placeholder={t('common.search')} style={{ paddingLeft: 32 }} value={counterparty} onChange={e => setCounterparty(e.target.value)} />
           </div>
         </FilterField>
-        <Button variant="primary" onClick={search}><Icon name="search" />{t('common.search')}</Button>
+        <Button variant="primary" onClick={search}><Icon decorative name="search" />{t('common.search')}</Button>
       </FilterBar>
 
       <Card pad="none" className="min-w-0">
