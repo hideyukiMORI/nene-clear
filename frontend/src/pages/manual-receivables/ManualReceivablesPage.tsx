@@ -6,7 +6,7 @@ import {
 import { describeApiError } from '@/shared/api/client'
 import type { ManualReceivable, ManualReceivableImportResult } from '@/entities/manual-receivable'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
 import { Icon } from '@/shared/ui/icon'
 import { Modal } from '@/shared/ui/modal'
@@ -172,7 +172,7 @@ export default function ManualReceivablesPage() {
 
       <NotOriginalNotice />
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <DataTable>
           <thead>
             <tr>

@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listUsers, createUser, deleteUser } from '@/shared/api/endpoints'
 import type { User } from '@/entities/user'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
 import { Icon } from '@/shared/ui/icon'
 import { Modal } from '@/shared/ui/modal'
@@ -101,7 +101,7 @@ export default function UsersPage() {
         actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon name="plus" />{t('users.invite')}</Button>}
       />
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <DataTable>
           <thead>
             <tr><th>{t('table.email')}</th><th>{t('table.role')}</th><th>{t('table.status')}</th><th>{t('table.lastLogin')}</th><th /></tr>

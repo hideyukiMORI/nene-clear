@@ -1,0 +1,51 @@
+/*
+ * nene2-ui slot overrides — the layer that aims the kit at Clear's design (W1, #440).
+ *
+ * Kit components are never edited. Where Clear's design differs from a kit
+ * default, the difference is absorbed here, at the override point the kit
+ * provides. Read after the kit's own theme (see `index.css`), so these win.
+ *
+ * ── Two rules this file follows ─────────────────────────────────────────────
+ *
+ * 1. ONLY write a slot whose value differs from the kit default. Accepting a
+ *    default means writing nothing. Restating a default silently pins a number
+ *    nobody chose, and the day the kit fixes its scale, Clear would not move
+ *    with it (nene-vault #481).
+ *
+ * 2. "Resolves to the same value today" is NOT the same as "is the same
+ *    reference". A row whose expression differs from the kit's but happens to
+ *    compute to the same colour stays: it points the kit at CLEAR's token, so
+ *    Clear keeps its own design if the kit ever changes that default. Only a row
+ *    that repeats the kit's own expression is a permanent no-op and must go
+ *    (nene-deal §8-9).
+ *
+ * ── Card (W1a) — measured 2026-08-27 against nene2-ui 0.19.1 ────────────────
+ *
+ *   slot                          kit default              Clear (theme a)   →
+ *   --radius-x-slot-card          --radius-x-md   =  8px   --radius = 0px    → write
+ *   --color-x-slot-card-bg        --color-surface-raised   --surface #ffffff → write*
+ *   --color-x-slot-card-border    --color-border           --line   #dce3ec  → write
+ *   shadow (`raised` prop)        off by default           --shadow: none    → nothing
+ *
+ *   * Same colour today (both are pure white) but a different reference, so
+ *     rule 2 keeps it. `--color-surface-raised` is the kit's raised surface;
+ *     Clear's equivalent is `--surface`. ⚠️ The names cross: Clear's `--surface`
+ *     is the white one and `--surface-2` is the tinted one, while the kit has
+ *     `--color-surface` tinted and `--color-surface-raised` white. Mapping these
+ *     by name turns white into off-white.
+ *
+ *   Clear's card carries no padding of its own — the padding lives in
+ *   `.card-head` / `.card-body` / `.card-foot`, which stay local. The kit pads
+ *   by default (`pad="sm"`), so every call site passes `pad="none"`. There is
+ *   deliberately no `--spacing-x-slot-card-pad` in the kit; padding is per
+ *   instance, so it cannot be handled from this file.
+ *
+ * Slots for components Clear has not swapped yet are NOT written here. A slot
+ * value that nothing renders cannot be verified, and an unverified value reads
+ * as a decision that was checked.
+ */
+@theme {
+  --radius-x-slot-card: var(--radius-x-none);
+  --color-x-slot-card-bg: var(--surface);
+  --color-x-slot-card-border: var(--line);
+}

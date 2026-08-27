@@ -8,7 +8,8 @@ import { downloadCsv } from '@/shared/lib/download'
 import type { UpstreamInvoice } from '@/entities/upstream-invoice'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardHead } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
+import { CardHead } from '@/shared/ui/card'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -175,7 +176,7 @@ export default function DunningPage() {
 
       {/* Pause banner */}
       {activePauses.size > 0 && (
-        <div className="card" style={{ borderColor: 'var(--warn-line)', background: 'var(--warn-bg)', marginBottom: 20 }}>
+        <Card pad="none" className="min-w-0" style={{ borderColor: 'var(--warn-line)', background: 'var(--warn-bg)', marginBottom: 20 }}>
           <div style={{ padding: '14px 18px' }}>
             <div className="row" style={{ color: 'var(--warn)', fontWeight: 700, fontSize: 13, marginBottom: 10 }}>
               <Icon name="pause" /> {t('dunning.pausedBanner', { count: activePauses.size })}
@@ -192,11 +193,11 @@ export default function DunningPage() {
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Eligible invoices */}
-      <Card>
+      <Card pad="none" className="min-w-0">
         <CardHead>
           <h2><Icon name="alert" />{t('dunning.eligibleInvoices')}</h2>
           <p>{t('dunning.eligibleSubtitle')}</p>
@@ -239,7 +240,7 @@ export default function DunningPage() {
       </Card>
 
       {/* History */}
-      <FilterBar>
+      <FilterBar className="mt-x-md">
         <FilterField label={t('table.invoiceNumber')}>
           <div className="inp-icon">
             <Icon name="search" />
@@ -266,7 +267,7 @@ export default function DunningPage() {
         </div>
       </FilterBar>
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <CardHead><h2><Icon name="clock" />{t('dunning.history')}</h2></CardHead>
         <DataTable>
           <thead>

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listAuditEvents } from '@/shared/api/endpoints'
 import type { AuditEvent, AuditAction } from '@/entities/audit-event'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, Pager, SortableTh, nextSort } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -157,7 +157,7 @@ export default function AuditLogPage() {
         </div>
       </FilterBar>
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <DataTable>
           <thead>
             <tr>

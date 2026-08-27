@@ -4,7 +4,8 @@ import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearS
 import { describeApiError } from '@/shared/api/client'
 import type { BankImportBatch } from '@/entities/bank-import-batch'
 import { Button } from '@/shared/ui/button'
-import { Card, CardHead, CardBody } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
+import { CardHead, CardBody } from '@/shared/ui/card'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -128,7 +129,7 @@ export default function BankImportPage() {
     <>
       <PageHead title={t('bankImport.title')} sub={t('bankImport.subtitle')} />
 
-      <Card style={{ maxWidth: 760 }}>
+      <Card pad="none" className="min-w-0" style={{ maxWidth: 760 }}>
         <CardHead><h2><Icon name="cloud-up" />{t('bankImport.upload')}</h2></CardHead>
         <CardBody className="stack">
           <form onSubmit={handleUpload} className="stack">
@@ -164,7 +165,7 @@ export default function BankImportPage() {
         </CardBody>
       </Card>
 
-      <FilterBar>
+      <FilterBar className="mt-x-md">
         <FilterField label={t('table.fileName')}>
           <div className="inp-icon">
             <Icon name="search" />
@@ -199,7 +200,7 @@ export default function BankImportPage() {
         </div>
       </FilterBar>
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <CardHead><h2><Icon name="clock" />{t('bankImport.batches')}</h2></CardHead>
         <DataTable>
           <thead>
