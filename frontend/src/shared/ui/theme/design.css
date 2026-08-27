@@ -236,28 +236,12 @@ svg.ic-lg{ width:22px; height:22px; }
 .glossary-row dd{ margin:2px 0 0; font-size:12px; line-height:1.55; color:var(--muted); }
 
 /* ───────── Buttons ───────── */
-.btn{ display:inline-flex; align-items:center; gap:7px; border:1px solid transparent;
-  border-radius:var(--radius-sm); padding:8px 14px; font-size:13px; font-weight:600;
-  cursor:pointer; white-space:nowrap; line-height:1; transition:background .12s,border-color .12s; }
-.btn .ic{ width:16px; height:16px; }
-.btn-primary{ background:var(--primary); color:#fff; }
-.btn-primary:hover{ background:var(--primary-hover); }
-.btn-primary:active{ background:var(--primary-press); }
-.btn-ghost{ background:var(--surface); color:var(--ink-2); border-color:var(--line-strong); }
-.btn-ghost:hover{ background:var(--surface-2); border-color:var(--muted); }
-.btn-ghost-danger{ background:var(--surface); color:var(--bad); border-color:var(--bad-line); }
-.btn-ghost-danger:hover{ background:var(--bad-bg); border-color:var(--bad); }
-.btn-ghost-warn{ background:var(--surface); color:var(--warn); border-color:var(--warn-line); }
-.btn-ghost-warn:hover{ background:var(--warn-bg); border-color:var(--warn); }
-.btn-danger{ background:var(--bad); color:#fff; }
-.btn-danger:hover{ filter:brightness(.92); }
-.btn-warn{ background:var(--warn); color:#fff; }
-.btn-warn:hover{ filter:brightness(.94); }
-.btn-sm{ padding:5px 10px; font-size:12px; }
-.btn-sm .ic{ width:14px; height:14px; }
-.btn-link{ background:transparent; border:0; color:var(--navy-500); font-weight:600;
-  cursor:pointer; padding:0; display:inline-flex; align-items:center; gap:5px; }
-.btn-link:hover{ color:var(--navy-700); text-decoration:underline; }
+/* `.btn*` はキットへ移った（W1a Button, #440）。7つの variant は
+   形（solid/outline/bare/link）× 色（neutral/accent/danger/success/warn/info）の
+   2軸に分解された——`ghost-danger` のような合成名は、5艦が同じ1マスに別々の
+   名前を発明していたもの（キット #487）。意匠は kit-slots.css のスロットで寄せる。
+   ⚠️ `.btn .ic{ width:16px }` は `--spacing-x-slot-button-icon` へ移した。キット側は
+   max なので、18px の `svg.ic` を 16px に抑える形で同じ結果になる。 */
 
 /* ───────── Cards / sections ───────── */
 /* `.card` moved to the kit (W1a, #440). Its three sibling-spacing rules went with
@@ -501,7 +485,6 @@ hr.div{ border:0; border-top:1px solid var(--line); margin:0; }
 .tag-pill{ display:inline-flex; align-items:center; gap:8px; background:var(--surface);
   border:1px solid var(--warn-line); border-radius:var(--radius-sm); padding:6px 11px; font-size:12px;
   white-space:nowrap; }
-.tag-pill .btn-link{ white-space:nowrap; }
 
 /* settings sections */
 .set-sect{ padding:18px; border-bottom:1px solid var(--line); }

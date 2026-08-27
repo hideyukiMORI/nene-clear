@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { listAuditEvents } from '@/shared/api/endpoints'
 import type { AuditEvent, AuditAction } from '@/entities/audit-event'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, Pager, SortableTh, nextSort } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
@@ -152,8 +152,8 @@ export default function AuditLogPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: total })}</span>
-          <Button variant="ghost" size="sm" onClick={clear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={search}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="outline" tone="neutral" size="sm" onClick={clear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button size="sm" onClick={search}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 
@@ -178,7 +178,7 @@ export default function AuditLogPage() {
                     <td><StatusBadge map={EVENT_META} value={event.action} dot fallback={event.action} /></td>
                     <td>{actorLabel(event.actor_id)}</td>
                     <td className="row-act">
-                      <Button variant="ghost" size="sm" onClick={() => toggle(event.audit_event_id)}>
+                      <Button variant="outline" tone="neutral" size="sm" onClick={() => toggle(event.audit_event_id)}>
                         {isOpen ? t('audit.hideDetail') : t('audit.viewDetail')}
                       </Button>
                     </td>

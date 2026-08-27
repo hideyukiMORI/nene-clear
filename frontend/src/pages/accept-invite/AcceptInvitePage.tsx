@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getInvitation, acceptInvitation } from '@/shared/api/endpoints'
 import { ApiError } from '@/shared/api/client'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Icon } from '@/shared/ui/icon'
 import { LogoMark } from '@/shared/ui/logo-mark'
 import { Notice } from '@/shared/ui/notice'
@@ -88,7 +88,7 @@ export default function AcceptInvitePage() {
           {status === 'ready' && done && (
             <>
               <Notice variant="ok">{t('acceptInvite.success')}</Notice>
-              <Button variant="primary" style={{ justifyContent: 'center', padding: '11px', marginTop: 16, width: '100%' }} onClick={() => navigate('/admin')}>
+              <Button style={{ justifyContent: 'center', padding: '11px', marginTop: 16, width: '100%' }} onClick={() => navigate('/admin')}>
                 <Icon decorative name="login" />{t('acceptInvite.toLogin')}
               </Button>
             </>
@@ -118,7 +118,7 @@ export default function AcceptInvitePage() {
                   />
                 </div>
               </div>
-              <Button variant="primary" type="submit" disabled={submitting} style={{ justifyContent: 'center', padding: '11px' }}>
+              <Button type="submit" disabled={submitting} style={{ justifyContent: 'center', padding: '11px' }}>
                 <Icon decorative name="check" />{submitting ? t('common.processing') : t('acceptInvite.submit')}
               </Button>
               {error && <Notice variant="bad">{error}</Notice>}

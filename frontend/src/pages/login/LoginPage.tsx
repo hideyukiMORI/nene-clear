@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { login } from '@/shared/api/endpoints'
 import { storeToken } from '@/shared/api/client'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Icon } from '@/shared/ui/icon'
 import { LogoMark } from '@/shared/ui/logo-mark'
 import { Notice } from '@/shared/ui/notice'
@@ -96,7 +96,7 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            <Button variant="primary" type="submit" disabled={loading} style={{ justifyContent: 'center', padding: '11px' }}>
+            <Button type="submit" disabled={loading} style={{ justifyContent: 'center', padding: '11px' }}>
               <Icon decorative name="login" />
               {loading ? t('common.checking') : t('login.submit')}
             </Button>

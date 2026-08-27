@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listClientCredits, applyClientCredit, clientCreditsExportPath } from '@/shared/api/endpoints'
 import { downloadCsv } from '@/shared/lib/download'
 import type { ClientCredit } from '@/entities/client-credit'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
@@ -39,8 +39,8 @@ function ApplyModal({ credit, onClose }: { credit: ClientCredit; onClose: () => 
       size="narrow"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!invoiceId || mut.isPending} onClick={() => mut.mutate()}>
+          <Button variant="outline" tone="neutral" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button disabled={!invoiceId || mut.isPending} onClick={() => mut.mutate()}>
             <Icon decorative name="link" />{mut.isPending ? t('common.processing') : t('clientCredit.apply')}
           </Button>
         </>
@@ -131,7 +131,7 @@ export default function ClientCreditsPage() {
           { term: t('glossary.allocate.term'), def: t('glossary.allocate.def') },
         ]} />}
         actions={
-          <Button variant="ghost" onClick={() => void downloadCsv(clientCreditsExportPath(creditFilter), 'client-credits.csv')}>
+          <Button variant="outline" tone="neutral" onClick={() => void downloadCsv(clientCreditsExportPath(creditFilter), 'client-credits.csv')}>
             <Icon decorative name="export" />{t('export.csv')}
           </Button>
         }
@@ -174,8 +174,8 @@ export default function ClientCreditsPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: total })}</span>
-          <Button variant="ghost" size="sm" onClick={clear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={search}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="outline" tone="neutral" size="sm" onClick={clear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button size="sm" onClick={search}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 
@@ -206,7 +206,7 @@ export default function ClientCreditsPage() {
                 <td className="muted">{formatDate(c.created_at)}</td>
                 <td className="row-act">
                   {c.status === 'open' && (
-                    <Button variant="primary" size="sm" onClick={() => setApplyTarget(c)}>
+                    <Button size="sm" onClick={() => setApplyTarget(c)}>
                       <Icon decorative name="link" size="sm" />{t('clientCredit.apply')}
                     </Button>
                   )}
