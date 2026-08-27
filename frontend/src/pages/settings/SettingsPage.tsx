@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/shared/api/endpoints'
 import type { BankAccountDraft, ClearSettings } from '@/entities/clear-settings'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { CardFoot } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
@@ -95,7 +95,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
           <div className="field"><label>{t('settings.upstreamUrl')}</label><input className="inp" type="url" value={upstreamUrl} onChange={e => setUpstreamUrl(e.target.value)} /></div>
           <div className="field"><label>{t('settings.upstreamToken')}</label><input className="inp mono" type="password" value={upstreamToken} onChange={e => setUpstreamToken(e.target.value)} /></div>
           <div className="row">
-            <Button variant="ghost" onClick={handleTest} disabled={testing}><Icon decorative name="refresh" />{testing ? t('common.checking') : t('settings.testConnection')}</Button>
+            <Button variant="outline" tone="neutral" onClick={handleTest} disabled={testing}><Icon decorative name="refresh" />{testing ? t('common.checking') : t('settings.testConnection')}</Button>
             {testResult === 'ok' && <span className="row" style={{ color: 'var(--ok)', fontWeight: 600, fontSize: '12.5px', gap: 6 }}><Icon decorative name="check" size="sm" />{t('settings.connectionOk')}</span>}
             {testResult === 'fail' && <span className="row" style={{ color: 'var(--bad)', fontWeight: 600, fontSize: '12.5px', gap: 6 }}><Icon decorative name="x" size="sm" />{t('settings.connectionFail')}</span>}
           </div>
@@ -141,7 +141,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
       <div className="set-sect">
         <h3 className="spread" style={{ display: 'flex' }}>
           <span className="row" style={{ gap: 8 }}><Icon decorative name="building" />{t('settings.section.banks')}</span>
-          <Button variant="ghost" size="sm" onClick={() => setAccounts(p => [...p, emptyAccount()])}>
+          <Button variant="outline" tone="neutral" size="sm" onClick={() => setAccounts(p => [...p, emptyAccount()])}>
             <Icon decorative name="plus" size="sm" />{t('settings.addBankAccount')}
           </Button>
         </h3>
@@ -162,7 +162,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
                 <label>{t('settings.accountNumber')}</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <input className="inp mono" style={{ flex: 1, minWidth: 0 }} type={revealedAccounts.has(i) ? 'text' : 'password'} value={acc.account_number} onChange={e => updateAccount(i, 'account_number', e.target.value)} />
-                  <Button variant="ghost" size="sm" onClick={() => toggleReveal(i)}>{t(revealedAccounts.has(i) ? 'settings.hideNumber' : 'settings.revealNumber')}</Button>
+                  <Button variant="outline" tone="neutral" size="sm" onClick={() => toggleReveal(i)}>{t(revealedAccounts.has(i) ? 'settings.hideNumber' : 'settings.revealNumber')}</Button>
                 </div>
               </div>
             </div>
@@ -191,7 +191,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
           : <span />
         }
         {saveMut.isError && <Notice variant="bad">{saveMut.error.message}</Notice>}
-        <Button variant="primary" disabled={saveMut.isPending} onClick={handleSave}>
+        <Button disabled={saveMut.isPending} onClick={handleSave}>
           <Icon decorative name="check" />{saveMut.isPending ? t('common.saving') : t('settings.save')}
         </Button>
       </CardFoot>

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { listUnmatchedTransactions, listDunningNotices } from '@/shared/api/endpoints'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { CardHead } from '@/shared/ui/card'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
@@ -87,7 +87,7 @@ export default function DashboardPage() {
                   <td className="num">{yen(tx.amount_cents)}</td>
                   <td className="strong">{tx.counterparty_text}</td>
                   <td className="row-act">
-                    <Button variant="primary" size="sm" onClick={() => navigate('/admin/reconciliation')}>
+                    <Button size="sm" onClick={() => navigate('/admin/reconciliation')}>
                       <Icon decorative name="check" size="sm" />{t('reconciliation.confirm')}
                     </Button>
                   </td>

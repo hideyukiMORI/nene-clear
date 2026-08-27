@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { listBankTransactions, bankTransactionsExportPath } from '@/shared/api/endpoints'
 import { downloadCsv } from '@/shared/lib/download'
 import type { BankTransaction } from '@/entities/bank-transaction'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, Pager, SortableTh, nextSort } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
@@ -75,7 +75,7 @@ export default function BankTransactionsPage() {
         title={t('bankTransaction.title')}
         sub={t('bankTransaction.subtitle')}
         actions={
-          <Button variant="ghost" onClick={() => void downloadCsv(bankTransactionsExportPath(txFilter), 'bank-transactions.csv')}>
+          <Button variant="outline" tone="neutral" onClick={() => void downloadCsv(bankTransactionsExportPath(txFilter), 'bank-transactions.csv')}>
             <Icon decorative name="export" />{t('export.csv')}
           </Button>
         }
@@ -109,7 +109,7 @@ export default function BankTransactionsPage() {
             <input className="inp" data-kbd="search" placeholder={t('common.search')} style={{ paddingLeft: 32 }} value={counterparty} onChange={e => setCounterparty(e.target.value)} />
           </div>
         </FilterField>
-        <Button variant="primary" onClick={search}><Icon decorative name="search" />{t('common.search')}</Button>
+        <Button onClick={search}><Icon decorative name="search" />{t('common.search')}</Button>
       </FilterBar>
 
       <Card pad="none" className="min-w-0">

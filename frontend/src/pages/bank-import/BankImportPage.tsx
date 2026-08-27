@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listBankImportBatches, importBankCsv, reverseBankImportBatch, getClearSettings } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import type { BankImportBatch } from '@/entities/bank-import-batch'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { CardHead, CardBody } from '@/shared/ui/card'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
@@ -43,8 +43,8 @@ function ReverseModal({ batch, onClose }: ReverseModalProps) {
       size="narrow"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}>
+          <Button variant="outline" tone="neutral" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button tone="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}>
             <Icon decorative name="trash" size="sm" />{mut.isPending ? t('common.processing') : t('bankImport.reverse')}
           </Button>
         </>
@@ -156,7 +156,7 @@ export default function BankImportPage() {
             </div>
             {uploadMsg && <Notice variant={uploadMsg.ok ? 'ok' : 'bad'}>{uploadMsg.text}</Notice>}
             <div className="row">
-              <Button variant="primary" type="submit" disabled={uploadMut.isPending}>
+              <Button type="submit" disabled={uploadMut.isPending}>
                 <Icon decorative name="import" />{uploadMut.isPending ? t('common.importing') : t('bankImport.submit')}
               </Button>
               <span className="faint" style={{ fontSize: 12 }}>{t('bankImport.dedupeHint')}</span>
@@ -195,8 +195,8 @@ export default function BankImportPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: batchTotal })}</span>
-          <Button variant="ghost" size="sm" onClick={clearBatches}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={searchBatches}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="outline" tone="neutral" size="sm" onClick={clearBatches}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button size="sm" onClick={searchBatches}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 
@@ -224,7 +224,7 @@ export default function BankImportPage() {
                 <td className="muted">{formatDate(b.imported_at)}</td>
                 <td className="row-act">
                   {b.status === 'imported' && (
-                    <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(b)}>
+                    <Button variant="outline" tone="danger" size="sm" onClick={() => setReverseTarget(b)}>
                       <Icon decorative name="trash" size="sm" />{t('bankImport.reverse')}
                     </Button>
                   )}

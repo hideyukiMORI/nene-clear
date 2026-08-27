@@ -65,7 +65,77 @@
  *   it invisible while keeping the kit's box model intact. Setting it to
  *   `transparent` would do the same thing and say less about why.
  */
+/* ── Button (W1a) — measured 2026-08-27 against nene2-ui 0.20.0 ─────────────
+ *
+ * Clear's seven variants were a shape and a colour fused into one name. 0.20.0
+ * splits them, so the mapping is mechanical:
+ *
+ *   primary(25)      → default (solid × accent)      ghost(28)       → outline × neutral
+ *   danger(3)        → tone="danger"                 ghost-danger(4) → outline × danger
+ *   warn(2)          → tone="warn"                   ghost-warn(1)   → outline × warn
+ *   link(5)          → variant="link"
+ *
+ *   slot                              kit default          Clear          →
+ *   --radius-x-slot-button            --radius-x-md  8px   --radius-sm 0  → write
+ *   --font-weight-x-slot-button       medium (500)         600            → write
+ *   --spacing-x-slot-button-gap       --spacing-x-3xs 4px  7px            → write (2xs, +1)
+ *   --spacing-x-slot-button-pad-y     --spacing-x-xs 12px  8px            → write (2xs, exact)
+ *   --spacing-x-slot-button-pad-x     --spacing-x-sm 16px  14px           → snap, no write
+ *   --spacing-x-slot-button-sm-pad-*  12 / 4px             10 / 5px       → snap, no write
+ *   --spacing-x-slot-button-icon      --spacing-x-lg 24px  16px (`.btn .ic`) → write
+ *   --shadow-x-slot-button-solid      none                 none           → no write
+ *
+ * 🔴 `--text-x-slot-button-{,sm-}size` default to `inherit` and the kit warns to
+ *    override both or neither. Clear draws 13px and 12px; `sm` is exactly
+ *    `--text-x-xs`, and 13px is a 1px snap onto `--text-x-sm`.
+ *
+ * ⚠️ White on Clear's `--warn` (#8a5a16) computes to **5.91:1** — AA holds. That
+ *    is a property of Clear's darker warn, not of the kit's: on the contract's
+ *    lighter `--color-warn` the kit had to use `--color-on-warn` (a dark brown)
+ *    because white measured 3.48:1 there (fleet, #487).
+ */
 @theme {
+  --radius-x-slot-button: var(--radius-x-none);
+  --font-weight-x-slot-button: var(--font-weight-semibold);
+  --spacing-x-slot-button-gap: var(--spacing-x-2xs);
+  --spacing-x-slot-button-pad-y: var(--spacing-x-2xs);
+  --spacing-x-slot-button-icon: var(--spacing-x-sm);
+  --text-x-slot-button-size: var(--text-x-sm);
+  --text-x-slot-button-sm-size: var(--text-x-xs);
+  /* Clear's `.btn` sets `line-height: 1`, so the button's height comes from its
+     padding and whatever is tallest inside it — usually a 16px icon. Without the
+     pairing the button inherits 1.45 and the line box (20.3px) becomes the
+     tallest thing instead, adding 4.3px to every button (measured). Same lever
+     as the badge: Tailwind reads `--text-<name>--line-height` beside
+     `--text-<name>`, and the kit ships no line-height beside its type slots. */
+  --text-x-slot-button-size--line-height: 1;
+  --text-x-slot-button-sm-size--line-height: 1;
+
+  /* solid — the filled buttons. `#fff` is the literal `design.css` already uses
+     for all three; Clear has no on-accent token to point at yet. */
+  --color-x-slot-button-accent-bg: var(--primary);
+  --color-x-slot-button-accent-fg: #fff;
+  --color-x-slot-button-danger-bg: var(--bad);
+  --color-x-slot-button-danger-fg: #fff;
+  --color-x-slot-button-warn-bg: var(--warn);
+  --color-x-slot-button-warn-fg: #fff;
+
+  /* outline — one ground for every tone (the kit's shape), the tone in the ink
+     and the border. Clear's outlined buttons sit on the plain surface and only
+     tint on hover, which is the behaviour the kit's single ground slot assumes. */
+  --color-x-slot-button-outline-bg: var(--surface);
+  --color-x-slot-button-neutral-ink: var(--ink-2);
+  --color-x-slot-button-neutral-border: var(--line-strong);
+  --color-x-slot-button-danger-ink: var(--bad);
+  --color-x-slot-button-danger-border: var(--bad-line);
+  --color-x-slot-button-warn-ink: var(--warn);
+  --color-x-slot-button-warn-border: var(--warn-line);
+
+  /* link — `variant="link"` keeps the default `accent` tone, so the link colour
+     is the accent ink. Clear's `.btn-link` drew `--navy-500`, one step lighter
+     than `--primary`; they are different colours and both are still in use. */
+  --color-x-slot-button-accent-ink: var(--navy-500);
+
   --radius-x-slot-badge: var(--radius-x-pill);
   --font-weight-x-slot-badge: var(--font-weight-bold);
   /* Tailwind pairs `--text-<name>--line-height` with `--text-<name>`, so the

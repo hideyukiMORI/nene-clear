@@ -5,7 +5,7 @@ import {
 } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import type { ManualReceivable, ManualReceivableImportResult } from '@/entities/manual-receivable'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
 import { Icon } from '@/shared/ui/icon'
@@ -58,7 +58,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal open onClose={onClose} title={t('manualReceivables.create')} sub={t('manualReceivables.createSub')}
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!valid || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="plus" />{mut.isPending ? t('common.saving') : t('manualReceivables.create')}</Button></>}
+      footer={<><Button variant="outline" tone="neutral" onClick={onClose}>{t('common.cancel')}</Button><Button disabled={!valid || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="plus" />{mut.isPending ? t('common.saving') : t('manualReceivables.create')}</Button></>}
     >
       <NotOriginalNotice />
       <div className="field">
@@ -104,7 +104,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal open onClose={onClose} title={t('manualReceivables.import')} sub={t('manualReceivables.importSub')}
-      footer={<><Button variant="ghost" onClick={onClose}>{result ? t('common.close') : t('common.cancel')}</Button>{!result && <Button variant="primary" disabled={!file || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="import" />{mut.isPending ? t('common.processing') : t('manualReceivables.import')}</Button>}</>}
+      footer={<><Button variant="outline" tone="neutral" onClick={onClose}>{result ? t('common.close') : t('common.cancel')}</Button>{!result && <Button disabled={!file || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="import" />{mut.isPending ? t('common.processing') : t('manualReceivables.import')}</Button>}</>}
     >
       <NotOriginalNotice />
       <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.8 }}>{t('manualReceivables.importColumns')}</p>
@@ -142,7 +142,7 @@ function CancelModal({ receivable, onClose }: { receivable: ManualReceivable; on
   })
   return (
     <Modal open onClose={onClose} title={t('manualReceivables.confirmCancel')} sub={receivable.reference_number} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="warn" disabled={mut.isPending} onClick={() => mut.mutate()}>{mut.isPending ? t('common.processing') : t('manualReceivables.cancel')}</Button></>}
+      footer={<><Button variant="outline" tone="neutral" onClick={onClose}>{t('common.cancel')}</Button><Button tone="warn" disabled={mut.isPending} onClick={() => mut.mutate()}>{mut.isPending ? t('common.processing') : t('manualReceivables.cancel')}</Button></>}
     >
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
     </Modal>
@@ -165,8 +165,8 @@ export default function ManualReceivablesPage() {
         title={t('manualReceivables.title')}
         sub={t('manualReceivables.subtitle')}
         actions={<>
-          <Button variant="ghost" onClick={() => setShowImport(true)}><Icon decorative name="import" />{t('manualReceivables.import')}</Button>
-          <Button variant="primary" onClick={() => setShowCreate(true)}><Icon decorative name="plus" />{t('manualReceivables.create')}</Button>
+          <Button variant="outline" tone="neutral" onClick={() => setShowImport(true)}><Icon decorative name="import" />{t('manualReceivables.import')}</Button>
+          <Button onClick={() => setShowCreate(true)}><Icon decorative name="plus" />{t('manualReceivables.create')}</Button>
         </>}
       />
 
@@ -197,7 +197,7 @@ export default function ManualReceivablesPage() {
                 <td><StatusBadge map={STATUS_MAP} value={r.status} dot /></td>
                 <td className="row-act">
                   {r.status !== 'cancelled' && r.status !== 'paid' && (
-                    <Button variant="ghost-danger" size="sm" onClick={() => setCancelTarget(r)}>{t('manualReceivables.cancel')}</Button>
+                    <Button variant="outline" tone="danger" size="sm" onClick={() => setCancelTarget(r)}>{t('manualReceivables.cancel')}</Button>
                   )}
                 </td>
               </tr>

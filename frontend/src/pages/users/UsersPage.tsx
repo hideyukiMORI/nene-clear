@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { listUsers, createUser, deleteUser } from '@/shared/api/endpoints'
 import type { User } from '@/entities/user'
-import { Button } from '@/shared/ui/button'
+import { Button } from '@hideyukimori/nene2-ui'
 import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
 import { Icon } from '@/shared/ui/icon'
@@ -41,7 +41,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   })
   return (
     <Modal open onClose={onClose} title={t('users.invite')} sub={t('users.inviteModal.subtitle')} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!email.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="send" />{mut.isPending ? t('common.sending') : t('users.inviteSubmit')}</Button></>}
+      footer={<><Button variant="outline" tone="neutral" onClick={onClose}>{t('common.cancel')}</Button><Button disabled={!email.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="send" />{mut.isPending ? t('common.sending') : t('users.inviteSubmit')}</Button></>}
     >
       <div className="field">
         <label>{t('users.email')}</label>
@@ -72,7 +72,7 @@ function DeleteModal({ user, onClose }: { user: User; onClose: () => void }) {
   })
   return (
     <Modal open onClose={onClose} title={t('users.confirmDelete')} sub={user.email} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="trash" />{mut.isPending ? t('common.processing') : t('users.delete')}</Button></>}
+      footer={<><Button variant="outline" tone="neutral" onClick={onClose}>{t('common.cancel')}</Button><Button tone="danger" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="trash" />{mut.isPending ? t('common.processing') : t('users.delete')}</Button></>}
     >
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
     </Modal>
@@ -98,7 +98,7 @@ export default function UsersPage() {
       <PageHead
         title={t('users.title')}
         sub={t('users.subtitle')}
-        actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon decorative name="plus" />{t('users.invite')}</Button>}
+        actions={<Button onClick={() => setShowInvite(true)}><Icon decorative name="plus" />{t('users.invite')}</Button>}
       />
 
       <Card pad="none" className="min-w-0">
@@ -115,7 +115,7 @@ export default function UsersPage() {
                 <td><StatusBadge map={STATUS_MAP} value={u.status} dot /></td>
                 <td className="muted">—</td>
                 <td className="row-act">
-                  <Button variant="ghost-danger" size="sm" onClick={() => setDeleteTarget(u)}>
+                  <Button variant="outline" tone="danger" size="sm" onClick={() => setDeleteTarget(u)}>
                     <Icon decorative name="trash" size="sm" />{t('users.delete')}
                   </Button>
                 </td>
