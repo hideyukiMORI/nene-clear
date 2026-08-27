@@ -9,4 +9,52 @@
  */
 @layer theme, base, legacy, components, utilities;
 @import "tailwindcss";
+
+/*
+ * nene2-ui's theme (W1, #440).
+ *
+ * The kit defines 208 tokens, almost all of them slots Clear does not have
+ * (`--color-x-slot-*`, `--text-x-slot-*`, `--radius-x-*`). Kit components only
+ * ever reach those slots through Tailwind utilities, so WITHOUT this import a
+ * kit component renders unstyled.
+ *
+ * Order: the kit's theme first, Clear's `design.css` after. Measured before
+ * wiring this up: the two files share ZERO token names (kit 208, Clear 58, no
+ * overlap), so nothing here is contested today — the order is the safe default
+ * rather than a fix for a known collision. Clear's own tokens (`--ok`,
+ * `--navy-*`, …) stay authoritative for the legacy layer either way.
+ *
+ * Do NOT copy the kit's default values into Clear. Where Clear's design differs
+ * from a kit default, the difference belongs in a slot override (W1b), and only
+ * for values that actually differ — restating a default silently pins a number
+ * nobody chose (nene-vault #481).
+ */
+@import "@hideyukimori/nene2-ui/themes/default.css";
 @import "./design.css";
+
+/*
+ * REQUIRED. Tailwind v4's automatic content detection does not walk
+ * `node_modules`, and every class the kit ships lives in its `dist/`. Remove
+ * this line and the build stays GREEN while generating none of them. Type-check
+ * passes, tests pass (jsdom computes no styles), and the only symptom on screen
+ * is "the kit does not seem to do anything".
+ *
+ * Do NOT try to detect that by comparing build sizes. Measured here on
+ * 2026-08-27 (#440), all three builds from the same tree:
+ *
+ *     before the kit                470,535 bytes
+ *     kit installed, no @source     479,325 bytes   (+8,790)
+ *     kit installed, with @source   516,174 bytes   (+36,849)
+ *
+ * The +8,790 comes from the theme import above, which lands whether or not
+ * Tailwind ever scans the kit. So the stylesheet DOES grow while zero kit
+ * utilities exist — a size check would have said "wired up" and been wrong.
+ * (nene-deal recorded the no-@source build as byte-identical to the pre-kit
+ * one; that holds only when the theme import is absent too. Same trap, worse
+ * disguise.)
+ *
+ * `npm run source-probe` is the check that actually looks. Verified by mutation
+ * before being trusted: deleting this line turns it red, restoring it turns it
+ * green.
+ */
+@source "../../../../node_modules/@hideyukimori/nene2-ui/dist";
