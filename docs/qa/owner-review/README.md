@@ -50,7 +50,16 @@ disposable; the generator and this file are what persist.
 | column | is |
 | --- | --- |
 | **before** | the build at the wave's baseline commit, named in `meta.json` (`before.head`) |
-| **after** | the candidate, named in `meta.json` (`after.head`) |
+| **after** | the candidate, named in `meta.json` (`after.head`) **plus `after.uncommitted`** |
+
+🔴 **A commit SHA alone does not identify what was photographed.** Read `uncommitted`
+beside every `head`: it lists the files that differed from that commit when the picture was
+taken, and the page repeats it above the frames. Capturing a dirty tree is normal — a fix
+lands with the wave — but a verdict recorded against the bare SHA names a build that renders
+differently from what the owner approved. Measured here on 2026-08-27 (#440): W1's `after`
+column was captured from `08f3bc9` carrying an uncommitted `nowrap` fix, and the first
+`meta.json` recorded only `08f3bc9`. Tie the verdict to the commit the reviewed tree
+actually became.
 
 Both columns render the **same fixture data**, so anything that differs in the picture is a
 difference in the chrome — buttons, cards, badges, tables, spacing — and never in the rows.

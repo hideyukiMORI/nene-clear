@@ -65,6 +65,21 @@ const SCREENS = [
 ]
 
 const git = (repo, ...args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8' }).trim()
+
+/**
+ * Files that differ from HEAD, as `git status --porcelain` lines.
+ *
+ * 🔴 A commit SHA alone does NOT identify what was photographed. Measured here
+ * on 2026-08-27 (#440): the `after` column was captured from a tree carrying an
+ * uncommitted fix, and `meta.json` recorded the bare HEAD — so the provenance
+ * named a build that renders differently from the pictures the owner approved.
+ * The bundle exists to tie a verdict to a build; a SHA that silently omits the
+ * working tree unties it. Recorded, and surfaced on the page, rather than
+ * refused: capturing a dirty tree is normal (a fix goes in with the wave), it
+ * just may not be reported as if it were the commit.
+ */
+const dirty = (repo) => git(repo, 'status', '--porcelain').split('\n').filter(Boolean)
+
 const pkgVersion = (repo, name) => {
   try {
     return JSON.parse(readFileSync(join(repo, 'frontend/node_modules', name, 'package.json'), 'utf8')).version
@@ -178,12 +193,14 @@ const meta = {
   before: {
     head: git(BEFORE_REPO, 'rev-parse', 'HEAD'),
     subject: git(BEFORE_REPO, 'log', '-1', '--format=%s'),
+    uncommitted: dirty(BEFORE_REPO),
     'nene2-ui': pkgVersion(BEFORE_REPO, '@hideyukimori/nene2-ui'),
     url: BEFORE_URL,
   },
   after: {
     head: git(REPO, 'rev-parse', 'HEAD'),
     subject: git(REPO, 'log', '-1', '--format=%s'),
+    uncommitted: dirty(REPO),
     'nene2-ui': pkgVersion(REPO, '@hideyukimori/nene2-ui'),
     url: AFTER_URL,
   },
@@ -201,6 +218,13 @@ writeFileSync(`${OUT}/meta.json`, JSON.stringify(meta, null, 2) + '\n')
 
 // ── the page the owner reads ─────────────────────────────────────────────────
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+// Says so on the page, not only in meta.json: the reader has to know the column
+// is the commit PLUS these files, or the verdict names the wrong build.
+const uncommittedNote = (side) =>
+  side.uncommitted?.length
+    ? `<br><b class="warn">＋ 未コミットの変更 ${side.uncommitted.length} 件</b>` +
+      `<br><span class="files">${side.uncommitted.map((l) => esc(l)).join('<br>')}</span>`
+    : ''
 const cellHtml = (side, screen, vp) => {
   const cell = `${side.key}-${screen.key}-${vp.key}`
   if (notes[cell]) return `<div class="miss"><b>not captured</b><span>${esc(notes[cell])}</span></div>`
@@ -232,6 +256,8 @@ const page = `<!doctype html>
  table.meta th,table.meta td{ border:1px solid var(--line); padding:6px 12px; text-align:left; font-size:12.5px }
  table.meta th{ background:#eef2f7; font-weight:600; white-space:nowrap }
  code{ font-family:ui-monospace,monospace; font-size:12px }
+ .warn{ color:#8c2c1e }
+ .files{ font-family:ui-monospace,monospace; font-size:11px; color:var(--muted) }
  nav.toc{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 28px }
  nav.toc a{ background:#fff; border:1px solid var(--line); padding:5px 11px; border-radius:999px;
    text-decoration:none; color:inherit; font-size:12.5px }
@@ -254,8 +280,8 @@ const page = `<!doctype html>
   見るのはボタン・カード・バッジ・表・余白といった「器」で、行の中身ではありません。
   判定は「同一かどうか」ではなく <b>動いていること／人が見て整っていること</b>（08-23 施主裁定）。</p>
  <table class="meta">
-  <tr><th>before</th><td><code>${esc(meta.before.head.slice(0, 7))}</code> ${esc(meta.before.subject)}<br>nene2-ui: ${meta.before['nene2-ui'] ?? '未導入'}</td></tr>
-  <tr><th>after</th><td><code>${esc(meta.after.head.slice(0, 7))}</code> ${esc(meta.after.subject)}<br>nene2-ui: ${meta.after['nene2-ui'] ?? '—'}</td></tr>
+  <tr><th>before</th><td><code>${esc(meta.before.head.slice(0, 7))}</code> ${esc(meta.before.subject)}${uncommittedNote(meta.before)}<br>nene2-ui: ${meta.before['nene2-ui'] ?? '未導入'}</td></tr>
+  <tr><th>after</th><td><code>${esc(meta.after.head.slice(0, 7))}</code> ${esc(meta.after.subject)}${uncommittedNote(meta.after)}<br>nene2-ui: ${meta.after['nene2-ui'] ?? '—'}</td></tr>
   <tr><th>本番</th><td>${esc(meta.production.note ?? 'clear.ayane.co.jp')}</td></tr>
   <tr><th>撮影</th><td>${esc(meta.captured_at ?? '—')} · ${meta.captured}/${meta.expected} 枚</td></tr>
  </table>
