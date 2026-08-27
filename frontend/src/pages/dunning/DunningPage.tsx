@@ -6,7 +6,7 @@ import {
 } from '@/shared/api/endpoints'
 import { downloadCsv } from '@/shared/lib/download'
 import type { UpstreamInvoice } from '@/entities/upstream-invoice'
-import { Badge } from '@/shared/ui/badge'
+import { Badge } from '@hideyukimori/nene2-ui'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@hideyukimori/nene2-ui'
 import { CardHead } from '@/shared/ui/card'
@@ -216,14 +216,14 @@ export default function DunningPage() {
                 <tr key={inv.invoice_id} data-kbd-row={index} className={[paused ? 'dim' : '', cursor === index ? 'is-cursor' : ''].filter(Boolean).join(' ') || undefined}>
                   <td className="strong mono">{inv.invoice_number}</td>
                   <td>
-                    {daysNum > 0 ? <Badge variant="bad" dot>{t('dunning.status.overdue')}</Badge> : <Badge variant="warn" dot>{t('dunning.status.partial')}</Badge>}
+                    {daysNum > 0 ? <Badge tone="danger" dot>{t('dunning.status.overdue')}</Badge> : <Badge tone="warn" dot>{t('dunning.status.partial')}</Badge>}
                   </td>
                   <td className="num">{yen(inv.outstanding_cents)}</td>
                   <td className="muted">{inv.due_at ?? '—'}</td>
                   <td style={{ color: daysNum > 0 ? (daysNum > 14 ? 'var(--bad)' : 'var(--warn)') : 'var(--muted)', fontWeight: 600 }}>{elap}</td>
                   <td className="row-act">
                     {paused
-                      ? <Badge variant="warn"><Icon decorative name="pause" size="sm" />{t('dunning.paused')}</Badge>
+                      ? <Badge tone="warn"><Icon decorative name="pause" size="sm" />{t('dunning.paused')}</Badge>
                       : <Button variant="primary" size="sm" onClick={() => setSendTarget(inv)}><Icon decorative name="send" size="sm" />{t('dunning.send')}</Button>
                     }
                     {!paused && (

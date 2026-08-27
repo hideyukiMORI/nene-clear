@@ -22,8 +22,8 @@ const PAGE = 20
 const STATUS_BADGE: Record<BankTransaction['status'], StatusMeta> = {
   unmatched:         { v: 'warn', labelKey: 'bankTransaction.status.unmatched' },
   partially_matched: { v: 'info', labelKey: 'bankTransaction.status.partially_matched' },
-  matched:           { v: 'ok',   labelKey: 'bankTransaction.status.matched' },
-  voided:            { v: 'neut', labelKey: 'bankTransaction.status.voided' },
+  matched:           { v: 'success',   labelKey: 'bankTransaction.status.matched' },
+  voided:            { v: 'neutral', labelKey: 'bankTransaction.status.voided' },
 }
 
 type AppliedFilter = { status: string; dateFrom: string; dateTo: string; amountMin: string; amountMax: string; counterparty: string; offset: number }

@@ -21,8 +21,8 @@ import { useRowCursor } from '@/components/keyboard'
 import { formatDate } from '@/shared/lib/format'
 
 const BATCH_STATUS: Record<BankImportBatch['status'], StatusMeta> = {
-  imported: { v: 'ok',   labelKey: 'bankImport.status.imported' },
-  reversed: { v: 'neut', labelKey: 'bankImport.status.reversed' },
+  imported: { v: 'success',   labelKey: 'bankImport.status.imported' },
+  reversed: { v: 'neutral', labelKey: 'bankImport.status.reversed' },
 }
 
 interface ReverseModalProps { batch: BankImportBatch; onClose: () => void }
