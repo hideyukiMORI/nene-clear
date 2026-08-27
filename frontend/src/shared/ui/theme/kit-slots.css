@@ -94,6 +94,36 @@
  *    lighter `--color-warn` the kit had to use `--color-on-warn` (a dark brown)
  *    because white measured 3.48:1 there (fleet, #487).
  */
+/* ── Stopgap, NOT a slot — remove when the kit ships it (fleet #501) ────────
+ *
+ * The kit's `Button` sets no `white-space`, so its label wraps. Clear's `.btn`
+ * carried `white-space: nowrap` (`design.css:241` before W1a), and dropping it
+ * broke 15 buttons at SP 375×812 — measured across 168 buttons on 13 screens,
+ * before (`3566eec`) vs after (`08f3bc9`): 「督促を送信」「消込を確定」「停止」
+ * each go 26px → 70px (four lines), CSV出力 34px → 46px. PC 1440×900: zero.
+ * Japanese has no word boundaries to break on, so a wrap splits mid-word
+ * (「消込を / 確定」).
+ *
+ * This is the ONE rule in this file that names a kit class rather than a slot
+ * the kit offers, and it is deliberately quarantined here so it is easy to
+ * delete: `rounded-x-slot-button` is in `Button`'s `BASE_CLASS`, so it marks
+ * every kit button and nothing else. The alternative was `className` on 69 call
+ * sites — the same "the ship works around the kit" shape the kit's own Button
+ * comment calls an asymmetry it fixed for `inline-flex`.
+ *
+ * `components`, not `utilities`, so `className="whitespace-normal"` still wins
+ * at a call site that wants a wrapping label.
+ *
+ * 🔴 When nene2-ui ships nowrap on Button (fleet #501), delete this block —
+ *    do not leave it "just in case". A stopgap nobody removes becomes the
+ *    ship's own quiet fork of the kit.
+ */
+@layer components {
+  .rounded-x-slot-button {
+    white-space: nowrap;
+  }
+}
+
 @theme {
   --radius-x-slot-button: var(--radius-x-none);
   --font-weight-x-slot-button: var(--font-weight-semibold);
