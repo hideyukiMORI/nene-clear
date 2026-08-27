@@ -12,7 +12,7 @@ import type { AllocationInput, MatchSuggestion } from '@/shared/api/endpoints'
 import { describeApiError } from '@/shared/api/client'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -325,7 +325,7 @@ export default function ReconciliationPage() {
             <Button variant="primary" size="sm" onClick={uSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
           </div>
         </FilterBar>
-        <Card>
+        <Card pad="none" className="min-w-0">
           <DataTable>
             <thead>
               <tr>
@@ -384,7 +384,7 @@ export default function ReconciliationPage() {
             <Button variant="primary" size="sm" onClick={hSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
           </div>
         </FilterBar>
-        <Card>
+        <Card pad="none" className="min-w-0">
           <DataTable>
             <thead>
               <tr>

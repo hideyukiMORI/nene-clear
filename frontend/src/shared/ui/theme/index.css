@@ -30,6 +30,9 @@
  * nobody chose (nene-vault #481).
  */
 @import "@hideyukimori/nene2-ui/themes/default.css";
+/* Slot overrides aim the kit at Clear's design. Read AFTER the kit's theme so
+   the later `@theme` wins; see kit-slots.css for what may be written here. */
+@import "./kit-slots.css";
 @import "./design.css";
 
 /*

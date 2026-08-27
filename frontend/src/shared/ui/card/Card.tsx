@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 
-interface CardProps { children: ReactNode; className?: string; style?: React.CSSProperties }
-
-export function Card({ children, className, style }: CardProps) {
-  return <div className={['card', className].filter(Boolean).join(' ')} style={style}>{children}</div>
-}
+/*
+ * `Card` itself now comes from `@hideyukimori/nene2-ui` (W1a, #440) — the kit
+ * owns the bounded surface (background, border, radius). What stays here are the
+ * three parts the kit has no equivalent for; they are plain elements carrying
+ * legacy classes, and none of them is a descendant selector of `.card`, so they
+ * are unaffected by the surface moving.
+ */
 
 interface CardHeadProps {
   children: ReactNode

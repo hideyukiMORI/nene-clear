@@ -4,7 +4,7 @@ import { listBankTransactions, bankTransactionsExportPath } from '@/shared/api/e
 import { downloadCsv } from '@/shared/lib/download'
 import type { BankTransaction } from '@/entities/bank-transaction'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, Pager, SortableTh, nextSort } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
 import { FilterBar, FilterField } from '@/shared/ui/filter-bar'
@@ -112,7 +112,7 @@ export default function BankTransactionsPage() {
         <Button variant="primary" onClick={search}><Icon name="search" />{t('common.search')}</Button>
       </FilterBar>
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <DataTable>
           <thead>
             <tr>

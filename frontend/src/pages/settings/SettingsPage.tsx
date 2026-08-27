@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getClearSettings, updateClearSettings, testUpstreamConnection } from '@/shared/api/endpoints'
 import type { BankAccountDraft, ClearSettings } from '@/entities/clear-settings'
 import { Button } from '@/shared/ui/button'
-import { Card, CardFoot } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
+import { CardFoot } from '@/shared/ui/card'
 import { Icon } from '@/shared/ui/icon'
 import { Notice } from '@/shared/ui/notice'
 import { PageHead } from '@/shared/ui/page-head'
@@ -86,7 +87,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
   }
 
   return (
-    <Card style={{ maxWidth: 780 }}>
+    <Card pad="none" className="min-w-0" style={{ maxWidth: 780 }}>
       {/* Section: API */}
       <div className="set-sect">
         <h3><Icon name="plug" />{t('settings.section.api')}</h3>

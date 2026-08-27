@@ -260,13 +260,28 @@ svg.ic-lg{ width:22px; height:22px; }
 .btn-link:hover{ color:var(--navy-700); text-decoration:underline; }
 
 /* ───────── Cards / sections ───────── */
-.card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
-  box-shadow:var(--shadow); min-width:0; }
-.card + .card{ margin-top:20px; }
-/* Two-column dashboard cards: grid items don't collapse margins, so the second
-   card inherits 20px from `.card + .card` while the first has none, dropping the
-   right card. Give both the same top offset so their top edges align. */
-.dash-cards > .card{ margin-top:20px; }
+/* `.card` moved to the kit (W1a, #440). Its three sibling-spacing rules went with
+   it, because each of them keyed on the class that no longer exists:
+     .card + .card         → only ever fired inside .dash-cards (measured: one
+     .dash-cards > .card      adjacency, DashboardPage). Both said margin-top:20px
+                              and both existed to offset the block below the KPI
+                              row, so the offset now sits on the container itself
+                              . Both are now `mt-x-md` on the two cards.
+                              ⚠️ Moving this to `.dash-cards` does NOT work: as a
+                              normal-flow block its margin-top collapses with the
+                              KPI row's margin-bottom and the cards rise 20px
+                              (measured). Grid items' margins do not collapse,
+                              which is why the offset belongs on them.
+     .card + .filterbar    → 22px, TWO occurrences (BankImportPage, DunningPage —
+                              the first count of one was wrong and cost the
+                              dunning filter bar all 22px until the computed diff
+                              caught it). Both are now `mt-x-md` at the call site
+                              (20px; a 2px snap onto the kit's scale, which has no
+                              22px step).
+   `min-width: 0` was also on `.card`; the kit does not set it, so every call site
+   passes `min-w-0` — a card holds tables that have to be allowed to shrink.
+   The head/body/foot parts below are NOT descendant selectors of `.card`, so the
+   surface moving does not touch them. */
 .card-head{ display:flex; align-items:center; justify-content:space-between; gap:12px;
   padding:14px 18px; border-bottom:1px solid var(--line); }
 .card-head h2{ margin:0; font-size:14px; font-weight:700; color:var(--ink);
@@ -597,7 +612,6 @@ hr.div{ border:0; border-top:1px solid var(--line); margin:0; }
 .filter-actions{ display:flex; align-items:center; gap:10px; margin-left:auto; align-self:flex-end; }
 .filter-count{ font-size:12px; color:var(--muted); white-space:nowrap; }
 .filter-count b{ color:var(--ink); font-variant-numeric:tabular-nums; font-weight:700; }
-.card + .filterbar{ margin-top:22px; }
 
 /* sortable table headers */
 table.tbl thead th.sortable{ cursor:pointer; user-select:none; -webkit-user-select:none; }

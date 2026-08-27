@@ -4,7 +4,7 @@ import { listClientCredits, applyClientCredit, clientCreditsExportPath } from '@
 import { downloadCsv } from '@/shared/lib/download'
 import type { ClientCredit } from '@/entities/client-credit'
 import { Button } from '@/shared/ui/button'
-import { Card } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
 import { DataTable, TableStateRow, SortableTh, nextSort, Pager } from '@/shared/ui/data-table'
 import type { SortState } from '@/shared/ui/data-table'
 import { DatePicker } from '@/shared/ui/date-picker'
@@ -179,7 +179,7 @@ export default function ClientCreditsPage() {
         </div>
       </FilterBar>
 
-      <Card>
+      <Card pad="none" className="min-w-0">
         <DataTable>
           <thead>
             <tr>

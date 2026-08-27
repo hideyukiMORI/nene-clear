@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { listUnmatchedTransactions, listDunningNotices } from '@/shared/api/endpoints'
 import { Button } from '@/shared/ui/button'
-import { Card, CardHead } from '@/shared/ui/card'
+import { Card } from '@hideyukimori/nene2-ui'
+import { CardHead } from '@/shared/ui/card'
 import { DataTable, TableStateRow } from '@/shared/ui/data-table'
 import { Icon } from '@/shared/ui/icon'
 import { Kpi, KpiGrid } from '@/shared/ui/kpi'
@@ -64,7 +65,7 @@ export default function DashboardPage() {
 
       <div className="dash-cards" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.5fr) minmax(0,1fr)', gap: 20, alignItems: 'start' }}>
         {/* Unmatched transactions */}
-        <Card>
+        <Card pad="none" className="min-w-0 mt-x-md">
           <CardHead>
             <h2><Icon name="reconcile" />{t('dashboard.unmatched')}</h2>
             <Button variant="link" onClick={() => navigate('/admin/reconciliation')}>
@@ -97,7 +98,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Recent dunning */}
-        <Card>
+        <Card pad="none" className="min-w-0 mt-x-md">
           <CardHead>
             <h2><Icon name="bell" />{t('dashboard.recentDunning')}</h2>
             <Button variant="link" onClick={() => navigate('/admin/dunning')}>
