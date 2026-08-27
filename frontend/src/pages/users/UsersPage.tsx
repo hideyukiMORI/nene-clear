@@ -41,11 +41,11 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   })
   return (
     <Modal open onClose={onClose} title={t('users.invite')} sub={t('users.inviteModal.subtitle')} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!email.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="send" />{mut.isPending ? t('common.sending') : t('users.inviteSubmit')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="primary" disabled={!email.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="send" />{mut.isPending ? t('common.sending') : t('users.inviteSubmit')}</Button></>}
     >
       <div className="field">
         <label>{t('users.email')}</label>
-        <div className="inp-icon"><Icon name="mail" /><input className="inp" type="email" placeholder="user@example.com" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} /></div>
+        <div className="inp-icon"><Icon decorative name="mail" /><input className="inp" type="email" placeholder="user@example.com" style={{ paddingLeft: 34 }} value={email} onChange={e => setEmail(e.target.value)} /></div>
       </div>
       <div className="field">
         <label>{t('users.role')}</label>
@@ -72,7 +72,7 @@ function DeleteModal({ user, onClose }: { user: User; onClose: () => void }) {
   })
   return (
     <Modal open onClose={onClose} title={t('users.confirmDelete')} sub={user.email} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon name="trash" />{mut.isPending ? t('common.processing') : t('users.delete')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="trash" />{mut.isPending ? t('common.processing') : t('users.delete')}</Button></>}
     >
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
     </Modal>
@@ -98,7 +98,7 @@ export default function UsersPage() {
       <PageHead
         title={t('users.title')}
         sub={t('users.subtitle')}
-        actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon name="plus" />{t('users.invite')}</Button>}
+        actions={<Button variant="primary" onClick={() => setShowInvite(true)}><Icon decorative name="plus" />{t('users.invite')}</Button>}
       />
 
       <Card pad="none" className="min-w-0">
@@ -116,7 +116,7 @@ export default function UsersPage() {
                 <td className="muted">—</td>
                 <td className="row-act">
                   <Button variant="ghost-danger" size="sm" onClick={() => setDeleteTarget(u)}>
-                    <Icon name="trash" size="sm" />{t('users.delete')}
+                    <Icon decorative name="trash" size="sm" />{t('users.delete')}
                   </Button>
                 </td>
               </tr>

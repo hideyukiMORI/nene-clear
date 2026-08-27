@@ -152,8 +152,8 @@ export default function AuditLogPage() {
         </FilterField>
         <div className="filter-actions">
           <span className="filter-count">{t('filter.count', { n: total })}</span>
-          <Button variant="ghost" size="sm" onClick={clear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
-          <Button variant="primary" size="sm" onClick={search}><Icon name="search" size="sm" />{t('common.search')}</Button>
+          <Button variant="ghost" size="sm" onClick={clear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+          <Button variant="primary" size="sm" onClick={search}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
         </div>
       </FilterBar>
 

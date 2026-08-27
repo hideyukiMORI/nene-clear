@@ -89,7 +89,7 @@ export default function AcceptInvitePage() {
             <>
               <Notice variant="ok">{t('acceptInvite.success')}</Notice>
               <Button variant="primary" style={{ justifyContent: 'center', padding: '11px', marginTop: 16, width: '100%' }} onClick={() => navigate('/admin')}>
-                <Icon name="login" />{t('acceptInvite.toLogin')}
+                <Icon decorative name="login" />{t('acceptInvite.toLogin')}
               </Button>
             </>
           )}
@@ -99,7 +99,7 @@ export default function AcceptInvitePage() {
               <div className="field">
                 <label>{t('acceptInvite.password')}</label>
                 <div className="inp-icon">
-                  <Icon name="lock" />
+                  <Icon decorative name="lock" />
                   <input
                     className="inp" type="password" name="password"
                     value={password} onChange={e => setPassword(e.target.value)}
@@ -110,7 +110,7 @@ export default function AcceptInvitePage() {
               <div className="field">
                 <label>{t('acceptInvite.passwordConfirm')}</label>
                 <div className="inp-icon">
-                  <Icon name="lock" />
+                  <Icon decorative name="lock" />
                   <input
                     className="inp" type="password" name="password_confirm"
                     value={confirm} onChange={e => setConfirm(e.target.value)}
@@ -119,7 +119,7 @@ export default function AcceptInvitePage() {
                 </div>
               </div>
               <Button variant="primary" type="submit" disabled={submitting} style={{ justifyContent: 'center', padding: '11px' }}>
-                <Icon name="check" />{submitting ? t('common.processing') : t('acceptInvite.submit')}
+                <Icon decorative name="check" />{submitting ? t('common.processing') : t('acceptInvite.submit')}
               </Button>
               {error && <Notice variant="bad">{error}</Notice>}
             </form>

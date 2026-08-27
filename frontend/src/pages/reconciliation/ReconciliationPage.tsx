@@ -100,14 +100,14 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
         <>
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" type="submit" disabled={confirmMut.isPending}>
-            <Icon name="check" />{confirmMut.isPending ? t('common.processing') : t('reconciliation.confirm')}
+            <Icon decorative name="check" />{confirmMut.isPending ? t('common.processing') : t('reconciliation.confirm')}
           </Button>
         </>
       }
     >
       {/* Suggestions */}
       <div className="sugg">
-        <div className="sugg-h"><Icon name="reconcile" size="sm" />{t('reconciliation.suggestions')}</div>
+        <div className="sugg-h"><Icon decorative name="reconcile" size="sm" />{t('reconciliation.suggestions')}</div>
         {suggestQ.isLoading && <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t('reconciliation.searchingSuggestions')}</p>}
         {suggestQ.data?.upstream_unavailable && (
           <Notice variant="warn">{t('reconciliation.upstreamUnavailable')}</Notice>
@@ -148,13 +148,13 @@ function ConfirmModal({ tx, onClose }: { tx: BankTransaction; onClose: () => voi
               </div>
               {allocs.length > 1 && (
                 <Button variant="ghost" size="sm" style={{ height: 36 }} onClick={() => setAllocs(p => p.filter((_, j) => j !== i))}>
-                  <Icon name="x" size="sm" />
+                  <Icon decorative name="x" size="sm" />
                 </Button>
               )}
             </div>
           ))}
           <Button variant="link" onClick={() => setAllocs(p => [...p, { source: 'invoice_upstream', invoice_id: 0, amount_cents: 0 }])}>
-            <Icon name="plus" size="sm" />{t('reconciliation.addAllocation')}
+            <Icon decorative name="plus" size="sm" />{t('reconciliation.addAllocation')}
           </Button>
         </div>
       </div>
@@ -186,7 +186,7 @@ function ReverseModal({ recon, onClose }: { recon: Reconciliation; onClose: () =
   })
   return (
     <Modal open onClose={onClose} title={t('reconciliation.confirmReverse')} size="narrow"
-      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon name="refresh" size="sm" />{mut.isPending ? t('common.processing') : t('reconciliation.reverse')}</Button></>}
+      footer={<><Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button><Button variant="danger" disabled={!reason.trim() || mut.isPending} onClick={() => mut.mutate()}><Icon decorative name="refresh" size="sm" />{mut.isPending ? t('common.processing') : t('reconciliation.reverse')}</Button></>}
     >
       <div className="field"><label>{t('reconciliation.reversalReason')}</label><input className="inp" value={reason} onChange={e => setReason(e.target.value)} /></div>
       {mut.isError && <Notice variant="bad">{mut.error.message}</Notice>}
@@ -283,15 +283,15 @@ export default function ReconciliationPage() {
         ]} />}
         actions={
           <Button variant="ghost" onClick={() => void downloadCsv(reconciliationsExportPath(reconFilter), 'reconciliations.csv')}>
-            <Icon name="export" />{t('export.csv')}
+            <Icon decorative name="export" />{t('export.csv')}
           </Button>
         }
       />
 
       <Tabs
         tabs={[
-          { key: 'unmatched', label: <><Icon name="reconcile" size="sm" />{t('reconciliation.tab.unmatched')}</> },
-          { key: 'history', label: <><Icon name="clock" size="sm" />{t('reconciliation.tab.history')}</> },
+          { key: 'unmatched', label: <><Icon decorative name="reconcile" size="sm" />{t('reconciliation.tab.unmatched')}</> },
+          { key: 'history', label: <><Icon decorative name="clock" size="sm" />{t('reconciliation.tab.history')}</> },
         ]}
         active={tab}
         onChange={setTab}
@@ -315,14 +315,14 @@ export default function ReconciliationPage() {
           </FilterField>
           <FilterField label={t('table.counterparty')}>
             <div className="inp-icon">
-              <Icon name="search" />
+              <Icon decorative name="search" />
               <input className="inp" data-kbd="search" placeholder={t('common.search')} style={{ paddingLeft: 32 }} value={uCounterparty} onChange={e => setUCounterparty(e.target.value)} />
             </div>
           </FilterField>
           <div className="filter-actions">
             <span className="filter-count">{t('filter.count', { n: uTotal })}</span>
-            <Button variant="ghost" size="sm" onClick={uClear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
-            <Button variant="primary" size="sm" onClick={uSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
+            <Button variant="ghost" size="sm" onClick={uClear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+            <Button variant="primary" size="sm" onClick={uSearch}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
           </div>
         </FilterBar>
         <Card pad="none" className="min-w-0">
@@ -346,7 +346,7 @@ export default function ReconciliationPage() {
                   <td><Badge variant="info">{t('reconciliation.hasCandidates')}</Badge></td>
                   <td className="row-act">
                     <Button variant="primary" size="sm" onClick={() => setMatchTarget(tx)}>
-                      <Icon name="check" size="sm" />{t('reconciliation.confirm')}
+                      <Icon decorative name="check" size="sm" />{t('reconciliation.confirm')}
                     </Button>
                   </td>
                 </tr>
@@ -380,8 +380,8 @@ export default function ReconciliationPage() {
           </FilterField>
           <div className="filter-actions">
             <span className="filter-count">{t('filter.count', { n: hTotal })}</span>
-            <Button variant="ghost" size="sm" onClick={hClear}><Icon name="refresh" size="sm" />{t('filter.clear')}</Button>
-            <Button variant="primary" size="sm" onClick={hSearch}><Icon name="search" size="sm" />{t('common.search')}</Button>
+            <Button variant="ghost" size="sm" onClick={hClear}><Icon decorative name="refresh" size="sm" />{t('filter.clear')}</Button>
+            <Button variant="primary" size="sm" onClick={hSearch}><Icon decorative name="search" size="sm" />{t('common.search')}</Button>
           </div>
         </FilterBar>
         <Card pad="none" className="min-w-0">
@@ -406,7 +406,7 @@ export default function ReconciliationPage() {
                   <td className="row-act">
                     {r.status === 'confirmed' && (
                       <Button variant="ghost-danger" size="sm" onClick={() => setReverseTarget(r)}>
-                        <Icon name="refresh" size="sm" />{t('reconciliation.reverse')}
+                        <Icon decorative name="refresh" size="sm" />{t('reconciliation.reverse')}
                       </Button>
                     )}
                   </td>

@@ -52,7 +52,7 @@ function NavItem({ to, icon, label, badge, end }: { to: string; icon: string; la
       end={end}
       className={({ isActive }) => ['nav-item', isActive ? 'active' : ''].filter(Boolean).join(' ')}
     >
-      <Icon name={icon} />
+      <Icon decorative name={icon} />
       {label}
       {badge !== undefined && <span className="nav-badge">{badge}</span>}
     </NavLink>
@@ -160,7 +160,7 @@ export default function AppLayout() {
           </Link>
           <nav className="crumb">
             <span>NeNe Clear</span>
-            <svg className="ic" style={{ width: 14, height: 14 }}><use href="#i-chev-r" /></svg>
+            <Icon decorative name="chev-r" style={{ width: 14, height: 14 }} />
             <b>{t('crumb.menu')}</b>
           </nav>
           <div className="topbar-r">
@@ -178,7 +178,7 @@ export default function AppLayout() {
             </button>
             <span className="sep" />
             <button className="iconbtn" title={t('nav.logout')} onClick={handleLogout}>
-              <Icon name="logout" />
+              <Icon decorative name="logout" />
             </button>
           </div>
         </header>
@@ -200,7 +200,7 @@ export default function AppLayout() {
             end={tb.end}
             className={({ isActive }) => ['mtab', isActive ? 'active' : ''].filter(Boolean).join(' ')}
           >
-            <Icon name={tb.icon} />
+            <Icon decorative name={tb.icon} />
             {tb.to === '/admin/reconciliation' && RECON_BADGE !== undefined && (
               <span className="mtab-badge">{RECON_BADGE}</span>
             )}
@@ -234,7 +234,7 @@ export default function AppLayout() {
               <span>admin@example.com</span>
             </div>
             <button className="logout" title={t('nav.logout')} aria-label={t('nav.logout')} onClick={handleLogout}>
-              <Icon name="logout" />
+              <Icon decorative name="logout" />
             </button>
           </div>
         </div>

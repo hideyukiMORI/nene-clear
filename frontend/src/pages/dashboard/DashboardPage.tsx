@@ -36,30 +36,30 @@ export default function DashboardPage() {
         <Kpi
           accent="accent"
           testId="kpi-unmatched"
-          icon={<Icon name="reconcile" />}
+          icon={<Icon decorative name="reconcile" />}
           label={t('dashboard.kpi.unmatched')}
           value={<>{unmatchedQ.isLoading ? '…' : unmatchedTotal}{unit && <small>{unit}</small>}</>}
-          sub={<><Icon name="yen" size="sm" />{t('dashboard.kpi.unmatchedSub')}</>}
+          sub={<><Icon decorative name="yen" size="sm" />{t('dashboard.kpi.unmatchedSub')}</>}
         />
         <Kpi
           accent="bad"
-          icon={<Icon name="alert" style={{ color: 'var(--bad)' }} />}
+          icon={<Icon decorative name="alert" style={{ color: 'var(--bad)' }} />}
           label={t('dashboard.kpi.overdue')}
           value={<>5{unit && <small>{unit}</small>}</>}
-          sub={<><Icon name="clock" size="sm" />{t('dashboard.kpi.overdueSub')}</>}
+          sub={<><Icon decorative name="clock" size="sm" />{t('dashboard.kpi.overdueSub')}</>}
         />
         <Kpi
-          icon={<Icon name="check" />}
+          icon={<Icon decorative name="check" />}
           label={t('dashboard.kpi.cleared')}
           value={<span className="tnum">¥4,820,000</span>}
-          sub={<><Icon name="trend" size="sm" />{t('dashboard.kpi.clearedSub')}</>}
+          sub={<><Icon decorative name="trend" size="sm" />{t('dashboard.kpi.clearedSub')}</>}
         />
         <Kpi
           accent="warn"
-          icon={<Icon name="credit" style={{ color: 'var(--warn)' }} />}
+          icon={<Icon decorative name="credit" style={{ color: 'var(--warn)' }} />}
           label={t('dashboard.kpi.credit')}
           value={<span className="tnum">¥45,000</span>}
-          sub={<><Icon name="info" size="sm" />{t('dashboard.kpi.creditSub')}</>}
+          sub={<><Icon decorative name="info" size="sm" />{t('dashboard.kpi.creditSub')}</>}
         />
       </KpiGrid>
 
@@ -67,9 +67,9 @@ export default function DashboardPage() {
         {/* Unmatched transactions */}
         <Card pad="none" className="min-w-0 mt-x-md">
           <CardHead>
-            <h2><Icon name="reconcile" />{t('dashboard.unmatched')}</h2>
+            <h2><Icon decorative name="reconcile" />{t('dashboard.unmatched')}</h2>
             <Button variant="link" onClick={() => navigate('/admin/reconciliation')}>
-              {t('dashboard.viewAll')} <Icon name="chev-r" size="sm" />
+              {t('dashboard.viewAll')} <Icon decorative name="chev-r" size="sm" />
             </Button>
           </CardHead>
           <DataTable>
@@ -88,7 +88,7 @@ export default function DashboardPage() {
                   <td className="strong">{tx.counterparty_text}</td>
                   <td className="row-act">
                     <Button variant="primary" size="sm" onClick={() => navigate('/admin/reconciliation')}>
-                      <Icon name="check" size="sm" />{t('reconciliation.confirm')}
+                      <Icon decorative name="check" size="sm" />{t('reconciliation.confirm')}
                     </Button>
                   </td>
                 </tr>
@@ -100,9 +100,9 @@ export default function DashboardPage() {
         {/* Recent dunning */}
         <Card pad="none" className="min-w-0 mt-x-md">
           <CardHead>
-            <h2><Icon name="bell" />{t('dashboard.recentDunning')}</h2>
+            <h2><Icon decorative name="bell" />{t('dashboard.recentDunning')}</h2>
             <Button variant="link" onClick={() => navigate('/admin/dunning')}>
-              {t('dashboard.toDunning')} <Icon name="chev-r" size="sm" />
+              {t('dashboard.toDunning')} <Icon decorative name="chev-r" size="sm" />
             </Button>
           </CardHead>
           <DataTable>

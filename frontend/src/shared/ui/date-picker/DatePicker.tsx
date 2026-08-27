@@ -96,15 +96,15 @@ export function DatePicker({ value, onChange, placeholder = 'YYYY/MM/DD', ariaLa
         onChange={(e) => onChange(autoformat(e.target.value))}
       />
       <button type="button" className="date-btn" tabIndex={-1} aria-label="カレンダーを開く" onClick={openPopover}>
-        <Icon name="calendar" size="sm" />
+        <Icon decorative name="calendar" size="sm" />
       </button>
 
       {open && (
         <div className="dp-pop" style={{ top: pos.top, left: pos.left }}>
           <div className="dp-head">
-            <button type="button" className="dp-nav" aria-label="前の月" onClick={() => shiftMonth(-1)}><Icon name="chev-l" size="sm" /></button>
+            <button type="button" className="dp-nav" aria-label="前の月" onClick={() => shiftMonth(-1)}><Icon decorative name="chev-l" size="sm" /></button>
             <span className="dp-title">{view.y}年 {pad(view.m)}月</span>
-            <button type="button" className="dp-nav" aria-label="次の月" onClick={() => shiftMonth(1)}><Icon name="chev-r" size="sm" /></button>
+            <button type="button" className="dp-nav" aria-label="次の月" onClick={() => shiftMonth(1)}><Icon decorative name="chev-r" size="sm" /></button>
           </div>
           <div className="dp-wd">{WD.map((w, i) => <span key={w} className={i === 0 ? 'sun' : i === 6 ? 'sat' : ''}>{w}</span>)}</div>
           <div className="dp-grid">
@@ -120,7 +120,7 @@ export function DatePicker({ value, onChange, placeholder = 'YYYY/MM/DD', ariaLa
           </div>
           <div className="dp-foot">
             <button type="button" className="dp-today" onClick={() => { onChange(fmt(t.getFullYear(), t.getMonth() + 1, t.getDate())); setOpen(false) }}>
-              <Icon name="calendar" size="sm" />今日
+              <Icon decorative name="calendar" size="sm" />今日
             </button>
           </div>
         </div>

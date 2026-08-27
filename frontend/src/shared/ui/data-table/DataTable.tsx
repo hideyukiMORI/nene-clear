@@ -102,11 +102,11 @@ export function Pager({ offset, pageSize, total, onOffsetChange }: PagerProps) {
       <span>{t('common.pagination.showing', { from: offset + 1, to: Math.min(offset + pageSize, total), total })}</span>
       <div className="pager">
         <button aria-label={t('common.pagination.prev')} onClick={() => onOffsetChange(Math.max(0, offset - pageSize))} disabled={current === 1}>
-          <Icon name="chev-l" size="sm" />
+          <Icon decorative name="chev-l" size="sm" />
         </button>
         <span className="cur">{current} / {totalPages}</span>
         <button aria-label={t('common.pagination.next')} onClick={() => onOffsetChange(offset + pageSize)} disabled={current >= totalPages}>
-          <Icon name="chev-r" size="sm" />
+          <Icon decorative name="chev-r" size="sm" />
         </button>
       </div>
     </div>

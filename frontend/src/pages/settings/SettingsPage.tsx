@@ -90,21 +90,21 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
     <Card pad="none" className="min-w-0" style={{ maxWidth: 780 }}>
       {/* Section: API */}
       <div className="set-sect">
-        <h3><Icon name="plug" />{t('settings.section.api')}</h3>
+        <h3><Icon decorative name="plug" />{t('settings.section.api')}</h3>
         <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
           <div className="field"><label>{t('settings.upstreamUrl')}</label><input className="inp" type="url" value={upstreamUrl} onChange={e => setUpstreamUrl(e.target.value)} /></div>
           <div className="field"><label>{t('settings.upstreamToken')}</label><input className="inp mono" type="password" value={upstreamToken} onChange={e => setUpstreamToken(e.target.value)} /></div>
           <div className="row">
-            <Button variant="ghost" onClick={handleTest} disabled={testing}><Icon name="refresh" />{testing ? t('common.checking') : t('settings.testConnection')}</Button>
-            {testResult === 'ok' && <span className="row" style={{ color: 'var(--ok)', fontWeight: 600, fontSize: '12.5px', gap: 6 }}><Icon name="check" size="sm" />{t('settings.connectionOk')}</span>}
-            {testResult === 'fail' && <span className="row" style={{ color: 'var(--bad)', fontWeight: 600, fontSize: '12.5px', gap: 6 }}><Icon name="x" size="sm" />{t('settings.connectionFail')}</span>}
+            <Button variant="ghost" onClick={handleTest} disabled={testing}><Icon decorative name="refresh" />{testing ? t('common.checking') : t('settings.testConnection')}</Button>
+            {testResult === 'ok' && <span className="row" style={{ color: 'var(--ok)', fontWeight: 600, fontSize: '12.5px', gap: 6 }}><Icon decorative name="check" size="sm" />{t('settings.connectionOk')}</span>}
+            {testResult === 'fail' && <span className="row" style={{ color: 'var(--bad)', fontWeight: 600, fontSize: '12.5px', gap: 6 }}><Icon decorative name="x" size="sm" />{t('settings.connectionFail')}</span>}
           </div>
         </div>
       </div>
 
       {/* Section: Dunning */}
       <div className="set-sect">
-        <h3><Icon name="bell" />{t('settings.section.dunning')}</h3>
+        <h3><Icon decorative name="bell" />{t('settings.section.dunning')}</h3>
         <div className="form-row">
           <div className="field">
             <label>{t('settings.dunningInterval')}</label>
@@ -116,7 +116,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
 
       {/* Section: Fiscal year */}
       <div className="set-sect">
-        <h3><Icon name="calendar" />{t('settings.section.fiscal')}</h3>
+        <h3><Icon decorative name="calendar" />{t('settings.section.fiscal')}</h3>
         <div className="form-row">
           <div className="field">
             <label>{t('settings.fiscalYearEndMonth')}</label>
@@ -140,9 +140,9 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
       {/* Section: Bank accounts */}
       <div className="set-sect">
         <h3 className="spread" style={{ display: 'flex' }}>
-          <span className="row" style={{ gap: 8 }}><Icon name="building" />{t('settings.section.banks')}</span>
+          <span className="row" style={{ gap: 8 }}><Icon decorative name="building" />{t('settings.section.banks')}</span>
           <Button variant="ghost" size="sm" onClick={() => setAccounts(p => [...p, emptyAccount()])}>
-            <Icon name="plus" size="sm" />{t('settings.addBankAccount')}
+            <Icon decorative name="plus" size="sm" />{t('settings.addBankAccount')}
           </Button>
         </h3>
         {accounts.length === 0 && <p className="faint" style={{ fontSize: 12 }}>{t('settings.noBankAccounts')}</p>}
@@ -178,7 +178,7 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
             <div className="spread" style={{ marginTop: 12 }}>
               <span />
               <Button variant="link" style={{ color: 'var(--bad)' }} onClick={() => setAccounts(p => p.filter((_, j) => j !== i))}>
-                <Icon name="trash" size="sm" />{t('settings.removeBankAccount')}
+                <Icon decorative name="trash" size="sm" />{t('settings.removeBankAccount')}
               </Button>
             </div>
           </div>
@@ -187,12 +187,12 @@ function SettingsForm({ settings }: { settings: ClearSettings }) {
 
       <CardFoot>
         {saved
-          ? <div className="notice ok" style={{ border: 0, background: 'transparent', padding: 0 }}><Icon name="check" size="sm" /><span>{t('settings.saved')}</span></div>
+          ? <div className="notice ok" style={{ border: 0, background: 'transparent', padding: 0 }}><Icon decorative name="check" size="sm" /><span>{t('settings.saved')}</span></div>
           : <span />
         }
         {saveMut.isError && <Notice variant="bad">{saveMut.error.message}</Notice>}
         <Button variant="primary" disabled={saveMut.isPending} onClick={handleSave}>
-          <Icon name="check" />{saveMut.isPending ? t('common.saving') : t('settings.save')}
+          <Icon decorative name="check" />{saveMut.isPending ? t('common.saving') : t('settings.save')}
         </Button>
       </CardFoot>
     </Card>

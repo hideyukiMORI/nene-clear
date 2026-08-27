@@ -19,7 +19,7 @@ interface NoticeProps {
 export function Notice({ variant, children, className }: NoticeProps) {
   return (
     <div className={['notice', variant, className].filter(Boolean).join(' ')}>
-      <Icon name={iconName[variant]} />
+      <Icon decorative name={iconName[variant]} />
       <span>{children}</span>
     </div>
   )
