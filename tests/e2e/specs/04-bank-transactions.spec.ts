@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 import { apiRoute, json, list, bypassLogin, bankTransaction } from '../fixtures/helpers'
 
 test.beforeEach(async ({ page }) => {
@@ -79,5 +80,39 @@ test.describe('Bank transactions — list, filter, pagination boundaries', () =>
     await page.getByRole('button', { name: '検索' }).click()
 
     await expect.poll(() => lastUrl).toContain('status=matched')
+  })
+
+  // #439: the sorted column's background lost on specificity and never painted.
+  // Assert the painted colour, not the rule — a selector that loses is still in
+  // the stylesheet, so only the computed value can tell the two apart.
+  test('the sorted column header is painted differently from the unsorted ones', async ({ page }) => {
+    await apiRoute(page, '**/admin/bank-transactions?**', (route) =>
+      json(route, 200, list([bankTransaction()])),
+    )
+
+    await page.goto('/admin/bank-transactions')
+
+    // The page opens sorted by value_date, so exactly one header carries aria-sort.
+    const sorted = page.locator('table.tbl thead th[aria-sort]')
+    await expect(sorted).toHaveCount(1)
+
+    const bg = (l: Locator) => l.evaluate((el) => getComputedStyle(el).backgroundColor)
+    const sortedBg = await bg(sorted)
+    const plainBg = await bg(page.locator('table.tbl thead th.sortable:not([aria-sort])').first())
+
+    expect(sortedBg).not.toBe(plainBg)
+
+    // ...and that it is the colour the rule has always asked for. Resolve the
+    // token at run time rather than pasting its value, so a token change moves
+    // the expectation with it.
+    const navy100 = await sorted.evaluate((el) => {
+      const probe = document.createElement('div')
+      probe.style.backgroundColor = 'var(--navy-100)'
+      el.append(probe)
+      const c = getComputedStyle(probe).backgroundColor
+      probe.remove()
+      return c
+    })
+    expect(sortedBg).toBe(navy100)
   })
 })
