@@ -27,7 +27,7 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/noto-sans-jp": "^5.2.9",
     "@hideyukimori/nene2-client": "^1.1.0",
-    "@hideyukimori/nene2-ui": "^0.20.0",
+    "@hideyukimori/nene2-ui": "^0.21.0",
     "@tanstack/react-query": "^5.90.11",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
