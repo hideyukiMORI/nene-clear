@@ -601,7 +601,11 @@ table.tbl thead th.sortable:hover{ color:var(--navy-700); }
 th[aria-sort] .sort-ic{ opacity:1; color:var(--navy-600); }
 th[aria-sort="ascending"] .sort-ic::before{ content:"\2191"; }
 th[aria-sort="descending"] .sort-ic::before{ content:"\2193"; }
-[data-theme="a"] th[aria-sort]{ background:var(--navy-100); }
+/* The sorted column. The selector must carry `table.tbl thead` like its
+   neighbours do: `[data-theme="a"] table.tbl thead th` (0,2,3) sets every
+   header cell's background, so a short `[data-theme="a"] th[aria-sort]`
+   (0,2,1) loses on specificity and never paints (#439). */
+[data-theme="a"] table.tbl thead th[aria-sort]{ background:var(--navy-100); }
 
 /* date field (type-first) + calendar popover */
 .datefield{ position:relative; display:inline-flex; align-items:center; }
