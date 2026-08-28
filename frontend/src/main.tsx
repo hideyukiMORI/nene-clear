@@ -8,7 +8,6 @@ import '@/shared/ui/theme/index.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from '@/app/App'
-import { ThemeProvider } from '@/shared/ui/theme/theme-context'
 import { I18nProvider } from '@/shared/i18n/i18n-context'
 
 const root = document.getElementById('root')
@@ -17,9 +16,7 @@ if (!root) throw new Error('#root element not found')
 createRoot(root).render(
   <StrictMode>
     <I18nProvider>
-      <ThemeProvider>
-        <App />
-      </ThemeProvider>
+      <App />
     </I18nProvider>
   </StrictMode>,
 )
