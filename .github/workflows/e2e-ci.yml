@@ -10,7 +10,7 @@ on:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # 2026-11-09: ubuntu-latest=26.04 は Playwright <1.65 の chromium 非対応。1.65+ に上げたら latest へ戻す
 
     steps:
       - name: Checkout
